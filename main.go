@@ -4,8 +4,14 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 */
 package main
 
-import "github.com/eiladin/k8s-dotenv/cmd"
+import (
+	"os"
+
+	"github.com/eiladin/k8s-dotenv/cmd"
+)
+
+var version = "dev"
 
 func main() {
-	cmd.Execute()
+	cmd.Execute(version, os.Args[1:])
 }
