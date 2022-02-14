@@ -3,9 +3,22 @@
 A commandline tool to fetch, merge and convert secrets and config maps in kubernetes to a dot env file.
 
 ## Usage
-
+### CronJob
 ```bash
-k8s-dotenv get <DEPLOYMENT_NAME>
+k8s-dotenv get cj <DAEMONSET_NAME>
+```
+
+### Deployment
+```bash
+k8s-dotenv get deploy <DEPLOYMENT_NAME>
+```
+### DaemonSet
+```bash
+k8s-dotenv get ds <DAEMONSET_NAME>
+```
+### Job
+```bash
+k8s-dotenv get job <DAEMONSET_NAME>
 ```
 
 ## Help

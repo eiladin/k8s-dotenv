@@ -12,7 +12,6 @@ import (
 )
 
 var namespaceName string
-var contextNamespace string
 var outfile string
 var noExport bool
 
