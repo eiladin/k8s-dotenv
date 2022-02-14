@@ -1,4 +1,4 @@
-package deployment
+package daemonset
 
 import (
 	"context"
@@ -16,7 +16,7 @@ func Get(namespace string, name string) (*environment.Result, error) {
 		return nil, err
 	}
 
-	resp, err := clientset.AppsV1().Deployments(namespace).Get(context.TODO(), name, v1.GetOptions{})
+	resp, err := clientset.AppsV1().DaemonSets(namespace).Get(context.TODO(), name, v1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func GetList(namespace string) ([]string, error) {
 		return nil, err
 	}
 
-	resp, err := clientset.AppsV1().Deployments(namespace).List(context.TODO(), v1.ListOptions{})
+	resp, err := clientset.AppsV1().DaemonSets(namespace).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
