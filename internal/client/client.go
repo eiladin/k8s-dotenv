@@ -27,3 +27,16 @@ func Get() (*kubernetes.Clientset, error) {
 
 	return clientset, nil
 }
+
+func CurrentNamespace() (string, error) {
+	clientCfg, err := clientcmd.NewDefaultClientConfigLoadingRules().Load()
+	if err != nil {
+		return "", err
+	}
+
+	namespace := clientCfg.Contexts[clientCfg.CurrentContext].Namespace
+	if namespace == "" {
+		return "default", nil
+	}
+	return namespace, nil
+}

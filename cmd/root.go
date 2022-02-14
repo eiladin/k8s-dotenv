@@ -8,13 +8,16 @@ import (
 	"io/ioutil"
 	"log"
 
+	"github.com/eiladin/k8s-dotenv/internal/client"
 	"github.com/eiladin/k8s-dotenv/internal/configmap"
 	"github.com/eiladin/k8s-dotenv/internal/deployment"
+	"github.com/eiladin/k8s-dotenv/internal/namespace"
 	"github.com/eiladin/k8s-dotenv/internal/secret"
 	"github.com/spf13/cobra"
 )
 
 var namespaceName string
+var contextNamespace string
 var deploymentName string
 var outfile string
 
@@ -42,6 +45,16 @@ func newRootCmd(version string) *rootCmd {
 		Long:    `k8s-dotenv takes a kubernetes secret or configmap and turns it into a .env file.`,
 		Version: version,
 		Run: func(cmd *cobra.Command, args []string) {
+			var err error
+			contextNamespace, err = client.CurrentNamespace()
+			if err != nil && namespaceName == "" {
+				log.Fatal(err)
+			}
+
+			if namespaceName == "" {
+				namespaceName = contextNamespace
+			}
+
 			res := ""
 			secrets, configmaps, err := deployment.Get(namespaceName, deploymentName)
 			if err != nil {
@@ -71,10 +84,30 @@ func newRootCmd(version string) *rootCmd {
 		},
 	}
 
-	cmd.Flags().StringVarP(&namespaceName, "namespace", "n", "default", "Namespace")
-	cmd.Flags().StringVarP(&deploymentName, "deployment", "d", "", "Deployment")
+	cmd.Flags().StringVarP(&namespaceName, "namespace", "n", "", "Namespace")
+	_ = cmd.RegisterFlagCompletionFunc("namespace", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		list, err := namespace.GetList()
+		if err != nil {
+			log.Fatal(err)
+		}
+		return list, cobra.ShellCompDirectiveDefault
+	})
+
 	cmd.Flags().StringVarP(&outfile, "outfile", "o", ".env", "Output file")
+
+	cmd.Flags().StringVarP(&deploymentName, "deployment", "d", "", "Deployment")
 	_ = cmd.MarkFlagRequired("deployment")
+	_ = cmd.RegisterFlagCompletionFunc("deployment", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		list, err := deployment.GetList(namespaceName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return list, cobra.ShellCompDirectiveDefault
+	})
+
+	cmd.AddCommand(
+		newCompletionCmd(""),
+	)
 
 	root.cmd = cmd
 	return root
