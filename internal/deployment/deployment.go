@@ -34,3 +34,21 @@ func Get(namespace string, name string) ([]string, []string, error) {
 
 	return secrets, configmaps, nil
 }
+
+func GetList(namespace string) ([]string, error) {
+	clientset, err := client.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	deployments, err := clientset.AppsV1().Deployments(namespace).List(context.TODO(), v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	res := []string{}
+	for _, deploy := range deployments.Items {
+		res = append(res, deploy.Name)
+	}
+	return res, nil
+}
