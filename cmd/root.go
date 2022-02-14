@@ -13,7 +13,6 @@ import (
 
 var namespaceName string
 var contextNamespace string
-var deploymentName string
 var outfile string
 
 func Execute(version string, args []string) {
