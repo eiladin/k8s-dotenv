@@ -8,7 +8,10 @@ builds:
     goos:
       - linux
       - windows
-      - darwin    
+      - darwin
+    goarch:
+      - amd64
+      - arm64
     ldflags:
       - -s -w -X 'main.version={{ .Version }}'
 
@@ -17,7 +20,6 @@ archives:
       darwin: Darwin
       linux: Linux
       windows: Windows
-      386: i386
       amd64: x86_64
     format: tar.gz
     format_overrides:
