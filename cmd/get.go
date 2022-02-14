@@ -50,11 +50,11 @@ func newGetCmd() *cobra.Command {
 
 			res := ""
 			for k, v := range getResult.Environment {
-				res += parser.ParseStr(k, v)
+				res += parser.ParseStr(!noExport, k, v)
 			}
 
 			for _, s := range getResult.Secrets {
-				secretVal, err := secret.Get(namespaceName, s)
+				secretVal, err := secret.Get(namespaceName, s, !noExport)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -62,7 +62,7 @@ func newGetCmd() *cobra.Command {
 			}
 
 			for _, c := range getResult.ConfigMaps {
-				configmapVal, err := configmap.Get(namespaceName, c)
+				configmapVal, err := configmap.Get(namespaceName, c, !noExport)
 				if err != nil {
 					log.Fatal(err)
 				}

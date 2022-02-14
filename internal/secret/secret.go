@@ -9,7 +9,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Get(namespace string, name string) (string, error) {
+func Get(namespace string, name string, shouldExport bool) (string, error) {
 	clientset, err := client.Get()
 	if err != nil {
 		return "", err
@@ -22,7 +22,7 @@ func Get(namespace string, name string) (string, error) {
 
 	res := fmt.Sprintf("##### SECRET - %s #####\n", name)
 	for k, v := range secret.Data {
-		res += parser.Parse(k, v)
+		res += parser.Parse(shouldExport, k, v)
 	}
 
 	return res, nil

@@ -14,6 +14,7 @@ import (
 var namespaceName string
 var contextNamespace string
 var outfile string
+var noExport bool
 
 func Execute(version string, args []string) {
 	newRootCmd(version).Execute(args)
@@ -50,6 +51,8 @@ func newRootCmd(version string) *rootCmd {
 	})
 
 	cmd.PersistentFlags().StringVarP(&outfile, "outfile", "o", ".env", "Output file")
+
+	cmd.PersistentFlags().BoolVarP(&noExport, "no-export", "e", false, "Do not include `export` statements")
 
 	cmd.AddCommand(
 		newCompletionCmd(""),
