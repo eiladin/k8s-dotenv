@@ -2,44 +2,54 @@ package deployment
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/eiladin/k8s-dotenv/internal/client"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Get(namespace string, name string) ([]string, []string, []string, error) {
-	secrets := []string{}
-	configmaps := []string{}
-	environment := []string{}
+type GetResult struct {
+	Environment map[string]string
+	Secrets     []string
+	ConfigMaps  []string
+}
+
+func NewGetResult() *GetResult {
+	return &GetResult{
+		Environment: map[string]string{},
+		Secrets:     []string{},
+		ConfigMaps:  []string{},
+	}
+}
+
+func Get(namespace string, name string) (*GetResult, error) {
+	res := NewGetResult()
 
 	clientset, err := client.Get()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	deployment, err := clientset.AppsV1().Deployments(namespace).Get(context.TODO(), name, v1.GetOptions{})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	for _, cont := range deployment.Spec.Template.Spec.Containers {
 		for _, env := range cont.Env {
-			environment = append(environment, fmt.Sprintf("export %s=\"%s\"", strings.ReplaceAll(env.Name, ".", ""), strings.ReplaceAll(string(env.Value), "\n", "\\n")))
+			res.Environment[env.Name] = env.Value
 		}
 
 		for _, envFrom := range cont.EnvFrom {
 			if envFrom.SecretRef != nil {
-				secrets = append(secrets, envFrom.SecretRef.Name)
+				res.Secrets = append(res.Secrets, envFrom.SecretRef.Name)
 			}
 			if envFrom.ConfigMapRef != nil {
-				configmaps = append(configmaps, envFrom.ConfigMapRef.Name)
+				res.ConfigMaps = append(res.ConfigMaps, envFrom.ConfigMapRef.Name)
 			}
 		}
 	}
 
-	return environment, secrets, configmaps, nil
+	return res, nil
 }
 
 func GetList(namespace string) ([]string, error) {

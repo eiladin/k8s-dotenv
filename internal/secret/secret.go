@@ -3,9 +3,9 @@ package secret
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/eiladin/k8s-dotenv/internal/client"
+	"github.com/eiladin/k8s-dotenv/internal/parser"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,7 +22,7 @@ func Get(namespace string, name string) (string, error) {
 
 	res := fmt.Sprintf("##### SECRET - %s #####\n", name)
 	for k, v := range secret.Data {
-		res += fmt.Sprintf("export %s=\"%s\"\n", strings.ReplaceAll(k, ".", ""), strings.ReplaceAll(string(v), "\n", "\\n"))
+		res += parser.Parse(k, v)
 	}
 
 	return res, nil

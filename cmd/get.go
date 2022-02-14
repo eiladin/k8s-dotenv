@@ -3,11 +3,11 @@ package cmd
 import (
 	"io/ioutil"
 	"log"
-	"strings"
 
 	"github.com/eiladin/k8s-dotenv/internal/client"
 	"github.com/eiladin/k8s-dotenv/internal/configmap"
 	"github.com/eiladin/k8s-dotenv/internal/deployment"
+	"github.com/eiladin/k8s-dotenv/internal/parser"
 	"github.com/eiladin/k8s-dotenv/internal/secret"
 	"github.com/spf13/cobra"
 )
@@ -43,14 +43,17 @@ func newGetCmd() *cobra.Command {
 				namespaceName = contextNamespace
 			}
 
-			env, secrets, configmaps, err := deployment.Get(namespaceName, args[0])
+			getResult, err := deployment.Get(namespaceName, args[0])
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			res := strings.Join(env, "\n")
+			res := ""
+			for k, v := range getResult.Environment {
+				res += parser.ParseStr(k, v)
+			}
 
-			for _, s := range secrets {
+			for _, s := range getResult.Secrets {
 				secretVal, err := secret.Get(namespaceName, s)
 				if err != nil {
 					log.Fatal(err)
@@ -58,7 +61,7 @@ func newGetCmd() *cobra.Command {
 				res += secretVal
 			}
 
-			for _, c := range configmaps {
+			for _, c := range getResult.ConfigMaps {
 				configmapVal, err := configmap.Get(namespaceName, c)
 				if err != nil {
 					log.Fatal(err)
