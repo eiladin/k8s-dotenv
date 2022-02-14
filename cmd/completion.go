@@ -41,47 +41,44 @@ completion of k8s-dotenv commands.  This can be done by sourcing it from the .ba
   Note for zsh users: zsh completions are only supported in versions of zsh >= 5.2.`
 
 	completionExample = `
-# Installing bash completion on macOS using homebrew
-## If running Bash 3.2 included with macOS
-  brew install bash-completion
-## or, if running Bash 4.1+
-  brew install bash-completion@2
-## Add the completion to your completion directory
-  k8s-dotenv completion bash > $(brew --prefix)/etc/bash_completion.d/k8s-dotenv
+To load completions:
 
-# Installing bash completion on Linux
-## If bash-completion is not installed on Linux, install the 'bash-completion' package
-## via your distribution's package manager.
-## Load the k8s-dotenv completion code for bash into the current shell
-  source <(k8s-dotenv completion bash)
-## Write bash completion code to a file and source it from .bash_profile
-  k8s-dotenv completion bash > ~/.k8s-dotenv/completion.bash.inc
-  printf "
-    # k8s-dotenv shell completion
-    source '$HOME/.k8s-dotenv/completion.bash.inc'
-    " >> $HOME/.bash_profile
-  source $HOME/.bash_profile
+Bash:
 
-	# Load the k8s-dotenv completion code for zsh into the current shell
-  source <(k8s-dotenv completion zsh)
-# Set the k8s-dotenv completion code for zsh to autoload on startup
-  k8s-dotenv completion zsh > "${fpath[1]}/_k8s-dotenv"
-# Load the k8s-dotenv completion code for fish into the current shell
-  k8s-dotenv completion fish | source
-# To load completions for each session, execute once: 
-  k8s-dotenv completion fish > ~/.config/fish/completions/k8s-dotenv.fish
-# Load the k8s-dotenv completion code for powershell into the current shell
-  k8s-dotenv completion powershell | Out-String | Invoke-Expression
-# Set k8s-dotenv completion code for powershell to run on startup
-## Save completion code to a script and execute in the profile
-  k8s-dotenv completion powershell > $HOME\.k8s-dotenv\completion.ps1
-  Add-Content $PROFILE "$HOME\.k8s-dotenv\completion.ps1"
-## Execute completion code in the profile
-  Add-Content $PROFILE "if (Get-Command k8s-dotenv -ErrorAction SilentlyContinue) {
-    k8s-dotenv completion powershell | Out-String | Invoke-Expression
-  }"
-## Add completion code directly to the $PROFILE script
-  k8s-dotenv completion powershell >> $PROFILE`
+  $ source <(k8s-dotenv completion bash)
+
+  # To load completions for each session, execute once:
+  # Linux:
+    $ k8s-dotenv completion bash > /etc/bash_completion.d/k8s-dotenv
+  # macOS:
+    $ k8s-dotenv completion bash > /usr/local/etc/bash_completion.d/k8s-dotenv
+	
+Zsh:
+
+  # If shell completion is not already enabled in your environment,
+  # you will need to enable it.  You can execute the following once:
+	
+    $ echo "autoload -U compinit; compinit" >> ~/.zshrc
+	
+  # To load completions for each session, execute once:
+    $ k8s-dotenv completion zsh > "${fpath[1]}/_k8s-dotenv"
+	
+  # You will need to start a new shell for this setup to take effect.
+	
+fish:
+	
+  $ k8s-dotenv completion fish | source
+	
+  # To load completions for each session, execute once:
+    $ k8s-dotenv completion fish > ~/.config/fish/completions/k8s-dotenv.fish
+	
+PowerShell:
+	
+  PS> k8s-dotenv completion powershell | Out-String | Invoke-Expression
+	
+  # To load completions for every new session, run:
+    PS> k8s-dotenv completion powershell > k8s-dotenv.ps1
+  # and source this file from your PowerShell profile.`
 )
 
 var (
