@@ -2,6 +2,12 @@
 
 A commandline tool to fetch, merge and convert secrets and config maps in kubernetes to a dot env file.
 
+## Install
+
+Download from the [Releases](https://github.com/eiladin/k8s-dotenv/releases) page, extract and put in PATH.  
+
+Alternatively, use [install.sh](https://raw.githubusercontent.com/eiladin/k8s-dotenv/blob/main/install.sh) to download and extract the latest version automatically.
+
 ## Usage
 ### CronJob
 ```bash
