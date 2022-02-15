@@ -2,6 +2,7 @@ package client
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 
 	"k8s.io/client-go/kubernetes"
@@ -43,4 +44,25 @@ func CurrentNamespace(namespace string) (string, error) {
 		return "default", nil
 	}
 	return ns, nil
+}
+
+func GetApiGroup(resource string) (string, error) {
+	clientset, err := Get()
+	if err != nil {
+		return "", err
+	}
+
+	serverResources, err := clientset.ServerResources()
+	if err != nil {
+		return "", err
+	}
+
+	for _, r := range serverResources {
+		for _, ar := range r.APIResources {
+			if ar.Kind == resource {
+				return r.GroupVersion, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("resource %s not found", resource)
 }

@@ -1,42 +1,27 @@
 package cronjob
 
 import (
-	"context"
-
 	"github.com/eiladin/k8s-dotenv/internal/client"
 	"github.com/eiladin/k8s-dotenv/internal/environment"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Get(namespace string, name string) (*environment.Result, error) {
-	res := environment.NewResult()
-
 	clientset, err := client.Get()
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := clientset.BatchV1beta1().CronJobs(namespace).Get(context.TODO(), name, v1.GetOptions{})
+	apiVersion, err := client.GetApiGroup("CronJob")
 	if err != nil {
 		return nil, err
 	}
+	beta1 := apiVersion == "batch/v1beta1"
 
-	for _, cont := range resp.Spec.JobTemplate.Spec.Template.Spec.Containers {
-		for _, env := range cont.Env {
-			res.Environment[env.Name] = env.Value
-		}
-
-		for _, envFrom := range cont.EnvFrom {
-			if envFrom.SecretRef != nil {
-				res.Secrets = append(res.Secrets, envFrom.SecretRef.Name)
-			}
-			if envFrom.ConfigMapRef != nil {
-				res.ConfigMaps = append(res.ConfigMaps, envFrom.ConfigMapRef.Name)
-			}
-		}
+	if beta1 {
+		return GetV1beta1(clientset, namespace, name)
+	} else {
+		return GetV1(clientset, namespace, name)
 	}
-
-	return res, nil
 }
 
 func GetList(namespace string) ([]string, error) {
@@ -45,14 +30,15 @@ func GetList(namespace string) ([]string, error) {
 		return nil, err
 	}
 
-	resp, err := clientset.BatchV1beta1().CronJobs(namespace).List(context.TODO(), v1.ListOptions{})
+	apiVersion, err := client.GetApiGroup("CronJob")
 	if err != nil {
 		return nil, err
 	}
+	beta1 := apiVersion == "batch/v1beta1"
 
-	res := []string{}
-	for _, item := range resp.Items {
-		res = append(res, item.Name)
+	if beta1 {
+		return GetListV1beta1(clientset, namespace)
+	} else {
+		return GetListV1(clientset, namespace)
 	}
-	return res, nil
 }
