@@ -1,13 +1,10 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
-	"errors"
 	"log"
 
+	"github.com/eiladin/k8s-dotenv/cmd/completion"
+	"github.com/eiladin/k8s-dotenv/cmd/get"
 	v1 "github.com/eiladin/k8s-dotenv/internal/api/v1"
 	"github.com/eiladin/k8s-dotenv/internal/client"
 	"github.com/eiladin/k8s-dotenv/internal/options"
@@ -15,8 +12,6 @@ import (
 )
 
 var opt *options.Options = options.NewOptions()
-
-var ErrResourceNameRequired = errors.New("resource name required")
 
 func Execute(version string, args []string) {
 	newRootCmd(version).Execute(args)
@@ -66,8 +61,8 @@ func newRootCmd(version string) *rootCmd {
 	cmd.PersistentFlags().BoolVarP(&opt.NoExport, "no-export", "e", false, "Do not include `export` statements")
 
 	cmd.AddCommand(
-		newCompletionCmd(),
-		newGetCmd(),
+		completion.NewCmd(),
+		get.NewCmd(opt),
 	)
 
 	root.cmd = cmd

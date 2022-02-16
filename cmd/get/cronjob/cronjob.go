@@ -1,13 +1,15 @@
-package cmd
+package cronjob
 
 import (
 	v1 "github.com/eiladin/k8s-dotenv/internal/api/v1"
 	"github.com/eiladin/k8s-dotenv/internal/api/v1beta1"
 	"github.com/eiladin/k8s-dotenv/internal/environment"
+	"github.com/eiladin/k8s-dotenv/internal/errors/cmd"
+	"github.com/eiladin/k8s-dotenv/internal/options"
 	"github.com/spf13/cobra"
 )
 
-func newCronJobCmd() *cobra.Command {
+func NewCmd(opt *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "cronjob RESOURCE_NAME",
 		Aliases: []string{"cronjobs", "cj"},
@@ -24,9 +26,9 @@ func newCronJobCmd() *cobra.Command {
 
 			return list, cobra.ShellCompDirectiveNoFileComp
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(c *cobra.Command, args []string) error {
 			if len(args) == 0 {
-				return ErrResourceNameRequired
+				return cmd.ErrResourceNameRequired
 			}
 			group, err := opt.Client.GetApiGroup("CronJob")
 			if err != nil {

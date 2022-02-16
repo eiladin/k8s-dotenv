@@ -1,4 +1,4 @@
-package cmd
+package completion
 
 import (
 	"errors"
@@ -90,7 +90,7 @@ var (
 	}
 )
 
-func newCompletionCmd() *cobra.Command {
+func NewCmd() *cobra.Command {
 	shells := []string{}
 	for s := range completionShells {
 		shells = append(shells, s)
