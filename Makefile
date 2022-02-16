@@ -17,4 +17,4 @@ help:
 
 .PHONY: build
 build:
-	@goreleaser release --snapshot --rm-dist
+	@goreleaser release --snapshot --rm-dist  --skip-validate --skip-publish
