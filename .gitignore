@@ -1,3 +1,4 @@
 
 dist/
 k8s-dotenv
+coverage.out

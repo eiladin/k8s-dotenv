@@ -2,10 +2,11 @@ package options
 
 import (
 	"github.com/eiladin/k8s-dotenv/internal/client"
+	"k8s.io/client-go/kubernetes"
 )
 
 type Options struct {
-	Client    *client.Client
+	Client    kubernetes.Interface
 	Namespace string
 	Name      string
 	Filename  string
@@ -17,7 +18,7 @@ func NewOptions() *Options {
 }
 
 func (opt *Options) ResolveNamespace() error {
-	ns, err := client.CurrentNamespace(opt.Namespace)
+	ns, err := client.CurrentNamespace(opt.Namespace, "")
 	if err != nil {
 		return err
 	}

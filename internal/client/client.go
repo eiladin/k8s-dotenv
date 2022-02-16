@@ -11,7 +11,7 @@ import (
 )
 
 type Client struct {
-	*kubernetes.Clientset
+	kubernetes.Interface
 }
 
 func Get() (*Client, error) {
@@ -33,25 +33,30 @@ func Get() (*Client, error) {
 	return &Client{clientset}, nil
 }
 
-func CurrentNamespace(namespace string) (string, error) {
+func CurrentNamespace(namespace string, configPath string) (string, error) {
 	if namespace != "" {
 		return namespace, nil
 	}
 
-	clientCfg, err := clientcmd.NewDefaultClientConfigLoadingRules().Load()
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	if configPath != "" {
+		rules.ExplicitPath = configPath
+	}
+	clientCfg, err := rules.Load()
 	if err != nil {
 		return "", err
 	}
 
 	ns := clientCfg.Contexts[clientCfg.CurrentContext].Namespace
+	fmt.Println(ns)
 	if ns == "" {
 		return "default", nil
 	}
 	return ns, nil
 }
 
-func (c *Client) GetApiGroup(resource string) (string, error) {
-	serverResources, err := c.ServerResources()
+func GetApiGroup(client kubernetes.Interface, resource string) (string, error) {
+	serverResources, err := client.Discovery().ServerResources()
 	if err != nil {
 		return "", err
 	}

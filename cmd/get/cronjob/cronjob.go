@@ -3,6 +3,7 @@ package cronjob
 import (
 	v1 "github.com/eiladin/k8s-dotenv/internal/api/v1"
 	"github.com/eiladin/k8s-dotenv/internal/api/v1beta1"
+	"github.com/eiladin/k8s-dotenv/internal/client"
 	"github.com/eiladin/k8s-dotenv/internal/environment"
 	"github.com/eiladin/k8s-dotenv/internal/errors/cmd"
 	"github.com/eiladin/k8s-dotenv/internal/options"
@@ -15,7 +16,7 @@ func NewCmd(opt *options.Options) *cobra.Command {
 		Aliases: []string{"cronjobs", "cj"},
 		Short:   "fetch environment configuration from cron job into a file",
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			group, _ := opt.Client.GetApiGroup("CronJob")
+			group, _ := client.GetApiGroup(opt.Client, "CronJob")
 
 			var list []string
 			if group == "batch/v1beta1" {
@@ -30,7 +31,7 @@ func NewCmd(opt *options.Options) *cobra.Command {
 			if len(args) == 0 {
 				return cmd.ErrResourceNameRequired
 			}
-			group, err := opt.Client.GetApiGroup("CronJob")
+			group, err := client.GetApiGroup(opt.Client, "CronJob")
 			if err != nil {
 				return err
 			}
