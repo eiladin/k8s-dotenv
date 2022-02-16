@@ -1,27 +1,22 @@
-package job
+package v1
 
 import (
 	"context"
 
-	"github.com/eiladin/k8s-dotenv/internal/client"
 	"github.com/eiladin/k8s-dotenv/internal/environment"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/eiladin/k8s-dotenv/internal/options"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Get(namespace string, name string) (*environment.Result, error) {
+func CronJob(opt *options.Options) (*environment.Result, error) {
 	res := environment.NewResult()
-
-	clientset, err := client.Get()
+	resp, err := opt.Client.BatchV1().CronJobs(opt.Namespace).Get(context.TODO(), opt.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
+	containers := resp.Spec.JobTemplate.Spec.Template.Spec.Containers
 
-	resp, err := clientset.BatchV1().Jobs(namespace).Get(context.TODO(), name, v1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, cont := range resp.Spec.Template.Spec.Containers {
+	for _, cont := range containers {
 		for _, env := range cont.Env {
 			res.Environment[env.Name] = env.Value
 		}
@@ -39,20 +34,16 @@ func Get(namespace string, name string) (*environment.Result, error) {
 	return res, nil
 }
 
-func GetList(namespace string) ([]string, error) {
-	clientset, err := client.Get()
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := clientset.BatchV1().Jobs(namespace).List(context.TODO(), v1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
+func CronJobs(opt *options.Options) ([]string, error) {
 	res := []string{}
+
+	resp, err := opt.Client.BatchV1().CronJobs(opt.Namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
 	for _, item := range resp.Items {
 		res = append(res, item.Name)
 	}
+
 	return res, nil
 }

@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 
 	"github.com/eiladin/k8s-dotenv/internal/configmap"
+	"github.com/eiladin/k8s-dotenv/internal/options"
 	"github.com/eiladin/k8s-dotenv/internal/parser"
 	"github.com/eiladin/k8s-dotenv/internal/secret"
 )
@@ -22,14 +23,14 @@ func NewResult() *Result {
 	}
 }
 
-func (r *Result) GetOutput(namespace string, shouldExport bool) (string, error) {
+func (r *Result) Output(opt *options.Options) (string, error) {
 	res := ""
 	for k, v := range r.Environment {
-		res += parser.ParseStr(shouldExport, k, v)
+		res += parser.ParseStr(!opt.NoExport, k, v)
 	}
 
 	for _, s := range r.Secrets {
-		secretVal, err := secret.Get(namespace, s, shouldExport)
+		secretVal, err := secret.Get(opt, s)
 		if err != nil {
 			return "", err
 		}
@@ -37,7 +38,7 @@ func (r *Result) GetOutput(namespace string, shouldExport bool) (string, error) 
 	}
 
 	for _, c := range r.ConfigMaps {
-		configmapVal, err := configmap.Get(namespace, c, shouldExport)
+		configmapVal, err := configmap.Get(opt, c)
 		if err != nil {
 			return "", err
 		}
@@ -46,13 +47,13 @@ func (r *Result) GetOutput(namespace string, shouldExport bool) (string, error) 
 	return res, nil
 }
 
-func (r *Result) Write(namespace string, shouldExport bool, filename string) error {
-	output, err := r.GetOutput(namespace, shouldExport)
+func (r *Result) Write(opt *options.Options) error {
+	output, err := r.Output(opt)
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.WriteFile(filename, []byte(output), 0644)
+	err = ioutil.WriteFile(opt.Filename, []byte(output), 0644)
 	if err != nil {
 		return err
 	}

@@ -4,25 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/eiladin/k8s-dotenv/internal/client"
+	"github.com/eiladin/k8s-dotenv/internal/options"
 	"github.com/eiladin/k8s-dotenv/internal/parser"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Get(namespace string, name string, shouldExport bool) (string, error) {
-	clientset, err := client.Get()
+func Get(opt *options.Options, secret string) (string, error) {
+	resp, err := opt.Client.CoreV1().Secrets(opt.Namespace).Get(context.TODO(), secret, v1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
 
-	secret, err := clientset.CoreV1().Secrets(namespace).Get(context.TODO(), name, v1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	res := fmt.Sprintf("##### SECRET - %s #####\n", name)
-	for k, v := range secret.Data {
-		res += parser.Parse(shouldExport, k, v)
+	res := fmt.Sprintf("##### SECRET - %s #####\n", secret)
+	for k, v := range resp.Data {
+		res += parser.Parse(!opt.NoExport, k, v)
 	}
 
 	return res, nil

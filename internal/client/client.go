@@ -10,7 +10,11 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-func Get() (*kubernetes.Clientset, error) {
+type Client struct {
+	*kubernetes.Clientset
+}
+
+func Get() (*Client, error) {
 	var home string
 	if home = homedir.HomeDir(); home == "" {
 		return nil, errors.New("err")
@@ -26,7 +30,7 @@ func Get() (*kubernetes.Clientset, error) {
 		return nil, err
 	}
 
-	return clientset, nil
+	return &Client{clientset}, nil
 }
 
 func CurrentNamespace(namespace string) (string, error) {
@@ -46,13 +50,8 @@ func CurrentNamespace(namespace string) (string, error) {
 	return ns, nil
 }
 
-func GetApiGroup(resource string) (string, error) {
-	clientset, err := Get()
-	if err != nil {
-		return "", err
-	}
-
-	serverResources, err := clientset.ServerResources()
+func (c *Client) GetApiGroup(resource string) (string, error) {
+	serverResources, err := c.ServerResources()
 	if err != nil {
 		return "", err
 	}
@@ -64,5 +63,6 @@ func GetApiGroup(resource string) (string, error) {
 			}
 		}
 	}
+
 	return "", fmt.Errorf("resource %s not found", resource)
 }

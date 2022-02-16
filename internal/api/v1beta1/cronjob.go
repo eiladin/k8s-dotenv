@@ -1,16 +1,16 @@
-package cronjob
+package v1beta1
 
 import (
 	"context"
 
 	"github.com/eiladin/k8s-dotenv/internal/environment"
+	"github.com/eiladin/k8s-dotenv/internal/options"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
-func GetV1beta1(clientset *kubernetes.Clientset, namespace string, name string) (*environment.Result, error) {
+func CronJob(opt *options.Options) (*environment.Result, error) {
 	res := environment.NewResult()
-	resp, err := clientset.BatchV1beta1().CronJobs(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	resp, err := opt.Client.BatchV1beta1().CronJobs(opt.Namespace).Get(context.TODO(), opt.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -34,10 +34,10 @@ func GetV1beta1(clientset *kubernetes.Clientset, namespace string, name string) 
 	return res, nil
 }
 
-func GetListV1beta1(clientset *kubernetes.Clientset, namespace string) ([]string, error) {
+func CronJobs(opt *options.Options) ([]string, error) {
 	res := []string{}
 
-	resp, err := clientset.BatchV1beta1().CronJobs(namespace).List(context.TODO(), metav1.ListOptions{})
+	resp, err := opt.Client.BatchV1beta1().CronJobs(opt.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -1,22 +1,17 @@
-package deployment
+package v1
 
 import (
 	"context"
 
-	"github.com/eiladin/k8s-dotenv/internal/client"
 	"github.com/eiladin/k8s-dotenv/internal/environment"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/eiladin/k8s-dotenv/internal/options"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Get(namespace string, name string) (*environment.Result, error) {
+func Deployment(opt *options.Options) (*environment.Result, error) {
 	res := environment.NewResult()
 
-	clientset, err := client.Get()
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := clientset.AppsV1().Deployments(namespace).Get(context.TODO(), name, v1.GetOptions{})
+	resp, err := opt.Client.AppsV1().Deployments(opt.Namespace).Get(context.TODO(), opt.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -39,13 +34,8 @@ func Get(namespace string, name string) (*environment.Result, error) {
 	return res, nil
 }
 
-func GetList(namespace string) ([]string, error) {
-	clientset, err := client.Get()
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := clientset.AppsV1().Deployments(namespace).List(context.TODO(), v1.ListOptions{})
+func Deployments(opt *options.Options) ([]string, error) {
+	resp, err := opt.Client.AppsV1().Deployments(opt.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
