@@ -147,12 +147,6 @@ func (suite ClientSuite) TestGetApiGroup() {
 	}
 }
 
-func (suite ClientSuite) TestClient() {
-	client, err := Get()
-	suite.NoError(err)
-	suite.NotNil(client)
-}
-
 func TestClientSuite(t *testing.T) {
 	suite.Run(t, new(ClientSuite))
 }
