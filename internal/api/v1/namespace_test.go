@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/internal/options"
@@ -9,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 type NamespaceSuite struct {
@@ -29,6 +31,7 @@ func (suite NamespaceSuite) TestNamespaces() {
 	cases := []struct {
 		items         []string
 		expectedCount int
+		shouldErr     bool
 	}{
 		{
 			items:         []string{"test"},
@@ -38,6 +41,9 @@ func (suite NamespaceSuite) TestNamespaces() {
 			items:         []string{"test", "test2"},
 			expectedCount: 2,
 		},
+		{
+			shouldErr: true,
+		},
 	}
 
 	for _, c := range cases {
@@ -46,13 +52,24 @@ func (suite NamespaceSuite) TestNamespaces() {
 			mock := mockNamespace(item)
 			mocks = append(mocks, mock)
 		}
+		client := fake.NewSimpleClientset(mocks...)
+		if c.shouldErr {
+			client.PrependReactor("list", "namespaces", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &corev1.NamespaceList{}, errors.New("error getting namespaces")
+			})
+		}
+
 		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(mocks...)
+		opt.Client = client
 
 		got, err := Namespaces(opt)
-		suite.NoError(err)
-		suite.NotNil(got)
-		suite.Len(got, c.expectedCount)
+		if c.shouldErr {
+			suite.Error(err)
+		} else {
+			suite.NoError(err)
+			suite.NotNil(got)
+			suite.Len(got, c.expectedCount)
+		}
 	}
 }
 

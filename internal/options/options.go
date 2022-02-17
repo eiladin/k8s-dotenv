@@ -17,8 +17,8 @@ func NewOptions() *Options {
 	return &Options{}
 }
 
-func (opt *Options) ResolveNamespace() error {
-	ns, err := client.CurrentNamespace(opt.Namespace, "")
+func (opt *Options) ResolveNamespace(configPath string) error {
+	ns, err := client.CurrentNamespace(opt.Namespace, configPath)
 	if err != nil {
 		return err
 	}

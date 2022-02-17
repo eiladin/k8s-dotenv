@@ -17,7 +17,7 @@ type Client struct {
 func Get() (*Client, error) {
 	var home string
 	if home = homedir.HomeDir(); home == "" {
-		return nil, errors.New("err")
+		return nil, errors.New("unable to locate home directory")
 	}
 
 	config, err := clientcmd.BuildConfigFromFlags("", filepath.Join(home, ".kube", "config"))
@@ -48,7 +48,6 @@ func CurrentNamespace(namespace string, configPath string) (string, error) {
 	}
 
 	ns := clientCfg.Contexts[clientCfg.CurrentContext].Namespace
-	fmt.Println(ns)
 	if ns == "" {
 		return "default", nil
 	}

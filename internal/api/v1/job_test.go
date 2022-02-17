@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/internal/options"
@@ -10,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 type JobSuite struct {
@@ -51,6 +53,7 @@ func (suite JobSuite) TestJob() {
 		env        map[string]string
 		configmaps []string
 		secrets    []string
+		shouldErr  bool
 	}{
 		{name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
 		{name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{}},
@@ -60,21 +63,33 @@ func (suite JobSuite) TestJob() {
 		{name: "my-job", namespace: "test", configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{}},
 		{name: "my-job", namespace: "test", configmaps: []string{}, secrets: []string{"Secret0", "Secret1"}},
 		{name: "my-job", namespace: "test", configmaps: []string{}, secrets: []string{}},
+		{shouldErr: true},
 	}
 
 	for _, c := range cases {
 		m := mockJob(c.name, c.namespace, c.env, c.configmaps, c.secrets)
+		client := fake.NewSimpleClientset(m)
+		if c.shouldErr {
+			client.PrependReactor("get", "jobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &v1.Job{}, errors.New("error getting job")
+			})
+		}
+
 		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(m)
+		opt.Client = client
 		opt.Namespace = c.namespace
 		opt.Name = c.name
 
 		got, err := Job(opt)
-		suite.NoError(err)
-		suite.NotNil(got)
-		suite.Len(got.Environment, len(c.env))
-		suite.Len(got.ConfigMaps, len(c.configmaps))
-		suite.Len(got.Secrets, len(c.secrets))
+		if c.shouldErr {
+			suite.Error(err)
+		} else {
+			suite.NoError(err)
+			suite.NotNil(got)
+			suite.Len(got.Environment, len(c.env))
+			suite.Len(got.ConfigMaps, len(c.configmaps))
+			suite.Len(got.Secrets, len(c.secrets))
+		}
 	}
 }
 
@@ -88,6 +103,7 @@ func (suite JobSuite) TestJobs() {
 		namespace     string
 		items         []item
 		expectedCount int
+		shouldErr     bool
 	}{
 		{
 			namespace:     "test",
@@ -109,6 +125,9 @@ func (suite JobSuite) TestJobs() {
 			items:         []item{{name: "my-job", namespace: "test"}, {name: "my-job-2", namespace: "other"}},
 			expectedCount: 1,
 		},
+		{
+			shouldErr: true,
+		},
 	}
 
 	for _, c := range cases {
@@ -117,14 +136,25 @@ func (suite JobSuite) TestJobs() {
 			mock := mockJob(item.name, item.namespace, nil, nil, nil)
 			mocks = append(mocks, mock)
 		}
+		client := fake.NewSimpleClientset(mocks...)
+		if c.shouldErr {
+			client.PrependReactor("list", "jobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &v1.JobList{}, errors.New("error getting jobs list")
+			})
+		}
+
 		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(mocks...)
+		opt.Client = client
 		opt.Namespace = c.namespace
 
 		got, err := Jobs(opt)
-		suite.NoError(err)
-		suite.NotNil(got)
-		suite.Len(got, c.expectedCount)
+		if c.shouldErr {
+			suite.Error(err)
+		} else {
+			suite.NoError(err)
+			suite.NotNil(got)
+			suite.Len(got, c.expectedCount)
+		}
 	}
 }
 

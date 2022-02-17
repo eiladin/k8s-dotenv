@@ -42,7 +42,7 @@ func newRootCmd(version string) *rootCmd {
 				return err
 			}
 			opt.Client = cs
-			return opt.ResolveNamespace()
+			return opt.ResolveNamespace("")
 		},
 		Version: version,
 	}

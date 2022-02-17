@@ -1,4 +1,4 @@
-package client
+package options
 
 import (
 	"io/ioutil"
@@ -6,12 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/batch/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
-type ClientSuite struct {
+type OptionsSuite struct {
 	suite.Suite
 }
 
@@ -80,7 +77,7 @@ users:
     token: not-a-real-token
 `
 
-func (suite ClientSuite) TestCurrentNamespace() {
+func (suite OptionsSuite) TestResolveNamespace() {
 	cases := []struct {
 		namespace     string
 		config        string
@@ -100,8 +97,9 @@ func (suite ClientSuite) TestCurrentNamespace() {
 			err := ioutil.WriteFile(configPath, []byte(c.config), 0644)
 			suite.NoError(err)
 		}
-
-		got, err := CurrentNamespace(c.namespace, configPath)
+		opt := NewOptions()
+		opt.Namespace = c.namespace
+		err := opt.ResolveNamespace(configPath)
 
 		if configPath != "" {
 			os.Remove(configPath)
@@ -111,48 +109,11 @@ func (suite ClientSuite) TestCurrentNamespace() {
 			suite.Error(err)
 		} else {
 			suite.NoError(err)
-		}
-		suite.Equal(c.expected, got)
-	}
-}
-
-func (suite ClientSuite) TestGetApiGroup() {
-	cases := []struct {
-		resource  string
-		shouldErr bool
-	}{
-		{resource: "Job"},
-		{resource: "Job", shouldErr: true},
-	}
-
-	for _, c := range cases {
-		client := fake.NewSimpleClientset(&v1.Job{})
-
-		if !c.shouldErr {
-			client.Fake.Resources = append(client.Fake.Resources, &metav1.APIResourceList{
-				GroupVersion: "v1",
-				APIResources: []metav1.APIResource{
-					{Name: "Jobs", SingularName: "Job", Kind: "Job", Namespaced: false, Group: "v1"},
-				},
-			})
-		}
-
-		got, err := GetApiGroup(client, c.resource)
-		if c.shouldErr {
-			suite.Error(err)
-		} else {
-			suite.NoError(err)
-			suite.NotNil(got)
+			suite.Equal(c.expected, opt.Namespace)
 		}
 	}
 }
 
-func (suite ClientSuite) TestClient() {
-	client, err := Get()
-	suite.NoError(err)
-	suite.NotNil(client)
-}
-
-func TestClientSuite(t *testing.T) {
-	suite.Run(t, new(ClientSuite))
+func TestOptionsSuite(t *testing.T) {
+	suite.Run(t, new(OptionsSuite))
 }
