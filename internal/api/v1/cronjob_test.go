@@ -17,7 +17,7 @@ type CronJobSuite struct {
 }
 
 func mockCronJob(name, namespace string, env map[string]string, configmaps, secrets []string) *v1.CronJob {
-	res := &v1.CronJob{
+	cronjob := &v1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Namespace:   namespace,
@@ -40,8 +40,8 @@ func mockCronJob(name, namespace string, env map[string]string, configmaps, secr
 	}
 
 	containers = append(containers, c)
-	res.Spec.JobTemplate.Spec.Template.Spec.Containers = containers
-	return res
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers = containers
+	return cronjob
 }
 
 func (suite CronJobSuite) TestCronJob() {
@@ -69,12 +69,12 @@ func (suite CronJobSuite) TestCronJob() {
 		opt.Namespace = c.namespace
 		opt.Name = c.name
 
-		res, err := CronJob(opt)
+		got, err := CronJob(opt)
 		suite.NoError(err)
-		suite.NotNil(res)
-		suite.Len(res.Environment, len(c.env))
-		suite.Len(res.ConfigMaps, len(c.configmaps))
-		suite.Len(res.Secrets, len(c.secrets))
+		suite.NotNil(got)
+		suite.Len(got.Environment, len(c.env))
+		suite.Len(got.ConfigMaps, len(c.configmaps))
+		suite.Len(got.Secrets, len(c.secrets))
 	}
 }
 
@@ -121,10 +121,10 @@ func (suite CronJobSuite) TestCronJobs() {
 		opt.Client = fake.NewSimpleClientset(mocks...)
 		opt.Namespace = c.namespace
 
-		res, err := CronJobs(opt)
+		got, err := CronJobs(opt)
 		suite.NoError(err)
-		suite.NotNil(res)
-		suite.Len(res, c.expectedCount)
+		suite.NotNil(got)
+		suite.Len(got, c.expectedCount)
 	}
 }
 

@@ -69,12 +69,12 @@ func (suite CronJobSuite) TestCronJob() {
 		opt.Namespace = c.namespace
 		opt.Name = c.name
 
-		res, err := CronJob(opt)
+		got, err := CronJob(opt)
 		suite.NoError(err)
-		suite.NotNil(res)
-		suite.Len(res.Environment, len(c.env))
-		suite.Len(res.ConfigMaps, len(c.configmaps))
-		suite.Len(res.Secrets, len(c.secrets))
+		suite.NotNil(got)
+		suite.Len(got.Environment, len(c.env))
+		suite.Len(got.ConfigMaps, len(c.configmaps))
+		suite.Len(got.Secrets, len(c.secrets))
 	}
 }
 
@@ -123,10 +123,10 @@ func (suite CronJobSuite) TestCronJobs() {
 		opt.Client = client
 		opt.Namespace = c.namespace
 
-		res, err := CronJobs(opt)
+		got, err := CronJobs(opt)
 		suite.NoError(err)
-		suite.NotNil(res)
-		suite.Len(res, c.expectedCount)
+		suite.NotNil(got)
+		suite.Len(got, c.expectedCount)
 	}
 }
 

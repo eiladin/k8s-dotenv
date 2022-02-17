@@ -49,10 +49,10 @@ func (suite NamespaceSuite) TestNamespaces() {
 		opt := options.NewOptions()
 		opt.Client = fake.NewSimpleClientset(mocks...)
 
-		res, err := Namespaces(opt)
+		got, err := Namespaces(opt)
 		suite.NoError(err)
-		suite.NotNil(res)
-		suite.Len(res, c.expectedCount)
+		suite.NotNil(got)
+		suite.Len(got, c.expectedCount)
 	}
 }
 

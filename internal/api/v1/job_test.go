@@ -69,12 +69,12 @@ func (suite JobSuite) TestJob() {
 		opt.Namespace = c.namespace
 		opt.Name = c.name
 
-		res, err := Job(opt)
+		got, err := Job(opt)
 		suite.NoError(err)
-		suite.NotNil(res)
-		suite.Len(res.Environment, len(c.env))
-		suite.Len(res.ConfigMaps, len(c.configmaps))
-		suite.Len(res.Secrets, len(c.secrets))
+		suite.NotNil(got)
+		suite.Len(got.Environment, len(c.env))
+		suite.Len(got.ConfigMaps, len(c.configmaps))
+		suite.Len(got.Secrets, len(c.secrets))
 	}
 }
 
@@ -121,10 +121,10 @@ func (suite JobSuite) TestJobs() {
 		opt.Client = fake.NewSimpleClientset(mocks...)
 		opt.Namespace = c.namespace
 
-		res, err := Jobs(opt)
+		got, err := Jobs(opt)
 		suite.NoError(err)
-		suite.NotNil(res)
-		suite.Len(res, c.expectedCount)
+		suite.NotNil(got)
+		suite.Len(got, c.expectedCount)
 	}
 }
 

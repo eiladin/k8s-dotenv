@@ -2,6 +2,7 @@ package job
 
 import (
 	"log"
+	"os"
 
 	v1 "github.com/eiladin/k8s-dotenv/internal/api/v1"
 	"github.com/eiladin/k8s-dotenv/internal/errors/cmd"
@@ -26,12 +27,18 @@ func NewCmd(opt *options.Options) *cobra.Command {
 				return cmd.ErrResourceNameRequired
 			}
 			opt.Name = args[0]
-			envRes, err := v1.Job(opt)
+			res, err := v1.Job(opt)
 			if err != nil {
 				return err
 			}
 
-			return envRes.Write(opt)
+			f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			return res.Write(f, opt)
 		},
 	}
 

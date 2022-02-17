@@ -1,4 +1,4 @@
-package configmap
+package secret
 
 import (
 	"testing"
@@ -10,12 +10,12 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-type ConfigMapSuite struct {
+type SecretSuite struct {
 	suite.Suite
 }
 
-func mockConfigMap(name string, namespace string, data map[string]string) *v1.ConfigMap {
-	res := &v1.ConfigMap{
+func mockSecret(name string, namespace string, data map[string][]byte) *v1.Secret {
+	res := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -25,10 +25,10 @@ func mockConfigMap(name string, namespace string, data map[string]string) *v1.Co
 	return res
 }
 
-func (suite ConfigMapSuite) TestGet() {
-	cm := mockConfigMap("test", "test", map[string]string{"n": "v"})
+func (suite SecretSuite) TestGet() {
+	s := mockSecret("test", "test", map[string][]byte{"n": []byte("v")})
 	opt := options.NewOptions()
-	opt.Client = fake.NewSimpleClientset(cm)
+	opt.Client = fake.NewSimpleClientset(s)
 	opt.Namespace = "test"
 
 	got, err := Get(opt, "test")
@@ -36,6 +36,6 @@ func (suite ConfigMapSuite) TestGet() {
 	suite.Greater(len(got), 0, "result should have a length greater than 0")
 }
 
-func TestConfigMapSuite(t *testing.T) {
-	suite.Run(t, new(ConfigMapSuite))
+func TestSecretSuite(t *testing.T) {
+	suite.Run(t, new(SecretSuite))
 }

@@ -1,6 +1,8 @@
 package cronjob
 
 import (
+	"os"
+
 	v1 "github.com/eiladin/k8s-dotenv/internal/api/v1"
 	"github.com/eiladin/k8s-dotenv/internal/api/v1beta1"
 	"github.com/eiladin/k8s-dotenv/internal/client"
@@ -37,18 +39,23 @@ func NewCmd(opt *options.Options) *cobra.Command {
 			}
 			beta1 := group == "batch/v1beta1"
 
-			var envRes *environment.Result
+			var res *environment.Result
 			opt.Name = args[0]
 			if beta1 {
-				envRes, err = v1beta1.CronJob(opt)
+				res, err = v1beta1.CronJob(opt)
 			} else {
-				envRes, err = v1.CronJob(opt)
+				res, err = v1.CronJob(opt)
 			}
 			if err != nil {
 				return err
 			}
 
-			return envRes.Write(opt)
+			f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			return res.Write(f, opt)
 		},
 	}
 

@@ -1,7 +1,7 @@
 package environment
 
 import (
-	"io/ioutil"
+	"io"
 
 	"github.com/eiladin/k8s-dotenv/internal/configmap"
 	"github.com/eiladin/k8s-dotenv/internal/options"
@@ -47,15 +47,11 @@ func (r *Result) Output(opt *options.Options) (string, error) {
 	return res, nil
 }
 
-func (r *Result) Write(opt *options.Options) error {
+func (r *Result) Write(writer io.Writer, opt *options.Options) error {
 	output, err := r.Output(opt)
 	if err != nil {
 		return err
 	}
-
-	err = ioutil.WriteFile(opt.Filename, []byte(output), 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err = writer.Write([]byte(output))
+	return err
 }

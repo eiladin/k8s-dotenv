@@ -98,7 +98,7 @@ func (suite ClientSuite) TestCurrentNamespace() {
 			suite.NoError(err)
 		}
 
-		res, err := CurrentNamespace(c.namespace, configPath)
+		got, err := CurrentNamespace(c.namespace, configPath)
 
 		if configPath != "" {
 			os.Remove(configPath)
@@ -109,7 +109,7 @@ func (suite ClientSuite) TestCurrentNamespace() {
 		} else {
 			suite.NoError(err)
 		}
-		suite.Equal(c.expected, res)
+		suite.Equal(c.expected, got)
 	}
 }
 
