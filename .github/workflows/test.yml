@@ -1,0 +1,40 @@
+
+name: test
+
+on:
+  pull_request:
+    branches: [ main ]  
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+
+    - name: Run test
+      run: go test ./... -v -tags=test -coverprofile=coverage.out
+
+    - name: convert gcov to lcov
+      if: ${{ github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' }}
+      uses: jandelgado/gcov2lcov-action@v1.0.8
+      with:
+        infile: coverage.out
+        outfile: coverage.lcov
+
+    - name: report code coverage
+      if: ${{ github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' }}
+      uses: zgosalvez/github-actions-report-lcov@v1
+      with:
+        coverage-files: coverage.lcov
+        minimum-coverage: 80
+        artifact-name: code-coverage-report
+        github-token: ${{ secrets.GITHUB_TOKEN }}
