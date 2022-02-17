@@ -41,46 +41,56 @@ func mockSecret(name string, namespace string, data map[string][]byte) *v1.Secre
 
 func (suite EnvironmentSuite) TestOutput() {
 	cases := []struct {
-		name      string
-		namespace string
-		env       map[string]string
-		configmap map[string]string
-		secrets   map[string][]byte
+		env           map[string]string
+		configmapName string
+		configmap     map[string]string
+		secretName    string
+		secrets       map[string][]byte
+		shouldErr     bool
 	}{
 		{
-			name:      "test",
-			namespace: "test",
 			env:       map[string]string{"env1": "val", "env2": "val2"},
 			configmap: map[string]string{"config": "val", "config2": "val2"},
 			secrets:   map[string][]byte{"secret": []byte("val"), "secret2": []byte("val2")},
 		},
 		{
-			name:      "test",
-			namespace: "test",
 			configmap: map[string]string{"config": "val", "config2": "val2"},
 			secrets:   map[string][]byte{"secret": []byte("val"), "secret2": []byte("val2")},
 		},
 		{
-			name:      "test",
-			namespace: "test",
-			env:       map[string]string{"env1": "val", "env2": "val2"},
-			secrets:   map[string][]byte{"secret": []byte("val"), "secret2": []byte("val2")},
+			env:     map[string]string{"env1": "val", "env2": "val2"},
+			secrets: map[string][]byte{"secret": []byte("val"), "secret2": []byte("val2")},
 		},
 		{
-			name:      "test",
-			namespace: "test",
 			env:       map[string]string{"env1": "val", "env2": "val2"},
 			configmap: map[string]string{"config": "val", "config2": "val2"},
 		},
+		{
+			configmap:     map[string]string{"config": "val"},
+			configmapName: "test1",
+			shouldErr:     true,
+		},
+		{
+			secrets:    map[string][]byte{"secret": []byte("val")},
+			secretName: "test1",
+			shouldErr:  true,
+		},
+	}
+
+	buildList := func(name string) []string {
+		if name != "" {
+			return []string{name}
+		}
+		return []string{"test"}
 	}
 
 	for i, c := range cases {
 		r := NewResult()
 		if c.configmap != nil {
-			r.ConfigMaps = []string{c.name}
+			r.ConfigMaps = buildList(c.configmapName)
 		}
 		if c.secrets != nil {
-			r.Secrets = []string{c.name}
+			r.Secrets = buildList(c.secretName)
 		}
 		if c.env != nil {
 			r.Environment = c.env
@@ -88,73 +98,83 @@ func (suite EnvironmentSuite) TestOutput() {
 
 		objs := []runtime.Object{}
 		if c.configmap != nil {
-			objs = append(objs, mockConfigMap(c.name, c.namespace, c.configmap))
+			objs = append(objs, mockConfigMap("test", "test", c.configmap))
 		}
 		if c.secrets != nil {
-			objs = append(objs, mockSecret(c.name, c.namespace, c.secrets))
+			objs = append(objs, mockSecret("test", "test", c.secrets))
 		}
 
 		opt := options.NewOptions()
 		opt.Client = fake.NewSimpleClientset(objs...)
-		opt.Namespace = c.namespace
+		opt.Namespace = "test"
 
 		got, err := r.Output(opt)
-		suite.NoError(err, fmt.Sprintf("Test case %d", i))
-		suite.NotNil(got, fmt.Sprintf("Test case %d", i))
-		for k, v := range c.configmap {
-			suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), fmt.Sprintf("Test case %d", i))
-		}
-		for k, v := range c.secrets {
-			suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), fmt.Sprintf("Test case %d", i))
-		}
-		for k, v := range c.env {
-			suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), fmt.Sprintf("Test case %d", i))
+		caseDesc := fmt.Sprintf("Test case %d", i)
+		if c.shouldErr {
+			suite.Error(err, caseDesc)
+		} else {
+			suite.NoError(err, caseDesc)
+			suite.NotNil(got, caseDesc)
+			for k, v := range c.configmap {
+				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
+			}
+			for k, v := range c.secrets {
+				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
+			}
+			for k, v := range c.env {
+				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
+			}
 		}
 	}
 }
 
 func (suite EnvironmentSuite) TestWrite() {
 	cases := []struct {
-		name      string
-		namespace string
-		env       map[string]string
-		configmap map[string]string
-		secrets   map[string][]byte
+		env           map[string]string
+		configmapName string
+		configmap     map[string]string
+		secretName    string
+		secrets       map[string][]byte
+		shouldErr     bool
 	}{
 		{
-			name:      "test",
-			namespace: "test",
 			env:       map[string]string{"env1": "val", "env2": "val2"},
 			configmap: map[string]string{"config": "val", "config2": "val2"},
 			secrets:   map[string][]byte{"secret": []byte("val"), "secret2": []byte("val2")},
 		},
 		{
-			name:      "test",
-			namespace: "test",
 			configmap: map[string]string{"config": "val", "config2": "val2"},
 			secrets:   map[string][]byte{"secret": []byte("val"), "secret2": []byte("val2")},
 		},
 		{
-			name:      "test",
-			namespace: "test",
-			env:       map[string]string{"env1": "val", "env2": "val2"},
-			secrets:   map[string][]byte{"secret": []byte("val"), "secret2": []byte("val2")},
+			env:     map[string]string{"env1": "val", "env2": "val2"},
+			secrets: map[string][]byte{"secret": []byte("val"), "secret2": []byte("val2")},
 		},
 		{
-			name:      "test",
-			namespace: "test",
 			env:       map[string]string{"env1": "val", "env2": "val2"},
 			configmap: map[string]string{"config": "val", "config2": "val2"},
 		},
+		{
+			configmapName: "test2",
+			configmap:     map[string]string{"config": "val", "config2": "val2"},
+			shouldErr:     true,
+		},
+	}
+
+	buildList := func(name string) []string {
+		if name != "" {
+			return []string{name}
+		}
+		return []string{"test"}
 	}
 
 	for i, c := range cases {
 		r := NewResult()
 		if c.configmap != nil {
-			r.ConfigMaps = []string{c.name}
+			r.ConfigMaps = buildList(c.configmapName)
 		}
 		if c.secrets != nil {
-			r.Secrets = []string{c.name}
+			r.Secrets = buildList(c.secretName)
 		}
 		if c.env != nil {
 			r.Environment = c.env
@@ -162,29 +182,34 @@ func (suite EnvironmentSuite) TestWrite() {
 
 		objs := []runtime.Object{}
 		if c.configmap != nil {
-			objs = append(objs, mockConfigMap(c.name, c.namespace, c.configmap))
+			objs = append(objs, mockConfigMap("test", "test", c.configmap))
 		}
 		if c.secrets != nil {
-			objs = append(objs, mockSecret(c.name, c.namespace, c.secrets))
+			objs = append(objs, mockSecret("test", "test", c.secrets))
 		}
 
 		opt := options.NewOptions()
 		opt.Client = fake.NewSimpleClientset(objs...)
-		opt.Namespace = c.namespace
+		opt.Namespace = "test"
 		var b bytes.Buffer
 
 		err := r.Write(&b, opt)
 		got := b.String()
-		suite.NoError(err, fmt.Sprintf("Test case %d", i))
-		suite.NotNil(got, fmt.Sprintf("Test case %d", i))
-		for k, v := range c.configmap {
-			suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), fmt.Sprintf("Test case %d", i))
-		}
-		for k, v := range c.secrets {
-			suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), fmt.Sprintf("Test case %d", i))
-		}
-		for k, v := range c.env {
-			suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), fmt.Sprintf("Test case %d", i))
+		caseDesc := fmt.Sprintf("Test case %d", i)
+		if c.shouldErr {
+			suite.Error(err)
+		} else {
+			suite.NoError(err, caseDesc)
+			suite.NotNil(got, caseDesc)
+			for k, v := range c.configmap {
+				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
+			}
+			for k, v := range c.secrets {
+				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
+			}
+			for k, v := range c.env {
+				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
+			}
 		}
 	}
 }

@@ -26,14 +26,30 @@ func mockSecret(name string, namespace string, data map[string][]byte) *v1.Secre
 }
 
 func (suite SecretSuite) TestGet() {
-	s := mockSecret("test", "test", map[string][]byte{"n": []byte("v")})
-	opt := options.NewOptions()
-	opt.Client = fake.NewSimpleClientset(s)
-	opt.Namespace = "test"
+	cases := []struct {
+		name      string
+		namespace string
+		shouldErr bool
+	}{
+		{name: "test", namespace: "test"},
+		{name: "test1", namespace: "test", shouldErr: true},
+		{name: "test", namespace: "test2", shouldErr: true},
+	}
 
-	got, err := Get(opt, "test")
-	suite.NoError(err)
-	suite.Greater(len(got), 0, "result should have a length greater than 0")
+	for _, c := range cases {
+		s := mockSecret("test", "test", map[string][]byte{"n": []byte("v")})
+		opt := options.NewOptions()
+		opt.Client = fake.NewSimpleClientset(s)
+		opt.Namespace = c.namespace
+
+		got, err := Get(opt, c.name)
+		if c.shouldErr {
+			suite.Error(err)
+		} else {
+			suite.NoError(err)
+			suite.Greater(len(got), 0, "result should have a length greater than 0")
+		}
+	}
 }
 
 func TestSecretSuite(t *testing.T) {

@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/internal/options"
@@ -10,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 type CronJobSuite struct {
@@ -51,6 +53,7 @@ func (suite CronJobSuite) TestCronJob() {
 		env        map[string]string
 		configmaps []string
 		secrets    []string
+		shouldErr  bool
 	}{
 		{name: "my-cronjob", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
 		{name: "my-cronjob", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{}},
@@ -60,21 +63,33 @@ func (suite CronJobSuite) TestCronJob() {
 		{name: "my-cronjob", namespace: "test", configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{}},
 		{name: "my-cronjob", namespace: "test", configmaps: []string{}, secrets: []string{"Secret0", "Secret1"}},
 		{name: "my-cronjob", namespace: "test", configmaps: []string{}, secrets: []string{}},
+		{name: "my-cronjob", namespace: "test", shouldErr: true},
 	}
 
 	for _, c := range cases {
 		m := mockCronJob(c.name, c.namespace, c.env, c.configmaps, c.secrets)
+		client := fake.NewSimpleClientset(m)
+		if c.shouldErr {
+			client.PrependReactor("get", "cronjobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &v1.CronJob{}, errors.New("error getting cronjob")
+			})
+		}
+
 		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(m)
+		opt.Client = client
 		opt.Namespace = c.namespace
 		opt.Name = c.name
 
 		got, err := CronJob(opt)
-		suite.NoError(err)
-		suite.NotNil(got)
-		suite.Len(got.Environment, len(c.env))
-		suite.Len(got.ConfigMaps, len(c.configmaps))
-		suite.Len(got.Secrets, len(c.secrets))
+		if c.shouldErr {
+			suite.Error(err)
+		} else {
+			suite.NoError(err)
+			suite.NotNil(got)
+			suite.Len(got.Environment, len(c.env))
+			suite.Len(got.ConfigMaps, len(c.configmaps))
+			suite.Len(got.Secrets, len(c.secrets))
+		}
 	}
 }
 
@@ -88,6 +103,7 @@ func (suite CronJobSuite) TestCronJobs() {
 		namespace     string
 		items         []item
 		expectedCount int
+		shouldErr     bool
 	}{
 		{
 			namespace:     "test",
@@ -109,6 +125,10 @@ func (suite CronJobSuite) TestCronJobs() {
 			items:         []item{{name: "my-cronjob", namespace: "test"}, {name: "my-cronjob-2", namespace: "other"}},
 			expectedCount: 1,
 		},
+		{
+			namespace: "test",
+			shouldErr: true,
+		},
 	}
 
 	for _, c := range cases {
@@ -117,14 +137,25 @@ func (suite CronJobSuite) TestCronJobs() {
 			mock := mockCronJob(item.name, item.namespace, nil, nil, nil)
 			mocks = append(mocks, mock)
 		}
+		client := fake.NewSimpleClientset(mocks...)
+		if c.shouldErr {
+			client.PrependReactor("list", "cronjobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &v1.CronJobList{}, errors.New("error getting cronjob")
+			})
+		}
+
 		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(mocks...)
+		opt.Client = client
 		opt.Namespace = c.namespace
 
 		got, err := CronJobs(opt)
-		suite.NoError(err)
-		suite.NotNil(got)
-		suite.Len(got, c.expectedCount)
+		if c.shouldErr {
+			suite.Error(err)
+		} else {
+			suite.NoError(err)
+			suite.NotNil(got)
+			suite.Len(got, c.expectedCount)
+		}
 	}
 }
 

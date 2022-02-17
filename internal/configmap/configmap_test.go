@@ -26,14 +26,30 @@ func mockConfigMap(name string, namespace string, data map[string]string) *v1.Co
 }
 
 func (suite ConfigMapSuite) TestGet() {
-	cm := mockConfigMap("test", "test", map[string]string{"n": "v"})
-	opt := options.NewOptions()
-	opt.Client = fake.NewSimpleClientset(cm)
-	opt.Namespace = "test"
+	cases := []struct {
+		name      string
+		namespace string
+		shouldErr bool
+	}{
+		{name: "test", namespace: "test"},
+		{name: "test1", namespace: "test", shouldErr: true},
+		{name: "test", namespace: "test2", shouldErr: true},
+	}
 
-	got, err := Get(opt, "test")
-	suite.NoError(err)
-	suite.Greater(len(got), 0, "result should have a length greater than 0")
+	for _, c := range cases {
+		cm := mockConfigMap("test", "test", map[string]string{"n": "v"})
+		opt := options.NewOptions()
+		opt.Client = fake.NewSimpleClientset(cm)
+		opt.Namespace = c.namespace
+
+		got, err := Get(opt, c.name)
+		if c.shouldErr {
+			suite.Error(err)
+		} else {
+			suite.NoError(err)
+			suite.Greater(len(got), 0, "result should have a length greater than 0")
+		}
+	}
 }
 
 func TestConfigMapSuite(t *testing.T) {
