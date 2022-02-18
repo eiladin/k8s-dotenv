@@ -81,7 +81,8 @@ func (suite JobCmdSuite) TestValidArgs() {
 	opt.Name = "test"
 	opt.Namespace = "test"
 	opt.Client = client
-	got := validArgs(opt)
+	cmd := NewCmd(opt)
+	got, _ := cmd.ValidArgsFunction(cmd, []string{}, "")
 	suite.NotNil(got)
 }
 
@@ -97,7 +98,6 @@ func (suite JobCmdSuite) TestRun() {
 		shouldErr  bool
 	}{
 		{args: []string{"my-job"}, name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
-		{args: []string{"my-job"}, name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}, filename: "test.out"},
 		{args: []string{"my-job"}, shouldErr: true},
 		{shouldErr: true},
 	}
@@ -126,14 +126,12 @@ func (suite JobCmdSuite) TestRun() {
 		opt.Filename = c.filename
 
 		var b bytes.Buffer
-		var err error
 
-		if c.filename == "" {
-			err = run(opt, c.args, &b)
-		} else {
-			err = run(opt, c.args, nil)
-			defer os.Remove(c.filename)
-		}
+		err := opt.SetWriter(&b)
+		suite.NoError(err)
+		cmd := NewCmd(opt)
+		err = cmd.RunE(cmd, c.args)
+
 		if c.shouldErr {
 			suite.Error(err)
 		} else {

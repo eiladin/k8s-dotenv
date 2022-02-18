@@ -116,6 +116,21 @@ func (suite ClientSuite) TestCurrentNamespace() {
 	}
 }
 
+func (suite ClientSuite) TestGetApiGroupApiError() {
+	client := fake.NewSimpleClientset(&v1.Job{})
+
+	client.Fake.Resources = append(client.Fake.Resources, &metav1.APIResourceList{
+		GroupVersion: "a/b/c",
+		APIResources: []metav1.APIResource{
+			{Name: "Jobs", SingularName: "Job", Kind: "Job", Namespaced: false, Group: "v1"},
+		},
+	})
+
+	got, err := GetApiGroup(client, "Job")
+	suite.Error(err)
+	suite.Empty(got)
+}
+
 func (suite ClientSuite) TestGetApiGroup() {
 	cases := []struct {
 		resource  string

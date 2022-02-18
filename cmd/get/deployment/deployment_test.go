@@ -2,7 +2,6 @@ package deployment
 
 import (
 	"bytes"
-	"errors"
 	"os"
 	"testing"
 
@@ -13,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
-	k8stesting "k8s.io/client-go/testing"
 )
 
 type DeploymentCmdSuite struct {
@@ -81,7 +79,8 @@ func (suite DeploymentCmdSuite) TestValidArgs() {
 	opt.Name = "test"
 	opt.Namespace = "test"
 	opt.Client = client
-	got := validArgs(opt)
+	cmd := NewCmd(opt)
+	got, _ := cmd.ValidArgsFunction(cmd, []string{}, "")
 	suite.NotNil(got)
 }
 
@@ -97,7 +96,6 @@ func (suite DeploymentCmdSuite) TestRun() {
 		shouldErr  bool
 	}{
 		{args: []string{"my-job"}, name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
-		{args: []string{"my-job"}, name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}, filename: "test.out"},
 		{args: []string{"my-job"}, shouldErr: true},
 		{shouldErr: true},
 	}
@@ -113,11 +111,6 @@ func (suite DeploymentCmdSuite) TestRun() {
 		}
 
 		client := fake.NewSimpleClientset(mocks...)
-		if c.shouldErr {
-			client.PrependReactor("get", "deployments", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &v1.Deployment{}, errors.New("error getting deployment")
-			})
-		}
 
 		opt := options.NewOptions()
 		opt.Client = client
@@ -126,14 +119,11 @@ func (suite DeploymentCmdSuite) TestRun() {
 		opt.Filename = c.filename
 
 		var b bytes.Buffer
-		var err error
+		err := opt.SetWriter(&b)
+		suite.NoError(err)
+		cmd := NewCmd(opt)
+		err = cmd.RunE(cmd, c.args)
 
-		if c.filename == "" {
-			err = run(opt, c.args, &b)
-		} else {
-			err = run(opt, c.args, nil)
-			defer os.Remove(c.filename)
-		}
 		if c.shouldErr {
 			suite.Error(err)
 		} else {

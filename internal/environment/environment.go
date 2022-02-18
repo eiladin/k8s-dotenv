@@ -1,8 +1,6 @@
 package environment
 
 import (
-	"io"
-
 	"github.com/eiladin/k8s-dotenv/internal/configmap"
 	"github.com/eiladin/k8s-dotenv/internal/options"
 	"github.com/eiladin/k8s-dotenv/internal/parser"
@@ -47,11 +45,11 @@ func (r *Result) Output(opt *options.Options) (string, error) {
 	return res, nil
 }
 
-func (r *Result) Write(writer io.Writer, opt *options.Options) error {
+func (r *Result) Write(opt *options.Options) error {
 	output, err := r.Output(opt)
 	if err != nil {
 		return err
 	}
-	_, err = writer.Write([]byte(output))
+	_, err = opt.Writer.Write([]byte(output))
 	return err
 }

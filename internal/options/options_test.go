@@ -1,6 +1,7 @@
 package options
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -112,6 +113,24 @@ func (suite OptionsSuite) TestResolveNamespace() {
 			suite.Equal(c.expected, opt.Namespace)
 		}
 	}
+}
+
+func (suite OptionsSuite) TestSetWriter() {
+	var b bytes.Buffer
+	opt := NewOptions()
+	err := opt.SetWriter(&b)
+	suite.NoError(err)
+	suite.Equal(&b, opt.Writer)
+
+	opt = NewOptions()
+	err = opt.SetWriter(nil)
+	suite.Error(err)
+
+	opt = NewOptions()
+	opt.Filename = "./test.out"
+	err = opt.SetWriter(nil)
+	defer os.Remove(opt.Filename)
+	suite.NoError(err)
 }
 
 func TestOptionsSuite(t *testing.T) {

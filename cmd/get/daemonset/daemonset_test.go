@@ -2,8 +2,6 @@ package daemonset
 
 import (
 	"bytes"
-	"errors"
-	"os"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/internal/options"
@@ -13,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
-	k8stesting "k8s.io/client-go/testing"
 )
 
 type DaemonsetCmdSuite struct {
@@ -81,7 +78,8 @@ func (suite DaemonsetCmdSuite) TestValidArgs() {
 	opt.Name = "test"
 	opt.Namespace = "test"
 	opt.Client = client
-	got := validArgs(opt)
+	cmd := NewCmd(opt)
+	got, _ := cmd.ValidArgsFunction(cmd, []string{}, "")
 	suite.NotNil(got)
 }
 
@@ -93,11 +91,9 @@ func (suite DaemonsetCmdSuite) TestRun() {
 		configmaps []string
 		secrets    []string
 		args       []string
-		filename   string
 		shouldErr  bool
 	}{
 		{args: []string{"my-job"}, name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
-		{args: []string{"my-job"}, name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}, filename: "test.out"},
 		{args: []string{"my-job"}, shouldErr: true},
 		{shouldErr: true},
 	}
@@ -113,40 +109,23 @@ func (suite DaemonsetCmdSuite) TestRun() {
 		}
 
 		client := fake.NewSimpleClientset(mocks...)
-		if c.shouldErr {
-			client.PrependReactor("get", "deployments", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &v1.Deployment{}, errors.New("error getting deployment")
-			})
-		}
 
 		opt := options.NewOptions()
 		opt.Client = client
 		opt.Namespace = c.namespace
 		opt.Name = c.name
-		opt.Filename = c.filename
 
 		var b bytes.Buffer
-		var err error
+		err := opt.SetWriter(&b)
+		suite.NoError(err)
+		cmd := NewCmd(opt)
+		err = cmd.RunE(cmd, c.args)
 
-		if c.filename == "" {
-			err = run(opt, c.args, &b)
-		} else {
-			err = run(opt, c.args, nil)
-			defer os.Remove(c.filename)
-		}
 		if c.shouldErr {
 			suite.Error(err)
 		} else {
 			suite.NoError(err)
-			var got string
-			if c.filename != "" {
-				suite.FileExists(c.filename)
-				content, err := os.ReadFile(c.filename)
-				suite.NoError(err)
-				got = string(content)
-			} else {
-				got = b.String()
-			}
+			got := b.String()
 			for k, v := range c.env {
 				suite.Contains(got, k)
 				suite.Contains(got, v)

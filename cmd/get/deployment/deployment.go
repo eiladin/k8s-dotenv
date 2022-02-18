@@ -1,9 +1,6 @@
 package deployment
 
 import (
-	"io"
-	"os"
-
 	v1 "github.com/eiladin/k8s-dotenv/internal/api/v1"
 	"github.com/eiladin/k8s-dotenv/internal/errors/cmd"
 	"github.com/eiladin/k8s-dotenv/internal/options"
@@ -19,7 +16,7 @@ func NewCmd(opt *options.Options) *cobra.Command {
 			return validArgs(opt), cobra.ShellCompDirectiveDefault
 		},
 		RunE: func(c *cobra.Command, args []string) error {
-			return run(opt, args, nil)
+			return run(opt, args)
 		},
 	}
 
@@ -31,7 +28,7 @@ func validArgs(opt *options.Options) []string {
 	return list
 }
 
-func run(opt *options.Options, args []string, writer io.Writer) error {
+func run(opt *options.Options, args []string) error {
 	if len(args) == 0 {
 		return cmd.ErrResourceNameRequired
 	}
@@ -42,14 +39,5 @@ func run(opt *options.Options, args []string, writer io.Writer) error {
 		return err
 	}
 
-	if writer == nil {
-		f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-		if err != nil {
-			return err
-		}
-		writer = f
-		defer f.Close()
-	}
-
-	return res.Write(writer, opt)
+	return res.Write(opt)
 }

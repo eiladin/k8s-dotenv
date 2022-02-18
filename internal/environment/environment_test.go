@@ -192,8 +192,8 @@ func (suite EnvironmentSuite) TestWrite() {
 		opt.Client = fake.NewSimpleClientset(objs...)
 		opt.Namespace = "test"
 		var b bytes.Buffer
-
-		err := r.Write(&b, opt)
+		opt.SetWriter(&b)
+		err := r.Write(opt)
 		got := b.String()
 		caseDesc := fmt.Sprintf("Test case %d", i)
 		if c.shouldErr {
