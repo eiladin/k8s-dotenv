@@ -1,4 +1,4 @@
-package cmd
+package completion
 
 import (
 	"errors"
@@ -82,7 +82,7 @@ PowerShell:
 )
 
 var (
-	completionShells = map[string]func(out io.Writer, boilerPlate string, cmd *cobra.Command) error{
+	completionShells = map[string]func(out io.Writer, cmd *cobra.Command) error{
 		"bash":       runCompletionBash,
 		"zsh":        runCompletionZsh,
 		"fish":       runCompletionFish,
@@ -90,7 +90,7 @@ var (
 	}
 )
 
-func newCompletionCmd(boilerPlate string) *cobra.Command {
+func NewCmd() *cobra.Command {
 	shells := []string{}
 	for s := range completionShells {
 		shells = append(shells, s)
@@ -103,7 +103,7 @@ func newCompletionCmd(boilerPlate string) *cobra.Command {
 		Long:                  completionLong,
 		Example:               completionExample,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := RunCompletion(os.Stdout, boilerPlate, cmd, args); err != nil {
+			if err := RunCompletion(os.Stdout, cmd, args); err != nil {
 				log.Fatal(err)
 			}
 		},
@@ -113,7 +113,7 @@ func newCompletionCmd(boilerPlate string) *cobra.Command {
 	return cmd
 }
 
-func RunCompletion(out io.Writer, boilerPlate string, cmd *cobra.Command, args []string) error {
+func RunCompletion(out io.Writer, cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return errors.New("shell not specified")
 	}
@@ -125,51 +125,39 @@ func RunCompletion(out io.Writer, boilerPlate string, cmd *cobra.Command, args [
 		return fmt.Errorf("Unsupported shell type %q.", args[0])
 	}
 
-	return run(out, boilerPlate, cmd.Parent())
+	return run(out, cmd.Parent())
 }
 
-func runCompletionBash(out io.Writer, boilerPlate string, root *cobra.Command) error {
-	if len(boilerPlate) == 0 {
-		boilerPlate = defaultBoilerPlate
-	}
-	if _, err := out.Write([]byte(boilerPlate)); err != nil {
+func runCompletionBash(out io.Writer, root *cobra.Command) error {
+	if _, err := out.Write([]byte(defaultBoilerPlate)); err != nil {
 		return err
 	}
 
-	return root.GenBashCompletionV2(out, false) // TODO: Upgrade to Cobra 1.3.0 or later before including descriptions (See https://github.com/spf13/cobra/pull/1509)
+	return root.GenBashCompletionV2(out, true)
 }
 
-func runCompletionZsh(out io.Writer, boilerPlate string, root *cobra.Command) error {
+func runCompletionZsh(out io.Writer, root *cobra.Command) error {
 	zshHead := fmt.Sprintf("#compdef %[1]s\ncompdef _%[1]s %[1]s\n", root.Name())
 	_, _ = out.Write([]byte(zshHead))
 
-	if len(boilerPlate) == 0 {
-		boilerPlate = defaultBoilerPlate
-	}
-	if _, err := out.Write([]byte(boilerPlate)); err != nil {
+	if _, err := out.Write([]byte(defaultBoilerPlate)); err != nil {
 		return err
 	}
 
 	return root.GenZshCompletion(out)
 }
 
-func runCompletionFish(out io.Writer, boilerPlate string, root *cobra.Command) error {
-	if len(boilerPlate) == 0 {
-		boilerPlate = defaultBoilerPlate
-	}
-	if _, err := out.Write([]byte(boilerPlate)); err != nil {
+func runCompletionFish(out io.Writer, root *cobra.Command) error {
+	if _, err := out.Write([]byte(defaultBoilerPlate)); err != nil {
 		return err
 	}
 
 	return root.GenFishCompletion(out, true)
 }
 
-func runCompletionPwsh(out io.Writer, boilerPlate string, root *cobra.Command) error {
-	if len(boilerPlate) == 0 {
-		boilerPlate = defaultBoilerPlate
-	}
+func runCompletionPwsh(out io.Writer, root *cobra.Command) error {
 
-	if _, err := out.Write([]byte(boilerPlate)); err != nil {
+	if _, err := out.Write([]byte(defaultBoilerPlate)); err != nil {
 		return err
 	}
 
