@@ -9,29 +9,12 @@ import (
 )
 
 func DaemonSet(opt *options.Options) (*environment.Result, error) {
-	res := environment.NewResult()
 
 	resp, err := opt.Client.AppsV1().DaemonSets(opt.Namespace).Get(context.TODO(), opt.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-
-	for _, cont := range resp.Spec.Template.Spec.Containers {
-		for _, env := range cont.Env {
-			res.Environment[env.Name] = env.Value
-		}
-
-		for _, envFrom := range cont.EnvFrom {
-			if envFrom.SecretRef != nil {
-				res.Secrets = append(res.Secrets, envFrom.SecretRef.Name)
-			}
-			if envFrom.ConfigMapRef != nil {
-				res.ConfigMaps = append(res.ConfigMaps, envFrom.ConfigMapRef.Name)
-			}
-		}
-	}
-
-	return res, nil
+	return environment.FromContainers(resp.Spec.Template.Spec.Containers), nil
 }
 
 func DaemonSets(opt *options.Options) ([]string, error) {

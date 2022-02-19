@@ -5,6 +5,7 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/parser"
 	"github.com/eiladin/k8s-dotenv/pkg/secret"
+	v1 "k8s.io/api/core/v1"
 )
 
 type Result struct {
@@ -19,6 +20,27 @@ func NewResult() *Result {
 		Secrets:     []string{},
 		ConfigMaps:  []string{},
 	}
+
+}
+
+func FromContainers(containers []v1.Container) *Result {
+	res := NewResult()
+	for _, cont := range containers {
+		for _, env := range cont.Env {
+			res.Environment[env.Name] = env.Value
+		}
+
+		for _, envFrom := range cont.EnvFrom {
+			if envFrom.SecretRef != nil {
+				res.Secrets = append(res.Secrets, envFrom.SecretRef.Name)
+			}
+			if envFrom.ConfigMapRef != nil {
+				res.ConfigMaps = append(res.ConfigMaps, envFrom.ConfigMapRef.Name)
+			}
+		}
+	}
+
+	return res
 }
 
 func (r *Result) Output(opt *options.Options) (string, error) {
