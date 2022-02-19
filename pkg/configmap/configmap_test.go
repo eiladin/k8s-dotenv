@@ -1,31 +1,19 @@
-package secret
+package configmap
 
 import (
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/internal/options"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-type SecretSuite struct {
+type ConfigMapSuite struct {
 	suite.Suite
 }
 
-func mockSecret(name string, namespace string, data map[string][]byte) *v1.Secret {
-	res := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Data: data,
-	}
-	return res
-}
-
-func (suite SecretSuite) TestGet() {
+func (suite ConfigMapSuite) TestGet() {
 	cases := []struct {
 		name      string
 		namespace string
@@ -37,9 +25,9 @@ func (suite SecretSuite) TestGet() {
 	}
 
 	for _, c := range cases {
-		s := mockSecret("test", "test", map[string][]byte{"n": []byte("v")})
+		cm := mocks.ConfigMap("test", "test", map[string]string{"n": "v"})
 		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(s)
+		opt.Client = fake.NewSimpleClientset(cm)
 		opt.Namespace = c.namespace
 
 		got, err := Get(opt, c.name)
@@ -52,6 +40,6 @@ func (suite SecretSuite) TestGet() {
 	}
 }
 
-func TestSecretSuite(t *testing.T) {
-	suite.Run(t, new(SecretSuite))
+func TestConfigMapSuite(t *testing.T) {
+	suite.Run(t, new(ConfigMapSuite))
 }

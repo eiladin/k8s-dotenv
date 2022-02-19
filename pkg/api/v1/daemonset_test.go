@@ -4,11 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/internal/options"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -16,34 +15,6 @@ import (
 
 type DaemonSetSuite struct {
 	suite.Suite
-}
-
-func mockDaemonSet(name, namespace string, env map[string]string, configmaps, secrets []string) *v1.DaemonSet {
-	res := &v1.DaemonSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   namespace,
-			Annotations: map[string]string{},
-		},
-	}
-
-	containers := []corev1.Container{}
-	c := corev1.Container{}
-
-	for k, v := range env {
-		c.Env = append(c.Env, corev1.EnvVar{Name: k, Value: v})
-	}
-
-	for _, cm := range configmaps {
-		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{ConfigMapRef: &corev1.ConfigMapEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: cm}}})
-	}
-	for _, s := range secrets {
-		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{SecretRef: &corev1.SecretEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: s}}})
-	}
-
-	containers = append(containers, c)
-	res.Spec.Template.Spec.Containers = containers
-	return res
 }
 
 func (suite DaemonSetSuite) TestDaemonSet() {
@@ -67,11 +38,11 @@ func (suite DaemonSetSuite) TestDaemonSet() {
 	}
 
 	for _, c := range cases {
-		m := mockDaemonSet(c.name, c.namespace, c.env, c.configmaps, c.secrets)
+		m := mocks.DaemonSet(c.name, c.namespace, c.env, c.configmaps, c.secrets)
 		client := fake.NewSimpleClientset(m)
 		if c.shouldErr {
 			client.PrependReactor("get", "daemonsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &v1.DaemonSet{}, errors.New("error getting daemonset")
+				return true, &appsv1.DaemonSet{}, errors.New("error getting daemonset")
 			})
 		}
 
@@ -131,15 +102,15 @@ func (suite DaemonSetSuite) TestDaemonSets() {
 	}
 
 	for _, c := range cases {
-		mocks := []runtime.Object{}
+		ms := []runtime.Object{}
 		for _, item := range c.items {
-			mock := mockDaemonSet(item.name, item.namespace, nil, nil, nil)
-			mocks = append(mocks, mock)
+			mock := mocks.DaemonSet(item.name, item.namespace, nil, nil, nil)
+			ms = append(ms, mock)
 		}
-		client := fake.NewSimpleClientset(mocks...)
+		client := fake.NewSimpleClientset(ms...)
 		if c.shouldErr {
 			client.PrependReactor("list", "daemonsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &v1.DaemonSetList{}, errors.New("error getting daemonset list")
+				return true, &appsv1.DaemonSetList{}, errors.New("error getting daemonset list")
 			})
 		}
 

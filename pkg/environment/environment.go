@@ -1,10 +1,10 @@
 package environment
 
 import (
-	"github.com/eiladin/k8s-dotenv/internal/configmap"
-	"github.com/eiladin/k8s-dotenv/internal/options"
-	"github.com/eiladin/k8s-dotenv/internal/parser"
-	"github.com/eiladin/k8s-dotenv/internal/secret"
+	"github.com/eiladin/k8s-dotenv/pkg/configmap"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/parser"
+	"github.com/eiladin/k8s-dotenv/pkg/secret"
 )
 
 type Result struct {

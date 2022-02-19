@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/eiladin/k8s-dotenv/internal/options"
-	"github.com/eiladin/k8s-dotenv/internal/parser"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/parser"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

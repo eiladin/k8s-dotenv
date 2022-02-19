@@ -4,10 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/internal/options"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -15,16 +15,6 @@ import (
 
 type NamespaceSuite struct {
 	suite.Suite
-}
-
-func mockNamespace(name string) *corev1.Namespace {
-	res := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Annotations: map[string]string{},
-		},
-	}
-	return res
 }
 
 func (suite NamespaceSuite) TestNamespaces() {
@@ -47,12 +37,12 @@ func (suite NamespaceSuite) TestNamespaces() {
 	}
 
 	for _, c := range cases {
-		mocks := []runtime.Object{}
+		ms := []runtime.Object{}
 		for _, item := range c.items {
-			mock := mockNamespace(item)
-			mocks = append(mocks, mock)
+			mock := mocks.Namespace(item)
+			ms = append(ms, mock)
 		}
-		client := fake.NewSimpleClientset(mocks...)
+		client := fake.NewSimpleClientset(ms...)
 		if c.shouldErr {
 			client.PrependReactor("list", "namespaces", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 				return true, &corev1.NamespaceList{}, errors.New("error getting namespaces")

@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/eiladin/k8s-dotenv/internal/client"
+	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"k8s.io/client-go/kubernetes"
 )
 
