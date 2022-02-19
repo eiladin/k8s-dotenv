@@ -1,9 +1,9 @@
 package daemonset
 
 import (
-	v1 "github.com/eiladin/k8s-dotenv/internal/api/v1"
-	"github.com/eiladin/k8s-dotenv/internal/errors/cmd"
-	"github.com/eiladin/k8s-dotenv/internal/options"
+	v1 "github.com/eiladin/k8s-dotenv/pkg/api/v1"
+	"github.com/eiladin/k8s-dotenv/pkg/errors/cmd"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
 

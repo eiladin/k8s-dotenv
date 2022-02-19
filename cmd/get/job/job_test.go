@@ -6,11 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/internal/options"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -18,56 +17,6 @@ import (
 
 type JobCmdSuite struct {
 	suite.Suite
-}
-
-func mockJob(name, namespace string, env map[string]string, configmaps, secrets []string) *v1.Job {
-	res := &v1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   namespace,
-			Annotations: map[string]string{},
-		},
-	}
-
-	containers := []corev1.Container{}
-	c := corev1.Container{}
-
-	for k, v := range env {
-		c.Env = append(c.Env, corev1.EnvVar{Name: k, Value: v})
-	}
-
-	for _, cm := range configmaps {
-		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{ConfigMapRef: &corev1.ConfigMapEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: cm}}})
-	}
-	for _, s := range secrets {
-		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{SecretRef: &corev1.SecretEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: s}}})
-	}
-
-	containers = append(containers, c)
-	res.Spec.Template.Spec.Containers = containers
-	return res
-}
-
-func mockSecret(name string, namespace string, data map[string][]byte) *corev1.Secret {
-	res := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Data: data,
-	}
-	return res
-}
-
-func mockConfigMap(name string, namespace string, data map[string]string) *corev1.ConfigMap {
-	res := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Data: data,
-	}
-	return res
 }
 
 func (suite JobCmdSuite) TestNewCmd() {
@@ -103,19 +52,19 @@ func (suite JobCmdSuite) TestRun() {
 	}
 
 	for _, c := range cases {
-		mocks := []runtime.Object{}
-		mocks = append(mocks, mockJob(c.name, c.namespace, c.env, c.configmaps, c.secrets))
+		ms := []runtime.Object{}
+		ms = append(ms, mocks.Job(c.name, c.namespace, c.env, c.configmaps, c.secrets))
 		for _, cm := range c.configmaps {
-			mocks = append(mocks, mockConfigMap(cm, c.namespace, map[string]string{"config": "value"}))
+			ms = append(ms, mocks.ConfigMap(cm, c.namespace, map[string]string{"config": "value"}))
 		}
 		for _, s := range c.secrets {
-			mocks = append(mocks, mockSecret(s, c.namespace, map[string][]byte{"secret": []byte("value")}))
+			ms = append(ms, mocks.Secret(s, c.namespace, map[string][]byte{"secret": []byte("value")}))
 		}
 
-		client := fake.NewSimpleClientset(mocks...)
+		client := fake.NewSimpleClientset(ms...)
 		if c.shouldErr {
 			client.PrependReactor("get", "jobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &v1.Job{}, errors.New("error getting job")
+				return true, &batchv1.Job{}, errors.New("error getting job")
 			})
 		}
 

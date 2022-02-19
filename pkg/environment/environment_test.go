@@ -5,38 +5,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/internal/options"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
 type EnvironmentSuite struct {
 	suite.Suite
-}
-
-func mockConfigMap(name string, namespace string, data map[string]string) *v1.ConfigMap {
-	res := &v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Data: data,
-	}
-	return res
-}
-
-func mockSecret(name string, namespace string, data map[string][]byte) *v1.Secret {
-	res := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Data: data,
-	}
-	return res
 }
 
 func (suite EnvironmentSuite) TestOutput() {
@@ -98,10 +75,10 @@ func (suite EnvironmentSuite) TestOutput() {
 
 		objs := []runtime.Object{}
 		if c.configmap != nil {
-			objs = append(objs, mockConfigMap("test", "test", c.configmap))
+			objs = append(objs, mocks.ConfigMap("test", "test", c.configmap))
 		}
 		if c.secrets != nil {
-			objs = append(objs, mockSecret("test", "test", c.secrets))
+			objs = append(objs, mocks.Secret("test", "test", c.secrets))
 		}
 
 		opt := options.NewOptions()
@@ -180,16 +157,16 @@ func (suite EnvironmentSuite) TestWrite() {
 			r.Environment = c.env
 		}
 
-		objs := []runtime.Object{}
+		ms := []runtime.Object{}
 		if c.configmap != nil {
-			objs = append(objs, mockConfigMap("test", "test", c.configmap))
+			ms = append(ms, mocks.ConfigMap("test", "test", c.configmap))
 		}
 		if c.secrets != nil {
-			objs = append(objs, mockSecret("test", "test", c.secrets))
+			ms = append(ms, mocks.Secret("test", "test", c.secrets))
 		}
 
 		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(objs...)
+		opt.Client = fake.NewSimpleClientset(ms...)
 		opt.Namespace = "test"
 		var b bytes.Buffer
 		opt.SetWriter(&b)

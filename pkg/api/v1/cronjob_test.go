@@ -4,11 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/internal/options"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -16,34 +15,6 @@ import (
 
 type CronJobSuite struct {
 	suite.Suite
-}
-
-func mockCronJob(name, namespace string, env map[string]string, configmaps, secrets []string) *v1.CronJob {
-	cronjob := &v1.CronJob{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   namespace,
-			Annotations: map[string]string{},
-		},
-	}
-
-	containers := []corev1.Container{}
-	c := corev1.Container{}
-
-	for k, v := range env {
-		c.Env = append(c.Env, corev1.EnvVar{Name: k, Value: v})
-	}
-
-	for _, cm := range configmaps {
-		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{ConfigMapRef: &corev1.ConfigMapEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: cm}}})
-	}
-	for _, s := range secrets {
-		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{SecretRef: &corev1.SecretEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: s}}})
-	}
-
-	containers = append(containers, c)
-	cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers = containers
-	return cronjob
 }
 
 func (suite CronJobSuite) TestCronJob() {
@@ -67,11 +38,11 @@ func (suite CronJobSuite) TestCronJob() {
 	}
 
 	for _, c := range cases {
-		m := mockCronJob(c.name, c.namespace, c.env, c.configmaps, c.secrets)
+		m := mocks.CronJobv1(c.name, c.namespace, c.env, c.configmaps, c.secrets)
 		client := fake.NewSimpleClientset(m)
 		if c.shouldErr {
 			client.PrependReactor("get", "cronjobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &v1.CronJob{}, errors.New("error getting cronjob")
+				return true, &batchv1.CronJob{}, errors.New("error getting cronjob")
 			})
 		}
 
@@ -132,15 +103,15 @@ func (suite CronJobSuite) TestCronJobs() {
 	}
 
 	for _, c := range cases {
-		mocks := []runtime.Object{}
+		ms := []runtime.Object{}
 		for _, item := range c.items {
-			mock := mockCronJob(item.name, item.namespace, nil, nil, nil)
-			mocks = append(mocks, mock)
+			mock := mocks.CronJobv1(item.name, item.namespace, nil, nil, nil)
+			ms = append(ms, mock)
 		}
-		client := fake.NewSimpleClientset(mocks...)
+		client := fake.NewSimpleClientset(ms...)
 		if c.shouldErr {
 			client.PrependReactor("list", "cronjobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &v1.CronJobList{}, errors.New("error getting cronjob")
+				return true, &batchv1.CronJobList{}, errors.New("error getting cronjob")
 			})
 		}
 

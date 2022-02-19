@@ -5,7 +5,7 @@ import (
 	"github.com/eiladin/k8s-dotenv/cmd/get/daemonset"
 	"github.com/eiladin/k8s-dotenv/cmd/get/deployment"
 	"github.com/eiladin/k8s-dotenv/cmd/get/job"
-	"github.com/eiladin/k8s-dotenv/internal/options"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
 

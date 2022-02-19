@@ -3,7 +3,7 @@ package v1
 import (
 	"context"
 
-	"github.com/eiladin/k8s-dotenv/internal/options"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

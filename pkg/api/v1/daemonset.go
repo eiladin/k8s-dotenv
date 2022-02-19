@@ -1,22 +1,22 @@
-package v1beta1
+package v1
 
 import (
 	"context"
 
-	"github.com/eiladin/k8s-dotenv/internal/environment"
-	"github.com/eiladin/k8s-dotenv/internal/options"
+	"github.com/eiladin/k8s-dotenv/pkg/environment"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func CronJob(opt *options.Options) (*environment.Result, error) {
+func DaemonSet(opt *options.Options) (*environment.Result, error) {
 	res := environment.NewResult()
-	resp, err := opt.Client.BatchV1beta1().CronJobs(opt.Namespace).Get(context.TODO(), opt.Name, metav1.GetOptions{})
+
+	resp, err := opt.Client.AppsV1().DaemonSets(opt.Namespace).Get(context.TODO(), opt.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	containers := resp.Spec.JobTemplate.Spec.Template.Spec.Containers
 
-	for _, cont := range containers {
+	for _, cont := range resp.Spec.Template.Spec.Containers {
 		for _, env := range cont.Env {
 			res.Environment[env.Name] = env.Value
 		}
@@ -34,16 +34,15 @@ func CronJob(opt *options.Options) (*environment.Result, error) {
 	return res, nil
 }
 
-func CronJobs(opt *options.Options) ([]string, error) {
-	res := []string{}
-
-	resp, err := opt.Client.BatchV1beta1().CronJobs(opt.Namespace).List(context.TODO(), metav1.ListOptions{})
+func DaemonSets(opt *options.Options) ([]string, error) {
+	resp, err := opt.Client.AppsV1().DaemonSets(opt.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
+
+	res := []string{}
 	for _, item := range resp.Items {
 		res = append(res, item.Name)
 	}
-
 	return res, nil
 }

@@ -5,9 +5,9 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/cmd/completion"
 	"github.com/eiladin/k8s-dotenv/cmd/get"
-	v1 "github.com/eiladin/k8s-dotenv/internal/api/v1"
-	"github.com/eiladin/k8s-dotenv/internal/client"
-	"github.com/eiladin/k8s-dotenv/internal/options"
+	v1 "github.com/eiladin/k8s-dotenv/pkg/api/v1"
+	"github.com/eiladin/k8s-dotenv/pkg/client"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
 
