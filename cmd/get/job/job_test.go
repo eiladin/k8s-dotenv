@@ -3,7 +3,6 @@ package job
 import (
 	"bytes"
 	"errors"
-	"os"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
@@ -43,7 +42,6 @@ func (suite JobCmdSuite) TestRun() {
 		configmaps []string
 		secrets    []string
 		args       []string
-		filename   string
 		shouldErr  bool
 	}{
 		{args: []string{"my-job"}, name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
@@ -68,32 +66,21 @@ func (suite JobCmdSuite) TestRun() {
 			})
 		}
 
+		var b bytes.Buffer
 		opt := options.NewOptions()
 		opt.Client = client
 		opt.Namespace = c.namespace
 		opt.Name = c.name
-		opt.Filename = c.filename
+		opt.Writer = &b
 
-		var b bytes.Buffer
-
-		err := opt.SetWriter(&b)
-		suite.NoError(err)
 		cmd := NewCmd(opt)
-		err = cmd.RunE(cmd, c.args)
+		err := cmd.RunE(cmd, c.args)
 
 		if c.shouldErr {
 			suite.Error(err)
 		} else {
 			suite.NoError(err)
-			var got string
-			if c.filename != "" {
-				suite.FileExists(c.filename)
-				content, err := os.ReadFile(c.filename)
-				suite.NoError(err)
-				got = string(content)
-			} else {
-				got = b.String()
-			}
+			got := b.String()
 			for k, v := range c.env {
 				suite.Contains(got, k)
 				suite.Contains(got, v)

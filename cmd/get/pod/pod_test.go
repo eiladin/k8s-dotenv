@@ -1,4 +1,4 @@
-package deployment
+package pod
 
 import (
 	"bytes"
@@ -41,14 +41,14 @@ func (suite DeploymentCmdSuite) TestRun() {
 		args       []string
 		shouldErr  bool
 	}{
-		{args: []string{"my-deployment"}, name: "my-deployment", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
-		{args: []string{"my-deployment"}, shouldErr: true},
+		{args: []string{"my-pod"}, name: "my-pod", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
+		{args: []string{"my-pod"}, shouldErr: true},
 		{shouldErr: true},
 	}
 
 	for _, c := range cases {
 		ms := []runtime.Object{}
-		ms = append(ms, mocks.Deployment(c.name, c.namespace, c.env, c.configmaps, c.secrets))
+		ms = append(ms, mocks.Pod(c.name, c.namespace, c.env, c.configmaps, c.secrets))
 		for _, cm := range c.configmaps {
 			ms = append(ms, mocks.ConfigMap(cm, c.namespace, map[string]string{"config": "value"}))
 		}

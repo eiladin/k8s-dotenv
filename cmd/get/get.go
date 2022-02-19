@@ -5,13 +5,14 @@ import (
 	"github.com/eiladin/k8s-dotenv/cmd/get/daemonset"
 	"github.com/eiladin/k8s-dotenv/cmd/get/deployment"
 	"github.com/eiladin/k8s-dotenv/cmd/get/job"
+	"github.com/eiladin/k8s-dotenv/cmd/get/pod"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
 
 func NewCmd(opt *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get DEPLOYMENT_NAME",
+		Use:   "get RESOURCE_TYPE",
 		Short: "fetch secrets and configmaps into a file",
 	}
 
@@ -19,6 +20,7 @@ func NewCmd(opt *options.Options) *cobra.Command {
 	cmd.AddCommand(deployment.NewCmd(opt))
 	cmd.AddCommand(daemonset.NewCmd(opt))
 	cmd.AddCommand(job.NewCmd(opt))
+	cmd.AddCommand(pod.NewCmd(opt))
 
 	return cmd
 }

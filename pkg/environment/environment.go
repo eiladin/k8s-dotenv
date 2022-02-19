@@ -50,6 +50,14 @@ func (r *Result) Write(opt *options.Options) error {
 	if err != nil {
 		return err
 	}
+
+	if opt.Writer == nil {
+		err = opt.SetDefaultWriter()
+		if err != nil {
+			return err
+		}
+	}
+
 	_, err = opt.Writer.Write([]byte(output))
 	return err
 }

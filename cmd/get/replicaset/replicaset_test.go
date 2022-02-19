@@ -1,4 +1,4 @@
-package deployment
+package replicaset
 
 import (
 	"bytes"
@@ -11,16 +11,16 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-type DeploymentCmdSuite struct {
+type ReplicaSetCmdSuite struct {
 	suite.Suite
 }
 
-func (suite DeploymentCmdSuite) TestNewCmd() {
+func (suite ReplicaSetCmdSuite) TestNewCmd() {
 	got := NewCmd(options.NewOptions())
 	suite.NotNil(got)
 }
 
-func (suite DeploymentCmdSuite) TestValidArgs() {
+func (suite ReplicaSetCmdSuite) TestValidArgs() {
 	opt := options.NewOptions()
 	client := fake.NewSimpleClientset()
 	opt.Name = "test"
@@ -31,7 +31,7 @@ func (suite DeploymentCmdSuite) TestValidArgs() {
 	suite.NotNil(got)
 }
 
-func (suite DeploymentCmdSuite) TestRun() {
+func (suite ReplicaSetCmdSuite) TestRun() {
 	cases := []struct {
 		name       string
 		namespace  string
@@ -41,14 +41,14 @@ func (suite DeploymentCmdSuite) TestRun() {
 		args       []string
 		shouldErr  bool
 	}{
-		{args: []string{"my-deployment"}, name: "my-deployment", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
-		{args: []string{"my-deployment"}, shouldErr: true},
+		{args: []string{"my-replicaset"}, name: "my-replicaset", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
+		{args: []string{"my-replicaset"}, shouldErr: true},
 		{shouldErr: true},
 	}
 
 	for _, c := range cases {
 		ms := []runtime.Object{}
-		ms = append(ms, mocks.Deployment(c.name, c.namespace, c.env, c.configmaps, c.secrets))
+		ms = append(ms, mocks.ReplicaSet(c.name, c.namespace, c.env, c.configmaps, c.secrets))
 		for _, cm := range c.configmaps {
 			ms = append(ms, mocks.ConfigMap(cm, c.namespace, map[string]string{"config": "value"}))
 		}
@@ -87,6 +87,6 @@ func (suite DeploymentCmdSuite) TestRun() {
 	}
 }
 
-func TestDeploymentCmdSuite(t *testing.T) {
-	suite.Run(t, new(DeploymentCmdSuite))
+func TestReplicaSetCmdSuite(t *testing.T) {
+	suite.Run(t, new(ReplicaSetCmdSuite))
 }

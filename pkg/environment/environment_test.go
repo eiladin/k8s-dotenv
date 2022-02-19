@@ -3,6 +3,7 @@ package environment
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
@@ -113,6 +114,8 @@ func (suite EnvironmentSuite) TestWrite() {
 		secretName    string
 		secrets       map[string][]byte
 		shouldErr     bool
+		filename      string
+		useFileWriter bool
 	}{
 		{
 			env:       map[string]string{"env1": "val", "env2": "val2"},
@@ -134,6 +137,18 @@ func (suite EnvironmentSuite) TestWrite() {
 		{
 			configmapName: "test2",
 			configmap:     map[string]string{"config": "val", "config2": "val2"},
+			shouldErr:     true,
+		},
+		{
+			env:           map[string]string{"env1": "val", "env2": "val2"},
+			configmap:     map[string]string{"config": "val", "config2": "val2"},
+			useFileWriter: true,
+			filename:      "test.out",
+		},
+		{
+			env:           map[string]string{"env1": "val", "env2": "val2"},
+			configmap:     map[string]string{"config": "val", "config2": "val2"},
+			useFileWriter: true,
 			shouldErr:     true,
 		},
 	}
@@ -165,13 +180,25 @@ func (suite EnvironmentSuite) TestWrite() {
 			ms = append(ms, mocks.Secret("test", "test", c.secrets))
 		}
 
+		var b bytes.Buffer
+		var err error
+		var got string
 		opt := options.NewOptions()
 		opt.Client = fake.NewSimpleClientset(ms...)
 		opt.Namespace = "test"
-		var b bytes.Buffer
-		opt.SetWriter(&b)
-		err := r.Write(opt)
-		got := b.String()
+		if c.useFileWriter {
+			opt.Filename = c.filename
+			defer os.Remove(c.filename)
+			err = r.Write(opt)
+			var fileBytes []byte
+			fileBytes, _ = os.ReadFile(c.filename)
+			got = string(fileBytes)
+		} else {
+			opt.Writer = &b
+			err = r.Write(opt)
+			got = b.String()
+		}
+
 		caseDesc := fmt.Sprintf("Test case %d", i)
 		if c.shouldErr {
 			suite.Error(err)

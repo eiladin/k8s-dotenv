@@ -41,8 +41,8 @@ func (suite DaemonsetCmdSuite) TestRun() {
 		args       []string
 		shouldErr  bool
 	}{
-		{args: []string{"my-job"}, name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
-		{args: []string{"my-job"}, shouldErr: true},
+		{args: []string{"my-daemonset"}, name: "my-daemonset", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
+		{args: []string{"my-daemonset"}, shouldErr: true},
 		{shouldErr: true},
 	}
 
@@ -58,16 +58,15 @@ func (suite DaemonsetCmdSuite) TestRun() {
 
 		client := fake.NewSimpleClientset(ms...)
 
+		var b bytes.Buffer
 		opt := options.NewOptions()
 		opt.Client = client
 		opt.Namespace = c.namespace
 		opt.Name = c.name
+		opt.Writer = &b
 
-		var b bytes.Buffer
-		err := opt.SetWriter(&b)
-		suite.NoError(err)
 		cmd := NewCmd(opt)
-		err = cmd.RunE(cmd, c.args)
+		err := cmd.RunE(cmd, c.args)
 
 		if c.shouldErr {
 			suite.Error(err)

@@ -43,10 +43,6 @@ func newRootCmd(version string) *rootCmd {
 			}
 			opt.Client = cs
 
-			err = opt.SetWriter(nil)
-			if err != nil {
-				return err
-			}
 			return opt.ResolveNamespace("")
 		},
 		Version: version,

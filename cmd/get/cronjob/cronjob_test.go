@@ -84,15 +84,15 @@ func (suite CronjobCmdSuite) TestRun() {
 		shouldErr  bool
 		testApiErr bool
 	}{
-		{group: "batch/v1", args: []string{"my-job"}, name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
-		{group: "batch/v1", args: []string{"my-job"}, shouldErr: true},
+		{group: "batch/v1", args: []string{"my-cronjob"}, name: "my-cronjob", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
+		{group: "batch/v1", args: []string{"my-cronjob"}, shouldErr: true},
 		{group: "batch/v1", shouldErr: true},
-		{group: "batch/v1beta1", args: []string{"my-job"}, name: "my-job", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
-		{group: "batch/v1beta1", args: []string{"my-job"}, shouldErr: true},
+		{group: "batch/v1beta1", args: []string{"my-cronjob"}, name: "my-cronjob", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
+		{group: "batch/v1beta1", args: []string{"my-cronjob"}, shouldErr: true},
 		{group: "batch/v1beta1", shouldErr: true},
-		{group: "batch/v1beta1", args: []string{"my-job"}, shouldErr: true},
-		{group: "batch/v1", args: []string{"my-job"}, shouldErr: true, testApiErr: true},
-		{group: "batch/not-a-version", args: []string{"my-job"}, shouldErr: true},
+		{group: "batch/v1beta1", args: []string{"my-cronjob"}, shouldErr: true},
+		{group: "batch/v1", args: []string{"my-cronjob"}, shouldErr: true, testApiErr: true},
+		{group: "batch/not-a-version", args: []string{"my-cronjob"}, shouldErr: true},
 	}
 
 	for _, c := range cases {
@@ -137,16 +137,15 @@ func (suite CronjobCmdSuite) TestRun() {
 			})
 		}
 
+		var b bytes.Buffer
 		opt := options.NewOptions()
 		opt.Client = client
 		opt.Namespace = c.namespace
 		opt.Name = c.name
+		opt.Writer = &b
 
-		var b bytes.Buffer
-		err := opt.SetWriter(&b)
-		suite.NoError(err)
 		cmd := NewCmd(opt)
-		err = cmd.RunE(cmd, c.args)
+		err := cmd.RunE(cmd, c.args)
 
 		if c.shouldErr {
 			suite.Error(err)
