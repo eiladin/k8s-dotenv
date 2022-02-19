@@ -26,14 +26,14 @@ func (suite DeploymentSuite) TestDeployment() {
 		secrets    []string
 		shouldErr  bool
 	}{
-		{name: "my-daemonset", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
-		{name: "my-daemonset", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{}},
-		{name: "my-daemonset", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{}, secrets: []string{"Secret0", "Secret1"}},
-		{name: "my-daemonset", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{}, secrets: []string{}},
-		{name: "my-daemonset", namespace: "test", configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
-		{name: "my-daemonset", namespace: "test", configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{}},
-		{name: "my-daemonset", namespace: "test", configmaps: []string{}, secrets: []string{"Secret0", "Secret1"}},
-		{name: "my-daemonset", namespace: "test", configmaps: []string{}, secrets: []string{}},
+		{name: "my-deployment", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
+		{name: "my-deployment", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{}},
+		{name: "my-deployment", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{}, secrets: []string{"Secret0", "Secret1"}},
+		{name: "my-deployment", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{}, secrets: []string{}},
+		{name: "my-deployment", namespace: "test", configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
+		{name: "my-deployment", namespace: "test", configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{}},
+		{name: "my-deployment", namespace: "test", configmaps: []string{}, secrets: []string{"Secret0", "Secret1"}},
+		{name: "my-deployment", namespace: "test", configmaps: []string{}, secrets: []string{}},
 		{shouldErr: true},
 	}
 
@@ -78,22 +78,22 @@ func (suite DeploymentSuite) TestDeployments() {
 	}{
 		{
 			namespace:     "test",
-			items:         []item{{name: "my-daemonset", namespace: "test"}},
+			items:         []item{{name: "my-deployment", namespace: "test"}},
 			expectedCount: 1,
 		},
 		{
 			namespace:     "test",
-			items:         []item{{name: "my-daemonset", namespace: "test"}, {name: "my-daemonset-2", namespace: "test"}},
+			items:         []item{{name: "my-deployment", namespace: "test"}, {name: "my-deployment-2", namespace: "test"}},
 			expectedCount: 2,
 		},
 		{
 			namespace:     "other",
-			items:         []item{{name: "my-daemonset", namespace: "test"}, {name: "my-daemonset-2", namespace: "test"}},
+			items:         []item{{name: "my-deployment", namespace: "test"}, {name: "my-deployment-2", namespace: "test"}},
 			expectedCount: 0,
 		},
 		{
 			namespace:     "test",
-			items:         []item{{name: "my-daemonset", namespace: "test"}, {name: "my-daemonset-2", namespace: "other"}},
+			items:         []item{{name: "my-deployment", namespace: "test"}, {name: "my-deployment-2", namespace: "other"}},
 			expectedCount: 1,
 		},
 		{

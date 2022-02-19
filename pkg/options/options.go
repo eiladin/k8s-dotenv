@@ -31,17 +31,14 @@ func (opt *Options) ResolveNamespace(configPath string) error {
 	return nil
 }
 
-func (opt *Options) SetWriter(writer io.Writer) error {
-	if writer == nil {
-		if opt.Filename == "" {
-			return errors.New("no filename provided")
-		}
-		f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-		if err != nil {
-			return err
-		}
-		writer = f
+func (opt *Options) SetDefaultWriter() error {
+	if opt.Filename == "" {
+		return errors.New("no filename provided")
 	}
-	opt.Writer = writer
+	f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	opt.Writer = f
 	return nil
 }
