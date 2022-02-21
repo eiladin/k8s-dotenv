@@ -142,7 +142,7 @@ func (suite CronjobCmdSuite) TestRun() {
 		opt.Client = client
 		opt.Namespace = c.namespace
 		opt.Name = c.name
-		opt.Writer = &b
+		opt.FileWriter = &b
 
 		cmd := NewCmd(opt)
 		err := cmd.RunE(cmd, c.args)

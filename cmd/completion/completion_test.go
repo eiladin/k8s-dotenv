@@ -6,6 +6,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
 )
@@ -27,11 +28,11 @@ func (w *errorWriter) Write(p []byte) (int, error) {
 }
 
 func (suite CompletionCmdSuite) TestNewCmd() {
-	got := NewCmd()
+	got := NewCmd(nil)
 	suite.NotNil(got)
 }
 
-func (suite CompletionCmdSuite) TestRunCompletion() {
+func (suite CompletionCmdSuite) TestRun() {
 	cases := []struct {
 		args      []string
 		shouldErr bool
@@ -43,11 +44,14 @@ func (suite CompletionCmdSuite) TestRunCompletion() {
 	}
 
 	for _, c := range cases {
-		cmd := NewCmd()
+		opt := options.NewOptions()
+		cmd := NewCmd(opt)
 		testCmd := &cobra.Command{Use: "test"}
 		testCmd.AddCommand(cmd)
 		var b bytes.Buffer
-		err := RunCompletion(&b, cmd, c.args)
+		opt.Writer = &b
+		err := cmd.RunE(cmd, c.args)
+		// err := RunCompletion(opt, cmd, c.args)
 		if c.shouldErr {
 			suite.Error(err)
 		} else {

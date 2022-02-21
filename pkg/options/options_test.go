@@ -114,14 +114,14 @@ func (suite OptionsSuite) TestResolveNamespace() {
 	}
 }
 
-func (suite OptionsSuite) TestSetWriter() {
+func (suite OptionsSuite) TestSetFileWriter() {
 	opt := NewOptions()
-	err := opt.SetDefaultWriter()
+	err := opt.SetDefaultFileWriter()
 	suite.Error(err)
 
 	opt = NewOptions()
 	opt.Filename = "./test.out"
-	err = opt.SetDefaultWriter()
+	err = opt.SetDefaultFileWriter()
 	defer os.Remove(opt.Filename)
 	suite.NoError(err)
 }
