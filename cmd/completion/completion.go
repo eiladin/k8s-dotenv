@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
-	"os"
 
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
 
@@ -90,7 +89,7 @@ var (
 	}
 )
 
-func NewCmd() *cobra.Command {
+func NewCmd(opt *options.Options) *cobra.Command {
 	shells := []string{}
 	for s := range completionShells {
 		shells = append(shells, s)
@@ -102,10 +101,8 @@ func NewCmd() *cobra.Command {
 		Short:                 "Output shell completion code for the specified shell (bash, zsh, fish)",
 		Long:                  completionLong,
 		Example:               completionExample,
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := RunCompletion(os.Stdout, cmd, args); err != nil {
-				log.Fatal(err)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return RunCompletion(opt, cmd, args)
 		},
 		ValidArgs: shells,
 	}
@@ -113,7 +110,7 @@ func NewCmd() *cobra.Command {
 	return cmd
 }
 
-func RunCompletion(out io.Writer, cmd *cobra.Command, args []string) error {
+func RunCompletion(opt *options.Options, cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return errors.New("shell not specified")
 	}
@@ -125,7 +122,7 @@ func RunCompletion(out io.Writer, cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Unsupported shell type %q.", args[0])
 	}
 
-	return run(out, cmd.Parent())
+	return run(opt.Writer, cmd.Parent())
 }
 
 func runCompletionBash(out io.Writer, root *cobra.Command) error {

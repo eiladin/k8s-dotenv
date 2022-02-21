@@ -152,7 +152,7 @@ func (suite EnvironmentSuite) TestWrite() {
 			fileBytes, _ = os.ReadFile(c.filename)
 			got = string(fileBytes)
 		} else {
-			opt.Writer = &b
+			opt.FileWriter = &b
 			err = r.Write(opt)
 			got = b.String()
 		}

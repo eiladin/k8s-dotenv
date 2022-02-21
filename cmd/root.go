@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"os"
 
 	"github.com/eiladin/k8s-dotenv/cmd/completion"
 	"github.com/eiladin/k8s-dotenv/cmd/get"
@@ -42,6 +43,7 @@ func newRootCmd(version string) *rootCmd {
 				return err
 			}
 			opt.Client = cs
+			opt.Writer = os.Stdout
 
 			return opt.ResolveNamespace("")
 		},
@@ -62,7 +64,7 @@ func newRootCmd(version string) *rootCmd {
 	cmd.PersistentFlags().BoolVarP(&opt.NoExport, "no-export", "e", false, "Do not include `export` statements")
 
 	cmd.AddCommand(
-		completion.NewCmd(),
+		completion.NewCmd(opt),
 		get.NewCmd(opt),
 	)
 
