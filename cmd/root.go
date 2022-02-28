@@ -12,7 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var opt *options.Options = options.NewOptions()
+var opt *options.Options = &options.Options{}
+var stdOut bool = false
 
 func Execute(version string, args []string) {
 	newRootCmd(version).Execute(args)
@@ -43,7 +44,9 @@ func newRootCmd(version string) *rootCmd {
 				return err
 			}
 			opt.Client = cs
-			opt.Writer = os.Stdout
+			if stdOut {
+				opt.Writer = os.Stdout
+			}
 
 			return opt.ResolveNamespace("")
 		},
@@ -62,6 +65,8 @@ func newRootCmd(version string) *rootCmd {
 	cmd.PersistentFlags().StringVarP(&opt.Filename, "outfile", "o", ".env", "Output file")
 
 	cmd.PersistentFlags().BoolVarP(&opt.NoExport, "no-export", "e", false, "Do not include `export` statements")
+
+	cmd.PersistentFlags().BoolVarP(&stdOut, "console", "c", false, "Output to console")
 
 	cmd.AddCommand(
 		completion.NewCmd(opt),

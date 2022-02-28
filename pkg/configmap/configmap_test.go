@@ -26,9 +26,11 @@ func (suite ConfigMapSuite) TestGet() {
 
 	for _, c := range cases {
 		cm := mocks.ConfigMap("test", "test", map[string]string{"n": "v"})
-		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(cm)
-		opt.Namespace = c.namespace
+
+		opt := &options.Options{
+			Client:    fake.NewSimpleClientset(cm),
+			Namespace: c.namespace,
+		}
 
 		got, err := Get(opt, c.name)
 		if c.shouldErr {

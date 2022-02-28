@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
@@ -32,6 +33,19 @@ func (suite CompletionCmdSuite) TestNewCmd() {
 	suite.NotNil(got)
 }
 
+func (suite CompletionCmdSuite) TestPreRun() {
+	opt := &options.Options{}
+	cmd := NewCmd(opt)
+	cmd.PreRun(cmd, []string{})
+	suite.Equal(os.Stdout, opt.Writer)
+
+	var b bytes.Buffer
+	opt = &options.Options{Writer: &b}
+	cmd = NewCmd(opt)
+	cmd.PreRun(cmd, []string{})
+	suite.Equal(&b, opt.Writer)
+}
+
 func (suite CompletionCmdSuite) TestRun() {
 	cases := []struct {
 		args      []string
@@ -44,14 +58,12 @@ func (suite CompletionCmdSuite) TestRun() {
 	}
 
 	for _, c := range cases {
-		opt := options.NewOptions()
+		var b bytes.Buffer
+		opt := &options.Options{Writer: &b}
 		cmd := NewCmd(opt)
 		testCmd := &cobra.Command{Use: "test"}
 		testCmd.AddCommand(cmd)
-		var b bytes.Buffer
-		opt.Writer = &b
 		err := cmd.RunE(cmd, c.args)
-		// err := RunCompletion(opt, cmd, c.args)
 		if c.shouldErr {
 			suite.Error(err)
 		} else {

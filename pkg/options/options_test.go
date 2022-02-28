@@ -1,6 +1,8 @@
 package options
 
 import (
+	"bytes"
+	"io"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -97,8 +99,7 @@ func (suite OptionsSuite) TestResolveNamespace() {
 			err := ioutil.WriteFile(configPath, []byte(c.config), 0644)
 			suite.NoError(err)
 		}
-		opt := NewOptions()
-		opt.Namespace = c.namespace
+		opt := &Options{Namespace: c.namespace}
 		err := opt.ResolveNamespace(configPath)
 
 		if configPath != "" {
@@ -114,16 +115,31 @@ func (suite OptionsSuite) TestResolveNamespace() {
 	}
 }
 
-func (suite OptionsSuite) TestSetFileWriter() {
-	opt := NewOptions()
-	err := opt.SetDefaultFileWriter()
-	suite.Error(err)
+func (suite OptionsSuite) TestSetWriter() {
+	var b bytes.Buffer
+	cases := []struct {
+		filename  string
+		writer    io.Writer
+		shouldErr bool
+	}{
+		{shouldErr: true},
+		{writer: &b},
+		{filename: "./test.out"},
+	}
 
-	opt = NewOptions()
-	opt.Filename = "./test.out"
-	err = opt.SetDefaultFileWriter()
-	defer os.Remove(opt.Filename)
-	suite.NoError(err)
+	for _, c := range cases {
+		opt := &Options{Writer: c.writer}
+		if c.filename != "" {
+			opt.Filename = c.filename
+			defer os.Remove(c.filename)
+		}
+		err := opt.SetDefaultWriter()
+		if c.shouldErr {
+			suite.Error(err)
+		} else {
+			suite.NoError(err)
+		}
+	}
 }
 
 func TestOptionsSuite(t *testing.T) {

@@ -26,9 +26,11 @@ func (suite SecretSuite) TestGet() {
 
 	for _, c := range cases {
 		s := mocks.Secret("test", "test", map[string][]byte{"n": []byte("v")})
-		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(s)
-		opt.Namespace = c.namespace
+
+		opt := &options.Options{
+			Client:    fake.NewSimpleClientset(s),
+			Namespace: c.namespace,
+		}
 
 		got, err := Get(opt, c.name)
 		if c.shouldErr {

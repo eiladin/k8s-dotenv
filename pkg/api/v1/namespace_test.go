@@ -49,8 +49,7 @@ func (suite NamespaceSuite) TestNamespaces() {
 			})
 		}
 
-		opt := options.NewOptions()
-		opt.Client = client
+		opt := &options.Options{Client: client}
 
 		got, err := Namespaces(opt)
 		if c.shouldErr {

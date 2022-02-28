@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
@@ -101,6 +102,11 @@ func NewCmd(opt *options.Options) *cobra.Command {
 		Short:                 "Output shell completion code for the specified shell (bash, zsh, fish)",
 		Long:                  completionLong,
 		Example:               completionExample,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			if opt.Writer == nil {
+				opt.Writer = os.Stdout
+			}
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return RunCompletion(opt, cmd, args)
 		},

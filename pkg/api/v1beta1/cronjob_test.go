@@ -46,10 +46,11 @@ func (suite CronJobSuite) TestCronJob() {
 				return true, &batchv1beta1.CronJob{}, errors.New("error getting cronjob")
 			})
 		}
-		opt := options.NewOptions()
-		opt.Client = client
-		opt.Namespace = c.namespace
-		opt.Name = c.name
+		opt := &options.Options{
+			Client:    client,
+			Namespace: c.namespace,
+			Name:      c.name,
+		}
 
 		got, err := CronJob(opt)
 		if c.shouldErr {
@@ -115,9 +116,10 @@ func (suite CronJobSuite) TestCronJobs() {
 			})
 		}
 
-		opt := options.NewOptions()
-		opt.Client = client
-		opt.Namespace = c.namespace
+		opt := &options.Options{
+			Client:    client,
+			Namespace: c.namespace,
+		}
 
 		got, err := CronJobs(opt)
 		if c.shouldErr {

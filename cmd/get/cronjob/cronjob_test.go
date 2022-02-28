@@ -21,7 +21,7 @@ type CronjobCmdSuite struct {
 }
 
 func (suite CronjobCmdSuite) TestNewCmd() {
-	got := NewCmd(options.NewOptions())
+	got := NewCmd(nil)
 	suite.NotNil(got)
 }
 
@@ -36,7 +36,6 @@ func (suite CronjobCmdSuite) TestValidArgs() {
 	}
 
 	for _, c := range cases {
-		opt := options.NewOptions()
 
 		var mock runtime.Object
 		if c.group == "batch/v1" {
@@ -59,9 +58,12 @@ func (suite CronjobCmdSuite) TestValidArgs() {
 			},
 		})
 
-		opt.Name = "test"
-		opt.Namespace = "test"
-		opt.Client = client
+		opt := &options.Options{
+			Name:      "test",
+			Namespace: "test",
+			Client:    client,
+		}
+
 		cmd := NewCmd(opt)
 		got, _ := cmd.ValidArgsFunction(cmd, []string{}, "")
 		if c.shouldBeEmpty {
@@ -138,12 +140,12 @@ func (suite CronjobCmdSuite) TestRun() {
 		}
 
 		var b bytes.Buffer
-		opt := options.NewOptions()
-		opt.Client = client
-		opt.Namespace = c.namespace
-		opt.Name = c.name
-		opt.FileWriter = &b
-
+		opt := &options.Options{
+			Client:    client,
+			Namespace: c.namespace,
+			Name:      c.name,
+			Writer:    &b,
+		}
 		cmd := NewCmd(opt)
 		err := cmd.RunE(cmd, c.args)
 

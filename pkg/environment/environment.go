@@ -73,13 +73,11 @@ func (r *Result) Write(opt *options.Options) error {
 		return err
 	}
 
-	if opt.FileWriter == nil {
-		err = opt.SetDefaultFileWriter()
-		if err != nil {
-			return err
-		}
+	err = opt.SetDefaultWriter()
+	if err != nil {
+		return err
 	}
 
-	_, err = opt.FileWriter.Write([]byte(output))
+	_, err = opt.Writer.Write([]byte(output))
 	return err
 }

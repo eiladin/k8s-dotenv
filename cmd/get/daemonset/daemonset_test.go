@@ -16,16 +16,16 @@ type DaemonsetCmdSuite struct {
 }
 
 func (suite DaemonsetCmdSuite) TestNewCmd() {
-	got := NewCmd(options.NewOptions())
+	got := NewCmd(nil)
 	suite.NotNil(got)
 }
 
 func (suite DaemonsetCmdSuite) TestValidArgs() {
-	opt := options.NewOptions()
-	client := fake.NewSimpleClientset()
-	opt.Name = "test"
-	opt.Namespace = "test"
-	opt.Client = client
+	opt := &options.Options{
+		Client:    fake.NewSimpleClientset(),
+		Namespace: "test",
+		Name:      "test",
+	}
 	cmd := NewCmd(opt)
 	got, _ := cmd.ValidArgsFunction(cmd, []string{}, "")
 	suite.NotNil(got)
@@ -59,11 +59,12 @@ func (suite DaemonsetCmdSuite) TestRun() {
 		client := fake.NewSimpleClientset(ms...)
 
 		var b bytes.Buffer
-		opt := options.NewOptions()
-		opt.Client = client
-		opt.Namespace = c.namespace
-		opt.Name = c.name
-		opt.FileWriter = &b
+		opt := &options.Options{
+			Client:    client,
+			Namespace: c.namespace,
+			Name:      c.name,
+			Writer:    &b,
+		}
 
 		cmd := NewCmd(opt)
 		err := cmd.RunE(cmd, c.args)

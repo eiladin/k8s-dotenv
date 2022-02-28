@@ -73,9 +73,10 @@ func (suite EnvironmentSuite) TestOutput() {
 		containers := []v1.Container{mocks.Container(c.env, cm, sec)}
 		r := FromContainers(containers)
 
-		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(objs...)
-		opt.Namespace = "test"
+		opt := &options.Options{
+			Client:    fake.NewSimpleClientset(objs...),
+			Namespace: "test",
+		}
 
 		got, err := r.Output(opt)
 		caseDesc := fmt.Sprintf("Test case %d", i)
@@ -109,7 +110,7 @@ func (suite EnvironmentSuite) TestWrite() {
 		secrets       map[string][]byte
 		shouldErr     bool
 		filename      string
-		useFileWriter bool
+		useWriter     bool
 	}{
 		{env: envCase, configmap: configmapCase, secrets: secretsCase, configmapName: "test", secretName: "test"},
 		{configmap: configmapCase, secrets: secretsCase, configmapName: "test", secretName: "test"},
@@ -117,8 +118,8 @@ func (suite EnvironmentSuite) TestWrite() {
 		{env: envCase, configmap: configmapCase, configmapName: "test"},
 		{configmap: configmapCase, configmapName: "test1", shouldErr: true},
 		{secrets: secretsCase, secretName: "test1", shouldErr: true},
-		{env: envCase, configmap: configmapCase, useFileWriter: true, filename: "test.out", configmapName: "test"},
-		{env: envCase, configmap: configmapCase, useFileWriter: true, configmapName: "test", shouldErr: true},
+		{env: envCase, configmap: configmapCase, useWriter: true, filename: "test.out", configmapName: "test"},
+		{env: envCase, configmap: configmapCase, useWriter: true, configmapName: "test", shouldErr: true},
 	}
 
 	for i, c := range cases {
@@ -141,10 +142,13 @@ func (suite EnvironmentSuite) TestWrite() {
 		var b bytes.Buffer
 		var err error
 		var got string
-		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(objs...)
-		opt.Namespace = "test"
-		if c.useFileWriter {
+
+		opt := &options.Options{
+			Client:    fake.NewSimpleClientset(objs...),
+			Namespace: "test",
+		}
+
+		if c.useWriter {
 			opt.Filename = c.filename
 			defer os.Remove(c.filename)
 			err = r.Write(opt)
@@ -152,7 +156,7 @@ func (suite EnvironmentSuite) TestWrite() {
 			fileBytes, _ = os.ReadFile(c.filename)
 			got = string(fileBytes)
 		} else {
-			opt.FileWriter = &b
+			opt.Writer = &b
 			err = r.Write(opt)
 			got = b.String()
 		}

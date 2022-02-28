@@ -46,10 +46,11 @@ func (suite ReplicaSetSuite) TestReplicaSet() {
 			})
 		}
 
-		opt := options.NewOptions()
-		opt.Client = client
-		opt.Namespace = c.namespace
-		opt.Name = c.name
+		opt := &options.Options{
+			Client:    client,
+			Namespace: c.namespace,
+			Name:      c.name,
+		}
 
 		got, err := ReplicaSet(opt)
 		if c.shouldErr {
@@ -114,9 +115,10 @@ func (suite ReplicaSetSuite) TestReplicaSets() {
 			})
 		}
 
-		opt := options.NewOptions()
-		opt.Client = client
-		opt.Namespace = c.namespace
+		opt := &options.Options{
+			Client:    client,
+			Namespace: c.namespace,
+		}
 
 		got, err := ReplicaSets(opt)
 		if c.shouldErr {

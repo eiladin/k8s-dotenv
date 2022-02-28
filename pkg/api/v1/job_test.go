@@ -46,10 +46,11 @@ func (suite JobSuite) TestJob() {
 			})
 		}
 
-		opt := options.NewOptions()
-		opt.Client = client
-		opt.Namespace = c.namespace
-		opt.Name = c.name
+		opt := &options.Options{
+			Client:    client,
+			Namespace: c.namespace,
+			Name:      c.name,
+		}
 
 		got, err := Job(opt)
 		if c.shouldErr {
@@ -114,9 +115,10 @@ func (suite JobSuite) TestJobs() {
 			})
 		}
 
-		opt := options.NewOptions()
-		opt.Client = client
-		opt.Namespace = c.namespace
+		opt := &options.Options{
+			Client:    client,
+			Namespace: c.namespace,
+		}
 
 		got, err := Jobs(opt)
 		if c.shouldErr {

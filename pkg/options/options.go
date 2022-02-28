@@ -10,17 +10,12 @@ import (
 )
 
 type Options struct {
-	Client     kubernetes.Interface
-	Namespace  string
-	Name       string
-	Filename   string
-	NoExport   bool
-	Writer     io.Writer
-	FileWriter io.Writer
-}
-
-func NewOptions() *Options {
-	return &Options{}
+	Client    kubernetes.Interface
+	Namespace string
+	Name      string
+	Filename  string
+	NoExport  bool
+	Writer    io.Writer
 }
 
 func (opt *Options) ResolveNamespace(configPath string) error {
@@ -32,7 +27,10 @@ func (opt *Options) ResolveNamespace(configPath string) error {
 	return nil
 }
 
-func (opt *Options) SetDefaultFileWriter() error {
+func (opt *Options) SetDefaultWriter() error {
+	if opt.Writer != nil {
+		return nil
+	}
 	if opt.Filename == "" {
 		return errors.New("no filename provided")
 	}
@@ -40,6 +38,6 @@ func (opt *Options) SetDefaultFileWriter() error {
 	if err != nil {
 		return err
 	}
-	opt.FileWriter = f
+	opt.Writer = f
 	return nil
 }
