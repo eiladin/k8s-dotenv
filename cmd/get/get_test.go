@@ -9,5 +9,4 @@ import (
 func TestNewCmd(t *testing.T) {
 	got := NewCmd(nil)
 	assert.NotNil(t, got)
-	assert.Len(t, got.Commands, 5)
 }
