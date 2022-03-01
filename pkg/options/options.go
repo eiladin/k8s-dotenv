@@ -9,6 +9,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+var ErrNoFilename = errors.New("no filename provided")
+
 type Options struct {
 	Client    kubernetes.Interface
 	Namespace string
@@ -32,7 +34,7 @@ func (opt *Options) SetDefaultWriter() error {
 		return nil
 	}
 	if opt.Filename == "" {
-		return errors.New("no filename provided")
+		return ErrNoFilename
 	}
 	f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {

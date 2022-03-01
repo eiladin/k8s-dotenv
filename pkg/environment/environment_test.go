@@ -2,184 +2,139 @@ package environment
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-type EnvironmentSuite struct {
-	suite.Suite
-}
+func TestResultOutput(t *testing.T) {
+	type testCase struct {
+		Name string
 
-func (suite EnvironmentSuite) TestNewResult() {
-	got := NewResult()
-	suite.NotNil(got)
-}
+		Result *Result
 
-func (suite EnvironmentSuite) TestFromContainers() {
-	containers := []v1.Container{
-		mocks.Container(map[string]string{"a": "b"}, []string{"a"}, []string{"b"}),
+		Opt *options.Options
+
+		ExpectedString string
+		ErrorChecker   func(err error) bool
 	}
 
-	got := FromContainers(containers)
-	suite.NotNil(got)
-	suite.NotEmpty(got.Environment)
-	suite.NotEmpty(got.ConfigMaps)
-	suite.NotEmpty(got.Secrets)
+	validate := func(t *testing.T, tc *testCase) {
+		t.Run(tc.Name, func(t *testing.T) {
+			actualString, actualError := tc.Result.Output(tc.Opt)
+
+			assert.Equal(t, tc.ExpectedString, actualString)
+			if tc.ErrorChecker != nil {
+				assert.Equal(t, true, tc.ErrorChecker(actualError))
+			}
+		})
+	}
+
+	objs := []runtime.Object{}
+	objs = append(objs, mocks.ConfigMap("test", "test", map[string]string{"cm1": "val", "cm2": "val2"}))
+	objs = append(objs, mocks.Secret("test", "test", map[string][]byte{"sec1": []byte("val"), "sec2": []byte("val2")}))
+	client := fake.NewSimpleClientset(objs...)
+
+	r1 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test"})})
+	r2 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, nil)})
+	r3 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, nil, []string{"test"})})
+	r4 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, nil, nil)})
+	r5 := FromContainers([]v1.Container{mocks.Container(nil, []string{"test"}, nil)})
+	r6 := FromContainers([]v1.Container{mocks.Container(nil, nil, []string{"test"})})
+	r7 := FromContainers([]v1.Container{mocks.Container(nil, nil, []string{"test1"})})
+	r8 := FromContainers([]v1.Container{mocks.Container(nil, []string{"test1"}, nil)})
+
+	envResult := "env1=\"val\"\nenv2=\"val2\"\n"
+	secResult := "##### SECRET - test #####\nsec1=\"val\"\nsec2=\"val2\"\n"
+	cmResult := "##### CONFIGMAP - test #####\ncm1=\"val\"\ncm2=\"val2\"\n"
+
+	validate(t, &testCase{Name: "Should get env configmaps and secrets", Result: r1, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: envResult + secResult + cmResult})
+	validate(t, &testCase{Name: "Should get env and configmaps with no secrets", Result: r2, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: envResult + cmResult})
+	validate(t, &testCase{Name: "Should get env and secrets with no configmaps", Result: r3, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: envResult + secResult})
+	validate(t, &testCase{Name: "Should get env with no secrets or configmaps", Result: r4, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: envResult})
+	validate(t, &testCase{Name: "Should get configmaps with no env or secrets", Result: r5, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: cmResult})
+	validate(t, &testCase{Name: "Should get secrets with no env or configmaps", Result: r6, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: secResult})
+	validate(t, &testCase{Name: "Should error with missing secret", Result: r7, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ErrorChecker: errors.IsNotFound})
+	validate(t, &testCase{Name: "Should error with missing configmap", Result: r8, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ErrorChecker: errors.IsNotFound})
 }
 
-func (suite EnvironmentSuite) TestOutput() {
-	envCase := map[string]string{"env1": "val", "env2": "val2"}
-	configmapCase := map[string]string{"config": "val", "config2": "val2"}
-	secretsCase := map[string][]byte{"secret": []byte("val"), "secret2": []byte("val2")}
+func TestResultWrite(t *testing.T) {
+	type testCase struct {
+		Name string
 
-	cases := []struct {
-		env           map[string]string
-		configmapName string
-		configmap     map[string]string
-		secretName    string
-		secrets       map[string][]byte
-		shouldErr     bool
-	}{
-		{env: envCase, configmap: configmapCase, secrets: secretsCase, configmapName: "test", secretName: "test"},
-		{configmap: configmapCase, secrets: secretsCase, configmapName: "test", secretName: "test"},
-		{env: envCase, secrets: secretsCase, secretName: "test"},
-		{env: envCase, configmap: configmapCase, configmapName: "test"},
-		{configmap: configmapCase, configmapName: "test1", shouldErr: true},
-		{secrets: secretsCase, secretName: "test1", shouldErr: true},
+		Result *Result
+
+		Opt *options.Options
+
+		Reader func() string
+
+		ExpectedResult string
+
+		ErrorChecker func(err error) bool
 	}
 
-	for i, c := range cases {
-		var cm []string
-		var sec []string
+	validate := func(t *testing.T, tc *testCase) {
+		t.Run(tc.Name, func(t *testing.T) {
+			actualError := tc.Result.Write(tc.Opt)
 
-		objs := []runtime.Object{}
-		if c.configmap != nil {
-			cm = []string{c.configmapName}
-			objs = append(objs, mocks.ConfigMap("test", "test", c.configmap))
-		}
-		if c.secrets != nil {
-			sec = []string{c.secretName}
-			objs = append(objs, mocks.Secret("test", "test", c.secrets))
-		}
-
-		containers := []v1.Container{mocks.Container(c.env, cm, sec)}
-		r := FromContainers(containers)
-
-		opt := &options.Options{
-			Client:    fake.NewSimpleClientset(objs...),
-			Namespace: "test",
-		}
-
-		got, err := r.Output(opt)
-		caseDesc := fmt.Sprintf("Test case %d", i)
-		if c.shouldErr {
-			suite.Error(err, caseDesc)
-		} else {
-			suite.NoError(err, caseDesc)
-			suite.NotNil(got, caseDesc)
-			for k, v := range c.configmap {
-				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
+			if tc.Reader != nil {
+				assert.Equal(t, tc.ExpectedResult, tc.Reader())
 			}
-			for k, v := range c.secrets {
-				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
-			}
-			for k, v := range c.env {
-				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
-			}
-		}
-	}
-}
 
-func (suite EnvironmentSuite) TestWrite() {
-	envCase := map[string]string{"env1": "val", "env2": "val2"}
-	configmapCase := map[string]string{"config": "val", "config2": "val2"}
-	secretsCase := map[string][]byte{"secret": []byte("val"), "secret2": []byte("val2")}
-	cases := []struct {
-		env           map[string]string
-		configmapName string
-		configmap     map[string]string
-		secretName    string
-		secrets       map[string][]byte
-		shouldErr     bool
-		filename      string
-		useWriter     bool
-	}{
-		{env: envCase, configmap: configmapCase, secrets: secretsCase, configmapName: "test", secretName: "test"},
-		{configmap: configmapCase, secrets: secretsCase, configmapName: "test", secretName: "test"},
-		{env: envCase, secrets: secretsCase, secretName: "test"},
-		{env: envCase, configmap: configmapCase, configmapName: "test"},
-		{configmap: configmapCase, configmapName: "test1", shouldErr: true},
-		{secrets: secretsCase, secretName: "test1", shouldErr: true},
-		{env: envCase, configmap: configmapCase, useWriter: true, filename: "test.out", configmapName: "test"},
-		{env: envCase, configmap: configmapCase, useWriter: true, configmapName: "test", shouldErr: true},
+			if tc.ErrorChecker != nil {
+				assert.True(t, tc.ErrorChecker(actualError))
+			}
+		})
 	}
 
-	for i, c := range cases {
-		var cm []string
-		var sec []string
+	objs := []runtime.Object{}
+	objs = append(objs, mocks.ConfigMap("test", "test", map[string]string{"cm1": "val", "cm2": "val2"}))
+	objs = append(objs, mocks.Secret("test", "test", map[string][]byte{"sec1": []byte("val"), "sec2": []byte("val2")}))
+	client := fake.NewSimpleClientset(objs...)
 
-		objs := []runtime.Object{}
-		if c.configmap != nil {
-			cm = []string{c.configmapName}
-			objs = append(objs, mocks.ConfigMap("test", "test", c.configmap))
-		}
-		if c.secrets != nil {
-			sec = []string{c.secretName}
-			objs = append(objs, mocks.Secret("test", "test", c.secrets))
-		}
+	r1 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test"})})
+	r2 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test1"})})
 
-		containers := []v1.Container{mocks.Container(c.env, cm, sec)}
-		r := FromContainers(containers)
+	envResult := "env1=\"val\"\nenv2=\"val2\"\n"
+	secResult := "##### SECRET - test #####\nsec1=\"val\"\nsec2=\"val2\"\n"
+	cmResult := "##### CONFIGMAP - test #####\ncm1=\"val\"\ncm2=\"val2\"\n"
 
-		var b bytes.Buffer
-		var err error
-		var got string
+	var b bytes.Buffer
+	validate(t, &testCase{
+		Name:   "Should work",
+		Result: r1,
+		Opt:    &options.Options{Client: client, Namespace: "test", NoExport: true, Writer: &b},
+		Reader: func() string {
+			return b.String()
+		},
+		ExpectedResult: envResult + secResult + cmResult,
+	})
 
-		opt := &options.Options{
-			Client:    fake.NewSimpleClientset(objs...),
-			Namespace: "test",
-		}
+	var b2 bytes.Buffer
+	validate(t, &testCase{
+		Name:   "Should Error with missing secret",
+		Result: r2,
+		Opt:    &options.Options{Client: client, Namespace: "test", NoExport: true, Writer: &b2},
+		Reader: func() string {
+			return b2.String()
+		},
+		ErrorChecker: errors.IsNotFound,
+	})
 
-		if c.useWriter {
-			opt.Filename = c.filename
-			defer os.Remove(c.filename)
-			err = r.Write(opt)
-			var fileBytes []byte
-			fileBytes, _ = os.ReadFile(c.filename)
-			got = string(fileBytes)
-		} else {
-			opt.Writer = &b
-			err = r.Write(opt)
-			got = b.String()
-		}
-
-		caseDesc := fmt.Sprintf("Test case %d", i)
-		if c.shouldErr {
-			suite.Error(err)
-		} else {
-			suite.NoError(err, caseDesc)
-			suite.NotNil(got, caseDesc)
-			for k, v := range c.configmap {
-				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
-			}
-			for k, v := range c.secrets {
-				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
-			}
-			for k, v := range c.env {
-				suite.Contains(got, fmt.Sprintf("export %s=\"%s\"", k, v), caseDesc)
-			}
-		}
-	}
-}
-
-func TestEnvironmentSuite(t *testing.T) {
-	suite.Run(t, new(EnvironmentSuite))
+	defer os.Remove("./test.out")
+	validate(t, &testCase{
+		Name:   "Should Error with missing writer",
+		Result: r1,
+		Opt:    &options.Options{Client: client, Namespace: "test"},
+		ErrorChecker: func(err error) bool {
+			return err.Error() == options.ErrNoFilename.Error()
+		},
+	})
 }

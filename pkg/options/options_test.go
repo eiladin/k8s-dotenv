@@ -2,17 +2,12 @@ package options
 
 import (
 	"bytes"
-	"io"
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
 )
-
-type OptionsSuite struct {
-	suite.Suite
-}
 
 var defaultNamespaceConfig = `
 apiVersion: v1
@@ -79,69 +74,98 @@ users:
     token: not-a-real-token
 `
 
-func (suite OptionsSuite) TestResolveNamespace() {
-	cases := []struct {
-		namespace     string
-		config        string
-		expected      string
-		expectedError bool
-	}{
-		{namespace: "test", expected: "test"},
-		{expected: "default", config: defaultNamespaceConfig},
-		{expected: "dev", config: devNamespaceConfig},
-		{expectedError: true, config: errorConfig},
+func TestOptionsResolveNamespace(t *testing.T) {
+	type testCase struct {
+		Name string
+
+		Options *Options
+
+		ConfigPath string
+
+		ErrorChecker func(err error) bool
+
+		ValueChecker func(opt *Options) bool
 	}
 
-	for _, c := range cases {
-		configPath := ""
-		if c.config != "" {
-			configPath = "./test.config"
-			err := ioutil.WriteFile(configPath, []byte(c.config), 0644)
-			suite.NoError(err)
-		}
-		opt := &Options{Namespace: c.namespace}
-		err := opt.ResolveNamespace(configPath)
+	validate := func(t *testing.T, tc *testCase) {
+		t.Run(tc.Name, func(t *testing.T) {
+			actualError := tc.Options.ResolveNamespace(tc.ConfigPath)
 
-		if configPath != "" {
-			os.Remove(configPath)
-		}
+			if tc.ErrorChecker != nil {
+				assert.True(t, tc.ErrorChecker(actualError))
+			}
 
-		if c.expectedError {
-			suite.Error(err)
-		} else {
-			suite.NoError(err)
-			suite.Equal(c.expected, opt.Namespace)
-		}
+			if tc.ValueChecker != nil {
+				assert.True(t, tc.ValueChecker(tc.Options))
+			}
+		})
 	}
+
+	validate(t, &testCase{
+		Name:    "Should resolve test",
+		Options: &Options{Namespace: "test"},
+		ValueChecker: func(opt *Options) bool {
+			return opt.Namespace == "test"
+		},
+	})
+
+	err := ioutil.WriteFile("./default.config", []byte(defaultNamespaceConfig), 0644)
+	assert.NoError(t, err)
+	defer os.Remove("./default.config")
+	validate(t, &testCase{
+		Name:       "Should resolve default",
+		Options:    &Options{},
+		ConfigPath: "default.config",
+		ValueChecker: func(opt *Options) bool {
+			return opt.Namespace == "default"
+		},
+	})
+
+	err = ioutil.WriteFile("./dev.config", []byte(devNamespaceConfig), 0644)
+	assert.NoError(t, err)
+	defer os.Remove("./dev.config")
+	validate(t, &testCase{
+		Name:       "Should resolve dev",
+		Options:    &Options{},
+		ConfigPath: "dev.config",
+		ValueChecker: func(opt *Options) bool {
+			return opt.Namespace == "dev"
+		},
+	})
+
+	err = ioutil.WriteFile("./error.config", []byte(errorConfig), 0644)
+	assert.NoError(t, err)
+	defer os.Remove("./error.config")
+	validate(t, &testCase{
+		Name:       "Should throw an error on invalid config",
+		Options:    &Options{},
+		ConfigPath: "error.config",
+		ErrorChecker: func(err error) bool {
+			return err != nil
+		},
+	})
 }
 
-func (suite OptionsSuite) TestSetWriter() {
+func TestOptionsSetDefaultWriter(t *testing.T) {
+	type testCase struct {
+		Name string
+
+		Options *Options
+
+		ExpectedError error
+	}
+
+	validate := func(t *testing.T, tc *testCase) {
+		t.Run(tc.Name, func(t *testing.T) {
+			actualError := tc.Options.SetDefaultWriter()
+
+			assert.Equal(t, tc.ExpectedError, actualError)
+		})
+	}
+
 	var b bytes.Buffer
-	cases := []struct {
-		filename  string
-		writer    io.Writer
-		shouldErr bool
-	}{
-		{shouldErr: true},
-		{writer: &b},
-		{filename: "./test.out"},
-	}
-
-	for _, c := range cases {
-		opt := &Options{Writer: c.writer}
-		if c.filename != "" {
-			opt.Filename = c.filename
-			defer os.Remove(c.filename)
-		}
-		err := opt.SetDefaultWriter()
-		if c.shouldErr {
-			suite.Error(err)
-		} else {
-			suite.NoError(err)
-		}
-	}
-}
-
-func TestOptionsSuite(t *testing.T) {
-	suite.Run(t, new(OptionsSuite))
+	defer os.Remove("./out.test")
+	validate(t, &testCase{Name: "Should use the passed in writer", Options: &Options{Writer: &b}})
+	validate(t, &testCase{Name: "Should Error given no filename or writer", Options: &Options{}, ExpectedError: ErrNoFilename})
+	validate(t, &testCase{Name: "Should not error given a filename", Options: &Options{Filename: "./out.test"}})
 }
