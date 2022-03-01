@@ -3,6 +3,7 @@ package secret
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/parser"
@@ -16,8 +17,14 @@ func Get(opt *options.Options, secret string) (string, error) {
 	}
 
 	res := fmt.Sprintf("##### SECRET - %s #####\n", secret)
-	for k, v := range resp.Data {
-		res += parser.Parse(!opt.NoExport, k, v)
+	keys := make([]string, 0, len(resp.Data))
+	for k := range resp.Data {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		res += parser.Parse(!opt.NoExport, k, resp.Data[k])
 	}
 
 	return res, nil

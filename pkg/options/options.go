@@ -9,18 +9,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type Options struct {
-	Client     kubernetes.Interface
-	Namespace  string
-	Name       string
-	Filename   string
-	NoExport   bool
-	Writer     io.Writer
-	FileWriter io.Writer
-}
+var ErrNoFilename = errors.New("no filename provided")
 
-func NewOptions() *Options {
-	return &Options{}
+type Options struct {
+	Client    kubernetes.Interface
+	Namespace string
+	Name      string
+	Filename  string
+	NoExport  bool
+	Writer    io.Writer
 }
 
 func (opt *Options) ResolveNamespace(configPath string) error {
@@ -32,14 +29,17 @@ func (opt *Options) ResolveNamespace(configPath string) error {
 	return nil
 }
 
-func (opt *Options) SetDefaultFileWriter() error {
+func (opt *Options) SetDefaultWriter() error {
+	if opt.Writer != nil {
+		return nil
+	}
 	if opt.Filename == "" {
-		return errors.New("no filename provided")
+		return ErrNoFilename
 	}
 	f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}
-	opt.FileWriter = f
+	opt.Writer = f
 	return nil
 }

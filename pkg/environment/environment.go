@@ -1,6 +1,8 @@
 package environment
 
 import (
+	"sort"
+
 	"github.com/eiladin/k8s-dotenv/pkg/configmap"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/parser"
@@ -45,10 +47,17 @@ func FromContainers(containers []v1.Container) *Result {
 
 func (r *Result) Output(opt *options.Options) (string, error) {
 	res := ""
-	for k, v := range r.Environment {
-		res += parser.ParseStr(!opt.NoExport, k, v)
+	keys := make([]string, 0, len(r.Environment))
+	for k := range r.Environment {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		res += parser.ParseStr(!opt.NoExport, k, r.Environment[k])
 	}
 
+	sort.Strings(r.Secrets)
 	for _, s := range r.Secrets {
 		secretVal, err := secret.Get(opt, s)
 		if err != nil {
@@ -57,6 +66,7 @@ func (r *Result) Output(opt *options.Options) (string, error) {
 		res += secretVal
 	}
 
+	sort.Strings(r.ConfigMaps)
 	for _, c := range r.ConfigMaps {
 		configmapVal, err := configmap.Get(opt, c)
 		if err != nil {
@@ -73,13 +83,11 @@ func (r *Result) Write(opt *options.Options) error {
 		return err
 	}
 
-	if opt.FileWriter == nil {
-		err = opt.SetDefaultFileWriter()
-		if err != nil {
-			return err
-		}
+	err = opt.SetDefaultWriter()
+	if err != nil {
+		return err
 	}
 
-	_, err = opt.FileWriter.Write([]byte(output))
+	_, err = opt.Writer.Write([]byte(output))
 	return err
 }

@@ -5,41 +5,36 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-type SecretSuite struct {
-	suite.Suite
-}
+func TestGet(t *testing.T) {
+	type testCase struct {
+		Name string
 
-func (suite SecretSuite) TestGet() {
-	cases := []struct {
-		name      string
-		namespace string
-		shouldErr bool
-	}{
-		{name: "test", namespace: "test"},
-		{name: "test1", namespace: "test", shouldErr: true},
-		{name: "test", namespace: "test2", shouldErr: true},
+		Opt    *options.Options
+		Secret string
+
+		ExpectedString string
+		ErrorChecker   func(err error) bool
 	}
 
-	for _, c := range cases {
-		s := mocks.Secret("test", "test", map[string][]byte{"n": []byte("v")})
-		opt := options.NewOptions()
-		opt.Client = fake.NewSimpleClientset(s)
-		opt.Namespace = c.namespace
+	validate := func(t *testing.T, tc *testCase) {
+		t.Run(tc.Name, func(t *testing.T) {
+			actualString, actualError := Get(tc.Opt, tc.Secret)
 
-		got, err := Get(opt, c.name)
-		if c.shouldErr {
-			suite.Error(err)
-		} else {
-			suite.NoError(err)
-			suite.Greater(len(got), 0, "result should have a length greater than 0")
-		}
+			assert.Equal(t, tc.ExpectedString, actualString)
+			if tc.ErrorChecker != nil {
+				assert.Equal(t, true, tc.ErrorChecker(actualError))
+			}
+		})
 	}
-}
 
-func TestSecretSuite(t *testing.T) {
-	suite.Run(t, new(SecretSuite))
+	cm := mocks.Secret("test", "test", map[string][]byte{"n": []byte("v")})
+	client := fake.NewSimpleClientset(cm)
+	validate(t, &testCase{Name: "Should find test.test", Secret: "test", Opt: &options.Options{Client: client, Namespace: "test"}, ExpectedString: "##### SECRET - test #####\nexport n=\"v\"\n"})
+	validate(t, &testCase{Name: "Should not find test.test1", Secret: "test1", Opt: &options.Options{Client: client, Namespace: "test"}, ErrorChecker: errors.IsNotFound})
+	validate(t, &testCase{Name: "Should not find test2.test", Secret: "test", Opt: &options.Options{Client: client, Namespace: "test2"}, ErrorChecker: errors.IsNotFound})
 }

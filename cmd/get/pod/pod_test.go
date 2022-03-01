@@ -4,89 +4,108 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/eiladin/k8s-dotenv/pkg/errors/cmd"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
-	"github.com/stretchr/testify/suite"
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-type DeploymentCmdSuite struct {
-	suite.Suite
+func TestNewCmd(t *testing.T) {
+	client := fake.NewSimpleClientset(mocks.Pod("test", "test", nil, nil, nil))
+
+	got := NewCmd(&options.Options{Client: client, Namespace: "test"})
+	assert.NotNil(t, got)
+
+	objs, _ := got.ValidArgsFunction(got, []string{}, "")
+	assert.Equal(t, []string{"test"}, objs)
+
+	actualError := got.RunE(got, []string{})
+	assert.Equal(t, cmd.ErrResourceNameRequired, actualError)
 }
 
-func (suite DeploymentCmdSuite) TestNewCmd() {
-	got := NewCmd(options.NewOptions())
-	suite.NotNil(got)
-}
+func TestRun(t *testing.T) {
+	type testCase struct {
+		Name string
 
-func (suite DeploymentCmdSuite) TestValidArgs() {
-	opt := options.NewOptions()
-	client := fake.NewSimpleClientset()
-	opt.Name = "test"
-	opt.Namespace = "test"
-	opt.Client = client
-	cmd := NewCmd(opt)
-	got, _ := cmd.ValidArgsFunction(cmd, []string{}, "")
-	suite.NotNil(got)
-}
+		Opt  *options.Options
+		Args []string
 
-func (suite DeploymentCmdSuite) TestRun() {
-	cases := []struct {
-		name       string
-		namespace  string
-		env        map[string]string
-		configmaps []string
-		secrets    []string
-		args       []string
-		shouldErr  bool
-	}{
-		{args: []string{"my-pod"}, name: "my-pod", namespace: "test", env: map[string]string{"k1": "v1", "k2": "v2"}, configmaps: []string{"ConfigMap0", "ConfigMap1"}, secrets: []string{"Secret0", "Secret1"}},
-		{args: []string{"my-pod"}, shouldErr: true},
-		{shouldErr: true},
+		ExpectedError error
+		ErrorChecker  func(err error) bool
 	}
 
-	for _, c := range cases {
-		ms := []runtime.Object{}
-		ms = append(ms, mocks.Pod(c.name, c.namespace, c.env, c.configmaps, c.secrets))
-		for _, cm := range c.configmaps {
-			ms = append(ms, mocks.ConfigMap(cm, c.namespace, map[string]string{"config": "value"}))
-		}
-		for _, s := range c.secrets {
-			ms = append(ms, mocks.Secret(s, c.namespace, map[string][]byte{"secret": []byte("value")}))
-		}
+	validate := func(t *testing.T, tc *testCase) {
+		t.Run(tc.Name, func(t *testing.T) {
+			actualError := run(tc.Opt, tc.Args)
 
-		client := fake.NewSimpleClientset(ms...)
-
-		var b bytes.Buffer
-		opt := options.NewOptions()
-		opt.Client = client
-		opt.Namespace = c.namespace
-		opt.Name = c.name
-		opt.FileWriter = &b
-
-		cmd := NewCmd(opt)
-		err := cmd.RunE(cmd, c.args)
-
-		if c.shouldErr {
-			suite.Error(err)
-		} else {
-			suite.NoError(err)
-			got := b.String()
-			for k, v := range c.env {
-				suite.Contains(got, k)
-				suite.Contains(got, v)
+			if tc.ErrorChecker != nil {
+				assert.True(t, tc.ErrorChecker(actualError))
+			} else {
+				assert.Equal(t, tc.ExpectedError, actualError)
 			}
-			for _, cm := range c.configmaps {
-				suite.Contains(got, cm)
-			}
-			for _, s := range c.secrets {
-				suite.Contains(got, s)
-			}
-		}
+		})
 	}
+
+	validate(t, &testCase{
+		Name:          "Should error with no args",
+		ExpectedError: cmd.ErrResourceNameRequired,
+	})
+
+	var b bytes.Buffer
+	client := fake.NewSimpleClientset(mocks.Pod("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
+	validate(t, &testCase{
+		Name: "Should find jobs",
+		Opt: &options.Options{
+			Client:    client,
+			Namespace: "test",
+			Name:      "test",
+			Writer:    &b,
+		},
+		Args: []string{"test"},
+	})
+
+	b.Reset()
+	client = fake.NewSimpleClientset()
+	validate(t, &testCase{
+		Name: "Should not find a pod in an empty cluster",
+		Opt: &options.Options{
+			Client:    client,
+			Namespace: "test",
+			Name:      "test",
+			Writer:    &b,
+		},
+		Args:         []string{"test"},
+		ErrorChecker: errors.IsNotFound,
+	})
+
 }
 
-func TestDeploymentCmdSuite(t *testing.T) {
-	suite.Run(t, new(DeploymentCmdSuite))
+func TestValidArgs(t *testing.T) {
+	type testCase struct {
+		Name string
+
+		Opt *options.Options
+
+		ExpectedSlice []string
+	}
+
+	validate := func(t *testing.T, tc *testCase) {
+		t.Run(tc.Name, func(t *testing.T) {
+			actualSlice := validArgs(tc.Opt)
+
+			assert.Equal(t, tc.ExpectedSlice, actualSlice)
+		})
+	}
+
+	validate(t, &testCase{
+		Name: "Should return pods",
+		Opt: &options.Options{
+			Client:    fake.NewSimpleClientset(),
+			Namespace: "test",
+			Name:      "test",
+		},
+		ExpectedSlice: []string{},
+	})
 }

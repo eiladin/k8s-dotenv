@@ -6,63 +6,53 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 )
 
-type NamespaceSuite struct {
-	suite.Suite
-}
+func TestNamespaces(t *testing.T) {
+	type testCase struct {
+		Name string
 
-func (suite NamespaceSuite) TestNamespaces() {
-	cases := []struct {
-		items         []string
-		expectedCount int
-		shouldErr     bool
-	}{
-		{
-			items:         []string{"test"},
-			expectedCount: 1,
-		},
-		{
-			items:         []string{"test", "test2"},
-			expectedCount: 2,
-		},
-		{
-			shouldErr: true,
-		},
+		Opt *options.Options
+
+		ExpectedSlice []string
+		ExpectedError error
 	}
 
-	for _, c := range cases {
-		ms := []runtime.Object{}
-		for _, item := range c.items {
-			mock := mocks.Namespace(item)
-			ms = append(ms, mock)
-		}
-		client := fake.NewSimpleClientset(ms...)
-		if c.shouldErr {
-			client.PrependReactor("list", "namespaces", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, &corev1.NamespaceList{}, errors.New("error getting namespaces")
-			})
-		}
+	validate := func(t *testing.T, tc *testCase) {
+		t.Run(tc.Name, func(t *testing.T) {
+			actualSlice, actualError := Namespaces(tc.Opt)
 
-		opt := options.NewOptions()
-		opt.Client = client
-
-		got, err := Namespaces(opt)
-		if c.shouldErr {
-			suite.Error(err)
-		} else {
-			suite.NoError(err)
-			suite.NotNil(got)
-			suite.Len(got, c.expectedCount)
-		}
+			assert.Equal(t, tc.ExpectedSlice, actualSlice)
+			assert.Equal(t, tc.ExpectedError, actualError)
+		})
 	}
-}
 
-func TestNamespaceSuite(t *testing.T) {
-	suite.Run(t, new(NamespaceSuite))
+	client := fake.NewSimpleClientset(mocks.Namespace("one"))
+	validate(t, &testCase{
+		Name:          "Should return a single namespace",
+		Opt:           &options.Options{Client: client},
+		ExpectedSlice: []string{"one"},
+	})
+
+	client = fake.NewSimpleClientset(mocks.Namespace("one"), mocks.Namespace("two"))
+	validate(t, &testCase{
+		Name:          "Should return multiple namespaces",
+		Opt:           &options.Options{Client: client},
+		ExpectedSlice: []string{"one", "two"},
+	})
+
+	client = fake.NewSimpleClientset()
+	client.PrependReactor("list", "namespaces", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &corev1.NamespaceList{}, errors.New("error getting namespaces")
+	})
+	validate(t, &testCase{
+		Name:          "Should return multiple namespaces",
+		Opt:           &options.Options{Client: client},
+		ExpectedError: errors.New("error getting namespaces"),
+	})
 }

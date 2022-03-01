@@ -4,10 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
+
+var ErrShellNotSpecified = errors.New("shell not specified")
+var ErrTooManyArguments = errors.New("Too many arguments. Expected only the shell type.")
+var ErrUnsupportedShellType = "Unsupported shell type %q."
 
 const defaultBoilerPlate = `
 # The MIT License (MIT)
@@ -101,6 +106,11 @@ func NewCmd(opt *options.Options) *cobra.Command {
 		Short:                 "Output shell completion code for the specified shell (bash, zsh, fish)",
 		Long:                  completionLong,
 		Example:               completionExample,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			if opt.Writer == nil {
+				opt.Writer = os.Stdout
+			}
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return RunCompletion(opt, cmd, args)
 		},
@@ -112,14 +122,14 @@ func NewCmd(opt *options.Options) *cobra.Command {
 
 func RunCompletion(opt *options.Options, cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		return errors.New("shell not specified")
+		return ErrShellNotSpecified
 	}
 	if len(args) > 1 {
-		return errors.New("Too many arguments. Expected only the shell type.")
+		return ErrTooManyArguments
 	}
 	run, found := completionShells[args[0]]
 	if !found {
-		return fmt.Errorf("Unsupported shell type %q.", args[0])
+		return fmt.Errorf(ErrUnsupportedShellType, args[0])
 	}
 
 	return run(opt.Writer, cmd.Parent())

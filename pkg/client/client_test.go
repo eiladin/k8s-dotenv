@@ -1,19 +1,17 @@
 package client
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
-
-type ClientSuite struct {
-	suite.Suite
-}
 
 var defaultNamespaceConfig = `
 apiVersion: v1
@@ -80,88 +78,124 @@ users:
     token: not-a-real-token
 `
 
-func (suite ClientSuite) TestCurrentNamespace() {
-	cases := []struct {
-		namespace     string
-		config        string
-		expected      string
-		expectedError bool
-	}{
-		{namespace: "test", expected: "test"},
-		{expected: "default", config: defaultNamespaceConfig},
-		{expected: "dev", config: devNamespaceConfig},
-		{expectedError: true, config: errorConfig},
+func TestCurrentNamespace(t *testing.T) {
+	type testCase struct {
+		Name string
+
+		Namespace  string
+		ConfigPath string
+
+		ExpectedString string
+		ExpectedError  error
+		ErrorChecker   func(err error) bool
 	}
 
-	for _, c := range cases {
-		configPath := ""
-		if c.config != "" {
-			configPath = "./test.config"
-			err := ioutil.WriteFile(configPath, []byte(c.config), 0644)
-			suite.NoError(err)
-		}
+	validate := func(t *testing.T, tc *testCase) {
+		t.Run(tc.Name, func(t *testing.T) {
+			actualString, actualError := CurrentNamespace(tc.Namespace, tc.ConfigPath)
 
-		got, err := CurrentNamespace(c.namespace, configPath)
-
-		if configPath != "" {
-			os.Remove(configPath)
-		}
-
-		if c.expectedError {
-			suite.Error(err)
-		} else {
-			suite.NoError(err)
-		}
-		suite.Equal(c.expected, got)
+			assert.Equal(t, tc.ExpectedString, actualString)
+			if tc.ErrorChecker != nil {
+				assert.True(t, tc.ErrorChecker(actualError))
+			} else {
+				assert.Equal(t, tc.ExpectedError, actualError)
+			}
+		})
 	}
-}
 
-func (suite ClientSuite) TestGetApiGroupApiError() {
-	client := fake.NewSimpleClientset(&v1.Job{})
-
-	client.Fake.Resources = append(client.Fake.Resources, &metav1.APIResourceList{
-		GroupVersion: "a/b/c",
-		APIResources: []metav1.APIResource{
-			{Name: "Jobs", SingularName: "Job", Kind: "Job", Namespaced: false, Group: "v1"},
-		},
+	validate(t, &testCase{
+		Name:           "Should return passed in namespace",
+		Namespace:      "test",
+		ExpectedString: "test",
 	})
 
-	got, err := GetApiGroup(client, "Job")
-	suite.Error(err)
-	suite.Empty(got)
+	err := ioutil.WriteFile("./default.config", []byte(defaultNamespaceConfig), 0644)
+	assert.NoError(t, err)
+	defer os.Remove("./default.config")
+	validate(t, &testCase{
+		Name:           "Should resolve default",
+		ConfigPath:     "default.config",
+		ExpectedString: "default",
+	})
+
+	err = ioutil.WriteFile("./dev.config", []byte(devNamespaceConfig), 0644)
+	assert.NoError(t, err)
+	defer os.Remove("./dev.config")
+	validate(t, &testCase{
+		Name:           "Should resolve dev",
+		ConfigPath:     "dev.config",
+		ExpectedString: "dev",
+	})
+
+	err = ioutil.WriteFile("./error.config", []byte(errorConfig), 0644)
+	assert.NoError(t, err)
+	defer os.Remove("./error.config")
+	validate(t, &testCase{
+		Name:       "Should throw an error on invalid config",
+		ConfigPath: "error.config",
+		ErrorChecker: func(err error) bool {
+			return err != nil
+		},
+	})
 }
 
-func (suite ClientSuite) TestGetApiGroup() {
-	cases := []struct {
-		resource  string
-		shouldErr bool
-	}{
-		{resource: "Job"},
-		{resource: "Job", shouldErr: true},
+func TestGetApiGroup(t *testing.T) {
+	type testCase struct {
+		Name string
+
+		Client   kubernetes.Interface
+		Resource string
+
+		ExpectedString string
+		ExpectedError  error
 	}
 
-	for _, c := range cases {
-		client := fake.NewSimpleClientset(&v1.Job{})
+	validate := func(t *testing.T, tc *testCase) {
+		t.Run(tc.Name, func(t *testing.T) {
+			actualString, actualError := GetApiGroup(tc.Client, tc.Resource)
 
-		if !c.shouldErr {
-			client.Fake.Resources = append(client.Fake.Resources, &metav1.APIResourceList{
-				GroupVersion: "v1",
-				APIResources: []metav1.APIResource{
-					{Name: "Jobs", SingularName: "Job", Kind: "Job", Namespaced: false, Group: "v1"},
-				},
-			})
-		}
-
-		got, err := GetApiGroup(client, c.resource)
-		if c.shouldErr {
-			suite.Error(err)
-		} else {
-			suite.NoError(err)
-			suite.NotNil(got)
-		}
+			assert.Equal(t, tc.ExpectedString, actualString)
+			assert.Equal(t, tc.ExpectedError, actualError)
+		})
 	}
-}
 
-func TestClientSuite(t *testing.T) {
-	suite.Run(t, new(ClientSuite))
+	client := fake.NewSimpleClientset(&v1.Job{})
+	client.Fake.Resources = []*metav1.APIResourceList{
+		{
+			GroupVersion: "v1",
+			APIResources: []metav1.APIResource{
+				{Name: "Jobs", SingularName: "Job", Kind: "Job", Namespaced: false, Group: "v1"},
+			},
+		},
+	}
+	validate(t, &testCase{
+		Name:           "Should detect resource group",
+		Client:         client,
+		Resource:       "Job",
+		ExpectedString: "v1",
+	})
+
+	client = fake.NewSimpleClientset(&v1.Job{})
+	validate(t, &testCase{
+		Name:          "Should error if the resource is not found",
+		Client:        client,
+		Resource:      "Job",
+		ExpectedError: errors.New("resource Job not found"),
+	})
+
+	client = fake.NewSimpleClientset(&v1.Job{})
+	client.Fake.Resources = []*metav1.APIResourceList{
+		{
+			GroupVersion: "a/b/c",
+			APIResources: []metav1.APIResource{
+				{Name: "Jobs", SingularName: "Job", Kind: "Job", Namespaced: false, Group: "a/b/c"},
+			},
+		},
+	}
+	validate(t, &testCase{
+		Name:          "Should return API errors",
+		Client:        client,
+		Resource:      "Job",
+		ExpectedError: errors.New("unexpected GroupVersion string: a/b/c"),
+	})
 }
