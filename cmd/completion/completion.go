@@ -10,9 +10,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ErrShellNotSpecified is returned when `completion` is called with no arguments.
 var ErrShellNotSpecified = errors.New("shell not specified")
-var ErrTooManyArguments = errors.New("Too many arguments. Expected only the shell type.")
-var ErrUnsupportedShellType = "Unsupported shell type %q."
+
+// ErrTooManyArguments is returned when `completion` is called with more than one argument.
+var ErrTooManyArguments = errors.New("too many arguments. Expected only the shell type")
+
+// ErrUnsupportedShellType is returned when `completion` is called and the argument is not one of `bash`, `zsh`, `fish` or `powershell`
+var ErrUnsupportedShellType = "unsupported shell type %q."
 
 const defaultBoilerPlate = `
 # The MIT License (MIT)
@@ -94,6 +99,7 @@ var (
 	}
 )
 
+// NewCmd creates the `completion` command.
 func NewCmd(opt *options.Options) *cobra.Command {
 	shells := []string{}
 	for s := range completionShells {
@@ -112,7 +118,7 @@ func NewCmd(opt *options.Options) *cobra.Command {
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return RunCompletion(opt, cmd, args)
+			return runCompletion(opt, cmd, args)
 		},
 		ValidArgs: shells,
 	}
@@ -120,7 +126,7 @@ func NewCmd(opt *options.Options) *cobra.Command {
 	return cmd
 }
 
-func RunCompletion(opt *options.Options, cmd *cobra.Command, args []string) error {
+func runCompletion(opt *options.Options, cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return ErrShellNotSpecified
 	}

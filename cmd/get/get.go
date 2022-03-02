@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmd creates the `get` command.
 func NewCmd(opt *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get RESOURCE_TYPE",

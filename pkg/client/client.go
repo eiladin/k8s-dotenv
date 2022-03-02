@@ -10,10 +10,16 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
+// Client is a wrapper around kubernetes.Interface
 type Client struct {
 	kubernetes.Interface
 }
 
+func NewClient(cl kubernetes.Interface) *Client {
+	return &Client{cl}
+}
+
+// Get returns a configured Client loaded from ~/.kube/config
 func Get() (*Client, error) {
 	var home string
 	if home = homedir.HomeDir(); home == "" {
@@ -33,6 +39,7 @@ func Get() (*Client, error) {
 	return &Client{clientset}, nil
 }
 
+// CurrentNamespace returns the namespace from "~/.kube/config"
 func CurrentNamespace(namespace string, configPath string) (string, error) {
 	if namespace != "" {
 		return namespace, nil
@@ -54,7 +61,8 @@ func CurrentNamespace(namespace string, configPath string) (string, error) {
 	return ns, nil
 }
 
-func GetApiGroup(client kubernetes.Interface, resource string) (string, error) {
+// GetAPIGroup returns the GroupVersion (batch/v1, batch/v1beta1, etc) for the given resource
+func (client *Client) GetAPIGroup(resource string) (string, error) {
 	serverResources, err := client.Discovery().ServerResources()
 	if err != nil {
 		return "", err

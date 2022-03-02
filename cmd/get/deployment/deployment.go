@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmd creates the `deployment` command.
 func NewCmd(opt *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "deployment RESOURCE_NAME",
@@ -24,7 +25,7 @@ func NewCmd(opt *options.Options) *cobra.Command {
 }
 
 func validArgs(opt *options.Options) []string {
-	list, _ := v1.Deployments(opt)
+	list, _ := v1.Deployments(opt.Client, opt.Namespace)
 	return list
 }
 
@@ -33,8 +34,7 @@ func run(opt *options.Options, args []string) error {
 		return cmd.ErrResourceNameRequired
 	}
 
-	opt.Name = args[0]
-	res, err := v1.Deployment(opt)
+	res, err := v1.Deployment(opt.Client, opt.Namespace, args[0])
 	if err != nil {
 		return err
 	}

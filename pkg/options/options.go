@@ -6,18 +6,17 @@ import (
 	"os"
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"k8s.io/client-go/kubernetes"
 )
 
 var ErrNoFilename = errors.New("no filename provided")
 
 type Options struct {
-	Client    kubernetes.Interface
-	Namespace string
-	Name      string
-	Filename  string
-	NoExport  bool
-	Writer    io.Writer
+	Client       *client.Client
+	Namespace    string
+	ResourceName string
+	Filename     string
+	NoExport     bool
+	Writer       io.Writer
 }
 
 func (opt *Options) ResolveNamespace(configPath string) error {

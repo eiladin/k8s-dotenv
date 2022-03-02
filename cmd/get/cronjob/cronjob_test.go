@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/errors/cmd"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
@@ -17,8 +18,8 @@ import (
 
 func TestNewCmd(t *testing.T) {
 	v1mock := mock.CronJobv1("my-cronjob", "test", nil, nil, nil)
-	client := fake.NewSimpleClientset(v1mock)
-	client.Fake.Resources = []*metav1.APIResourceList{
+	cl := fake.NewSimpleClientset(v1mock)
+	cl.Fake.Resources = []*metav1.APIResourceList{
 		{
 			GroupVersion: "batch/v1",
 			APIResources: []metav1.APIResource{
@@ -27,7 +28,7 @@ func TestNewCmd(t *testing.T) {
 		},
 	}
 
-	got := NewCmd(&options.Options{Client: client, Namespace: "test"})
+	got := NewCmd(&options.Options{Client: client.NewClient(cl), Namespace: "test"})
 	assert.NotNil(t, got)
 
 	cronjobs, _ := got.ValidArgsFunction(got, []string{}, "")
@@ -95,22 +96,22 @@ func TestRun(t *testing.T) {
 		ExpectedError: cmd.ErrResourceNameRequired,
 	})
 
-	client := fake.NewSimpleClientset()
-	client.Fake.Resources = []*metav1.APIResourceList{fakeResources["invalid"]}
+	cl := fake.NewSimpleClientset()
+	cl.Fake.Resources = []*metav1.APIResourceList{fakeResources["invalid"]}
 	validate(t, &testCase{
 		Name:          "Should return client errors",
-		Opt:           &options.Options{Client: client},
+		Opt:           &options.Options{Client: client.NewClient(cl)},
 		Args:          []string{"test"},
 		ExpectedError: errors.New("unexpected GroupVersion string: a/b/c"),
 	})
 
-	client = fake.NewSimpleClientset(v1mock)
-	client.Fake.Resources = []*metav1.APIResourceList{fakeResources["v1"]}
+	cl = fake.NewSimpleClientset(v1mock)
+	cl.Fake.Resources = []*metav1.APIResourceList{fakeResources["v1"]}
 	var b bytes.Buffer
 	validate(t, &testCase{
 		Name: "Should write v1 CronJobs",
 		Opt: &options.Options{
-			Client:    client,
+			Client:    client.NewClient(cl),
 			Namespace: "test",
 			Writer:    &b,
 		},
@@ -119,13 +120,13 @@ func TestRun(t *testing.T) {
 		ResultChecker:  b.String,
 	})
 
-	client = fake.NewSimpleClientset(v1beta1mock)
-	client.Fake.Resources = []*metav1.APIResourceList{fakeResources["v1beta1"]}
+	cl = fake.NewSimpleClientset(v1beta1mock)
+	cl.Fake.Resources = []*metav1.APIResourceList{fakeResources["v1beta1"]}
 	b.Reset()
 	validate(t, &testCase{
 		Name: "Should write v1beta1 CronJobs",
 		Opt: &options.Options{
-			Client:    client,
+			Client:    client.NewClient(cl),
 			Namespace: "test",
 			Writer:    &b,
 		},
@@ -134,13 +135,13 @@ func TestRun(t *testing.T) {
 		ResultChecker:  b.String,
 	})
 
-	client = fake.NewSimpleClientset()
-	client.Fake.Resources = []*metav1.APIResourceList{fakeResources["unsupported"]}
+	cl = fake.NewSimpleClientset()
+	cl.Fake.Resources = []*metav1.APIResourceList{fakeResources["unsupported"]}
 	b.Reset()
 	validate(t, &testCase{
 		Name: "Should error on unsupported group",
 		Opt: &options.Options{
-			Client:    client,
+			Client:    client.NewClient(cl),
 			Namespace: "test",
 			Writer:    &b,
 		},
@@ -148,15 +149,15 @@ func TestRun(t *testing.T) {
 		ExpectedError: errors.New("resource CronJob in group batch/unsupported not supported"),
 	})
 
-	client = fake.NewSimpleClientset()
-	client.Fake.Resources = []*metav1.APIResourceList{fakeResources["v1"]}
-	client.PrependReactor("get", "cronjobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+	cl = fake.NewSimpleClientset()
+	cl.Fake.Resources = []*metav1.APIResourceList{fakeResources["v1"]}
+	cl.PrependReactor("get", "cronjobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, nil, errors.New("error getting cronjob")
 	})
 	validate(t, &testCase{
 		Name: "Should return API errors",
 		Opt: &options.Options{
-			Client:    client,
+			Client:    client.NewClient(cl),
 			Namespace: "test",
 		},
 		Args:          []string{"test"},
@@ -177,10 +178,10 @@ func TestValidArgs(t *testing.T) {
 
 	v1mock := mock.CronJobv1("my-cronjob", "test", nil, nil, nil)
 	v1beta1mock := mock.CronJobv1beta1("my-beta-cronjob", "test", nil, nil, nil)
-	client := fake.NewSimpleClientset(v1mock, v1beta1mock)
+	cl := fake.NewSimpleClientset(v1mock, v1beta1mock)
 
 	validate := func(t *testing.T, tc *testCase) {
-		client.Fake.Resources = []*metav1.APIResourceList{
+		cl.Fake.Resources = []*metav1.APIResourceList{
 			{
 				GroupVersion: tc.Group,
 				APIResources: []metav1.APIResource{
@@ -196,7 +197,7 @@ func TestValidArgs(t *testing.T) {
 		})
 	}
 
-	validate(t, &testCase{Name: "Should find v1 cronjobs", Group: "batch/v1", Opt: &options.Options{Client: client, Namespace: "test"}, ExpectedSlice: []string{"my-cronjob"}})
-	validate(t, &testCase{Name: "Should find v1beta1 cronjobs", Group: "batch/v1beta1", Opt: &options.Options{Client: client, Namespace: "test"}, ExpectedSlice: []string{"my-beta-cronjob"}})
-	validate(t, &testCase{Name: "Should not find non-existant groups", Group: "batch/not-a-version", Opt: &options.Options{Client: client, Namespace: "test"}})
+	validate(t, &testCase{Name: "Should find v1 cronjobs", Group: "batch/v1", Opt: &options.Options{Client: client.NewClient(cl), Namespace: "test"}, ExpectedSlice: []string{"my-cronjob"}})
+	validate(t, &testCase{Name: "Should find v1beta1 cronjobs", Group: "batch/v1beta1", Opt: &options.Options{Client: client.NewClient(cl), Namespace: "test"}, ExpectedSlice: []string{"my-beta-cronjob"}})
+	validate(t, &testCase{Name: "Should not find non-existant groups", Group: "batch/not-a-version", Opt: &options.Options{Client: client.NewClient(cl), Namespace: "test"}})
 }

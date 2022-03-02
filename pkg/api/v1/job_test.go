@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/environment"
-	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,7 +17,9 @@ func TestJob(t *testing.T) {
 	type testCase struct {
 		Name string
 
-		Opt *options.Options
+		Client    *client.Client
+		Namespace string
+		Resource  string
 
 		ExpectedResult *environment.Result
 		ExpectedError  error
@@ -25,7 +27,7 @@ func TestJob(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualResult, actualError := Job(tc.Opt)
+			actualResult, actualError := Job(tc.Client, tc.Namespace, tc.Resource)
 
 			assert.Equal(t, tc.ExpectedResult, actualResult)
 			assert.Equal(t, tc.ExpectedError, actualError)
@@ -35,14 +37,12 @@ func TestJob(t *testing.T) {
 	mockv1 := mock.Job("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	mockecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
-	client := fake.NewSimpleClientset(mockv1, mockecret, mockConfigMap)
+	cl := fake.NewSimpleClientset(mockv1, mockecret, mockConfigMap)
 	validate(t, &testCase{
-		Name: "Should return jobs",
-		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-		},
+		Name:      "Should return jobs",
+		Client:    client.NewClient(cl),
+		Namespace: "test",
+		Resource:  "test",
 		ExpectedResult: &environment.Result{
 			Environment: map[string]string{"k": "v"},
 			Secrets:     []string{"test"},
@@ -50,17 +50,15 @@ func TestJob(t *testing.T) {
 		},
 	})
 
-	client = fake.NewSimpleClientset()
-	client.PrependReactor("get", "jobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+	cl = fake.NewSimpleClientset()
+	cl.PrependReactor("get", "jobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, nil, errors.New("error getting job")
 	})
 	validate(t, &testCase{
-		Name: "Should return API errors",
-		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-		},
+		Name:          "Should return API errors",
+		Client:        client.NewClient(cl),
+		Namespace:     "test",
+		Resource:      "test",
 		ExpectedError: errors.New("error getting job"),
 	})
 }
@@ -69,7 +67,8 @@ func TestJobs(t *testing.T) {
 	type testCase struct {
 		Name string
 
-		Opt *options.Options
+		Client    *client.Client
+		Namespace string
 
 		ExpectedSlice []string
 		ExpectedError error
@@ -77,7 +76,7 @@ func TestJobs(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := Jobs(tc.Opt)
+			actualSlice, actualError := Jobs(tc.Client, tc.Namespace)
 
 			assert.Equal(t, tc.ExpectedSlice, actualSlice)
 			assert.Equal(t, tc.ExpectedError, actualError)
@@ -85,28 +84,22 @@ func TestJobs(t *testing.T) {
 	}
 
 	mockv1 := mock.Job("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
-	client := fake.NewSimpleClientset(mockv1)
+	cl := fake.NewSimpleClientset(mockv1)
 	validate(t, &testCase{
-		Name: "Should return jobs",
-		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-		},
+		Name:          "Should return jobs",
+		Client:        client.NewClient(cl),
+		Namespace:     "test",
 		ExpectedSlice: []string{"test"},
 	})
 
-	client = fake.NewSimpleClientset()
-	client.PrependReactor("list", "jobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+	cl = fake.NewSimpleClientset()
+	cl.PrependReactor("list", "jobs", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, nil, errors.New("error getting job list")
 	})
 	validate(t, &testCase{
-		Name: "Should return API errors",
-		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-		},
+		Name:          "Should return API errors",
+		Client:        client.NewClient(cl),
+		Namespace:     "test",
 		ExpectedError: errors.New("error getting job list"),
 	})
 }

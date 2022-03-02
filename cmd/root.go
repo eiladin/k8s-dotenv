@@ -13,17 +13,18 @@ import (
 )
 
 var opt *options.Options = &options.Options{}
-var stdOut bool = false
+var stdOut bool
 
+// Execute creates the `k8s-dotenv` command with version and calls execute
 func Execute(version string, args []string) {
-	newRootCmd(version).Execute(args)
+	newRootCmd(version).execute(args)
 }
 
 type rootCmd struct {
 	cmd *cobra.Command
 }
 
-func (cmd *rootCmd) Execute(args []string) {
+func (cmd *rootCmd) execute(args []string) {
 	cmd.cmd.SetArgs(args)
 
 	if err := cmd.cmd.Execute(); err != nil {
@@ -55,7 +56,7 @@ func newRootCmd(version string) *rootCmd {
 
 	cmd.PersistentFlags().StringVarP(&opt.Namespace, "namespace", "n", "", "Namespace")
 	_ = cmd.RegisterFlagCompletionFunc("namespace", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		list, err := v1.Namespaces(opt)
+		list, err := v1.Namespaces(opt.Client)
 		if err != nil {
 			log.Fatal(err)
 		}

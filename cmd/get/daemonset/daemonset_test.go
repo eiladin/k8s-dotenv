@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/errors/cmd"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
@@ -13,9 +14,9 @@ import (
 )
 
 func TestNewCmd(t *testing.T) {
-	client := fake.NewSimpleClientset(mock.DaemonSet("test", "test", nil, nil, nil))
+	cl := fake.NewSimpleClientset(mock.DaemonSet("test", "test", nil, nil, nil))
 
-	got := NewCmd(&options.Options{Client: client, Namespace: "test"})
+	got := NewCmd(&options.Options{Client: client.NewClient(cl), Namespace: "test"})
 	assert.NotNil(t, got)
 
 	objs, _ := got.ValidArgsFunction(got, []string{}, "")
@@ -54,27 +55,27 @@ func TestRun(t *testing.T) {
 	})
 
 	var b bytes.Buffer
-	client := fake.NewSimpleClientset(mock.DaemonSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
+	cl := fake.NewSimpleClientset(mock.DaemonSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
 	validate(t, &testCase{
 		Name: "Should find daemonsets",
 		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-			Writer:    &b,
+			Client:       client.NewClient(cl),
+			Namespace:    "test",
+			ResourceName: "test",
+			Writer:       &b,
 		},
 		Args: []string{"test"},
 	})
 
 	b.Reset()
-	client = fake.NewSimpleClientset()
+	cl = fake.NewSimpleClientset()
 	validate(t, &testCase{
 		Name: "Should not find a daemonset in an empty cluster",
 		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-			Writer:    &b,
+			Client:       client.NewClient(cl),
+			Namespace:    "test",
+			ResourceName: "test",
+			Writer:       &b,
 		},
 		Args:         []string{"test"},
 		ErrorChecker: errors.IsNotFound,
@@ -101,9 +102,8 @@ func TestValidArgs(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should return daemonsets",
 		Opt: &options.Options{
-			Client:    fake.NewSimpleClientset(),
+			Client:    client.NewClient(fake.NewSimpleClientset()),
 			Namespace: "test",
-			Name:      "test",
 		},
 		ExpectedSlice: []string{},
 	})

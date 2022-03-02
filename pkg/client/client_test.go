@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -139,11 +138,11 @@ func TestCurrentNamespace(t *testing.T) {
 	})
 }
 
-func TestGetApiGroup(t *testing.T) {
+func TestGetAPIGroup(t *testing.T) {
 	type testCase struct {
 		Name string
 
-		Client   kubernetes.Interface
+		Client   Client
 		Resource string
 
 		ExpectedString string
@@ -152,15 +151,15 @@ func TestGetApiGroup(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualString, actualError := GetApiGroup(tc.Client, tc.Resource)
+			actualString, actualError := tc.Client.GetAPIGroup(tc.Resource)
 
 			assert.Equal(t, tc.ExpectedString, actualString)
 			assert.Equal(t, tc.ExpectedError, actualError)
 		})
 	}
 
-	client := fake.NewSimpleClientset(&v1.Job{})
-	client.Fake.Resources = []*metav1.APIResourceList{
+	cl := fake.NewSimpleClientset(&v1.Job{})
+	cl.Fake.Resources = []*metav1.APIResourceList{
 		{
 			GroupVersion: "v1",
 			APIResources: []metav1.APIResource{
@@ -170,21 +169,21 @@ func TestGetApiGroup(t *testing.T) {
 	}
 	validate(t, &testCase{
 		Name:           "Should detect resource group",
-		Client:         client,
+		Client:         Client{NewClient(cl)},
 		Resource:       "Job",
 		ExpectedString: "v1",
 	})
 
-	client = fake.NewSimpleClientset(&v1.Job{})
+	cl = fake.NewSimpleClientset(&v1.Job{})
 	validate(t, &testCase{
 		Name:          "Should error if the resource is not found",
-		Client:        client,
+		Client:        Client{NewClient(cl)},
 		Resource:      "Job",
 		ExpectedError: errors.New("resource Job not found"),
 	})
 
-	client = fake.NewSimpleClientset(&v1.Job{})
-	client.Fake.Resources = []*metav1.APIResourceList{
+	cl = fake.NewSimpleClientset(&v1.Job{})
+	cl.Fake.Resources = []*metav1.APIResourceList{
 		{
 			GroupVersion: "a/b/c",
 			APIResources: []metav1.APIResource{
@@ -194,7 +193,7 @@ func TestGetApiGroup(t *testing.T) {
 	}
 	validate(t, &testCase{
 		Name:          "Should return API errors",
-		Client:        client,
+		Client:        Client{NewClient(cl)},
 		Resource:      "Job",
 		ExpectedError: errors.New("unexpected GroupVersion string: a/b/c"),
 	})

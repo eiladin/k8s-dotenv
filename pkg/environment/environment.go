@@ -3,6 +3,7 @@ package environment
 import (
 	"sort"
 
+	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/configmap"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/parser"
@@ -45,7 +46,7 @@ func FromContainers(containers []v1.Container) *Result {
 	return res
 }
 
-func (r *Result) Output(opt *options.Options) (string, error) {
+func (r *Result) Output(client *client.Client, namespace string, shouldExport bool) (string, error) {
 	res := ""
 	keys := make([]string, 0, len(r.Environment))
 	for k := range r.Environment {
@@ -54,12 +55,12 @@ func (r *Result) Output(opt *options.Options) (string, error) {
 	sort.Strings(keys)
 
 	for _, k := range keys {
-		res += parser.ParseStr(!opt.NoExport, k, r.Environment[k])
+		res += parser.ParseStr(shouldExport, k, r.Environment[k])
 	}
 
 	sort.Strings(r.Secrets)
 	for _, s := range r.Secrets {
-		secretVal, err := secret.Get(opt, s)
+		secretVal, err := secret.Get(client, namespace, s, shouldExport)
 		if err != nil {
 			return "", err
 		}
@@ -68,7 +69,7 @@ func (r *Result) Output(opt *options.Options) (string, error) {
 
 	sort.Strings(r.ConfigMaps)
 	for _, c := range r.ConfigMaps {
-		configmapVal, err := configmap.Get(opt, c)
+		configmapVal, err := configmap.Get(client, namespace, c, shouldExport)
 		if err != nil {
 			return "", err
 		}
@@ -78,7 +79,7 @@ func (r *Result) Output(opt *options.Options) (string, error) {
 }
 
 func (r *Result) Write(opt *options.Options) error {
-	output, err := r.Output(opt)
+	output, err := r.Output(opt.Client, opt.Namespace, !opt.NoExport)
 	if err != nil {
 		return err
 	}

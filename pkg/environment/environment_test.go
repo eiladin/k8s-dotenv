@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,9 @@ func TestResultOutput(t *testing.T) {
 
 		Result *Result
 
-		Opt *options.Options
+		Client       *client.Client
+		Namespace    string
+		ShouldExport bool
 
 		ExpectedString string
 		ErrorChecker   func(err error) bool
@@ -28,7 +31,7 @@ func TestResultOutput(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualString, actualError := tc.Result.Output(tc.Opt)
+			actualString, actualError := tc.Result.Output(tc.Client, tc.Namespace, tc.ShouldExport)
 
 			assert.Equal(t, tc.ExpectedString, actualString)
 			if tc.ErrorChecker != nil {
@@ -40,7 +43,7 @@ func TestResultOutput(t *testing.T) {
 	objs := []runtime.Object{}
 	objs = append(objs, mock.ConfigMap("test", "test", map[string]string{"cm1": "val", "cm2": "val2"}))
 	objs = append(objs, mock.Secret("test", "test", map[string][]byte{"sec1": []byte("val"), "sec2": []byte("val2")}))
-	client := fake.NewSimpleClientset(objs...)
+	cl := fake.NewSimpleClientset(objs...)
 
 	r1 := FromContainers([]v1.Container{mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test"})})
 	r2 := FromContainers([]v1.Container{mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, nil)})
@@ -55,14 +58,14 @@ func TestResultOutput(t *testing.T) {
 	secResult := "##### SECRET - test #####\nsec1=\"val\"\nsec2=\"val2\"\n"
 	cmResult := "##### CONFIGMAP - test #####\ncm1=\"val\"\ncm2=\"val2\"\n"
 
-	validate(t, &testCase{Name: "Should get env configmaps and secrets", Result: r1, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: envResult + secResult + cmResult})
-	validate(t, &testCase{Name: "Should get env and configmaps with no secrets", Result: r2, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: envResult + cmResult})
-	validate(t, &testCase{Name: "Should get env and secrets with no configmaps", Result: r3, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: envResult + secResult})
-	validate(t, &testCase{Name: "Should get env with no secrets or configmaps", Result: r4, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: envResult})
-	validate(t, &testCase{Name: "Should get configmaps with no env or secrets", Result: r5, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: cmResult})
-	validate(t, &testCase{Name: "Should get secrets with no env or configmaps", Result: r6, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ExpectedString: secResult})
-	validate(t, &testCase{Name: "Should error with missing secret", Result: r7, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ErrorChecker: errors.IsNotFound})
-	validate(t, &testCase{Name: "Should error with missing configmap", Result: r8, Opt: &options.Options{Client: client, Namespace: "test", NoExport: true}, ErrorChecker: errors.IsNotFound})
+	validate(t, &testCase{Name: "Should get env configmaps and secrets", Result: r1, Client: client.NewClient(cl), Namespace: "test", ExpectedString: envResult + secResult + cmResult})
+	validate(t, &testCase{Name: "Should get env and configmaps with no secrets", Result: r2, Client: client.NewClient(cl), Namespace: "test", ExpectedString: envResult + cmResult})
+	validate(t, &testCase{Name: "Should get env and secrets with no configmaps", Result: r3, Client: client.NewClient(cl), Namespace: "test", ExpectedString: envResult + secResult})
+	validate(t, &testCase{Name: "Should get env with no secrets or configmaps", Result: r4, Client: client.NewClient(cl), Namespace: "test", ExpectedString: envResult})
+	validate(t, &testCase{Name: "Should get configmaps with no env or secrets", Result: r5, Client: client.NewClient(cl), Namespace: "test", ExpectedString: cmResult})
+	validate(t, &testCase{Name: "Should get secrets with no env or configmaps", Result: r6, Client: client.NewClient(cl), Namespace: "test", ExpectedString: secResult})
+	validate(t, &testCase{Name: "Should error with missing secret", Result: r7, Client: client.NewClient(cl), Namespace: "test", ErrorChecker: errors.IsNotFound})
+	validate(t, &testCase{Name: "Should error with missing configmap", Result: r8, Client: client.NewClient(cl), Namespace: "test", ErrorChecker: errors.IsNotFound})
 }
 
 func TestResultWrite(t *testing.T) {
@@ -97,7 +100,7 @@ func TestResultWrite(t *testing.T) {
 	objs := []runtime.Object{}
 	objs = append(objs, mock.ConfigMap("test", "test", map[string]string{"cm1": "val", "cm2": "val2"}))
 	objs = append(objs, mock.Secret("test", "test", map[string][]byte{"sec1": []byte("val"), "sec2": []byte("val2")}))
-	client := fake.NewSimpleClientset(objs...)
+	cl := fake.NewSimpleClientset(objs...)
 
 	r1 := FromContainers([]v1.Container{mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test"})})
 	r2 := FromContainers([]v1.Container{mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test1"})})
@@ -110,7 +113,7 @@ func TestResultWrite(t *testing.T) {
 	validate(t, &testCase{
 		Name:   "Should work",
 		Result: r1,
-		Opt:    &options.Options{Client: client, Namespace: "test", NoExport: true, Writer: &b},
+		Opt:    &options.Options{Client: client.NewClient(cl), Namespace: "test", NoExport: true, Writer: &b},
 		Reader: func() string {
 			return b.String()
 		},
@@ -121,7 +124,7 @@ func TestResultWrite(t *testing.T) {
 	validate(t, &testCase{
 		Name:   "Should Error with missing secret",
 		Result: r2,
-		Opt:    &options.Options{Client: client, Namespace: "test", NoExport: true, Writer: &b2},
+		Opt:    &options.Options{Client: client.NewClient(cl), Namespace: "test", NoExport: true, Writer: &b2},
 		Reader: func() string {
 			return b2.String()
 		},
@@ -132,7 +135,7 @@ func TestResultWrite(t *testing.T) {
 	validate(t, &testCase{
 		Name:   "Should Error with missing writer",
 		Result: r1,
-		Opt:    &options.Options{Client: client, Namespace: "test"},
+		Opt:    &options.Options{Client: client.NewClient(cl), Namespace: "test"},
 		ErrorChecker: func(err error) bool {
 			return err.Error() == options.ErrNoFilename.Error()
 		},
