@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ReplicaSet returns a mock struct.
 func ReplicaSet(name, namespace string, env map[string]string, configmaps, secrets []string) *appsv1.ReplicaSet {
 	res := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{

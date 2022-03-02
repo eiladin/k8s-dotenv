@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Get returns key/value pairs from a configmap
+// Get returns the export value(s) given a configmap name in a specific namespace
 func Get(client *client.Client, namespace string, resource string, shouldExport bool) (string, error) {
 	resp, err := client.CoreV1().ConfigMaps(namespace).Get(context.TODO(), resource, metav1.GetOptions{})
 	if err != nil {

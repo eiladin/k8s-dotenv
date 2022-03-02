@@ -31,7 +31,7 @@ func TestResultOutput(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualString, actualError := tc.Result.Output(tc.Client, tc.Namespace, tc.ShouldExport)
+			actualString, actualError := tc.Result.output(tc.Client, tc.Namespace, tc.ShouldExport)
 
 			assert.Equal(t, tc.ExpectedString, actualString)
 			if tc.ErrorChecker != nil {

@@ -8,8 +8,10 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/client"
 )
 
+// ErrNoFilename is raised when no filename is provided.
 var ErrNoFilename = errors.New("no filename provided")
 
+// Options contains configuration used to interact with the kubernetes API.
 type Options struct {
 	Client       *client.Client
 	Namespace    string
@@ -19,6 +21,7 @@ type Options struct {
 	Writer       io.Writer
 }
 
+// ResolveNamespace sets the Namespace property of an Options struct.
 func (opt *Options) ResolveNamespace(configPath string) error {
 	ns, err := client.CurrentNamespace(opt.Namespace, configPath)
 	if err != nil {
@@ -28,6 +31,7 @@ func (opt *Options) ResolveNamespace(configPath string) error {
 	return nil
 }
 
+// SetDefaultWriter sets the Writer property of an Options struct.
 func (opt *Options) SetDefaultWriter() error {
 	if opt.Writer != nil {
 		return nil

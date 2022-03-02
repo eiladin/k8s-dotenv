@@ -15,6 +15,7 @@ type Client struct {
 	kubernetes.Interface
 }
 
+// NewClient returns a Client wrapping the given kubernetes.Interface
 func NewClient(cl kubernetes.Interface) *Client {
 	return &Client{cl}
 }

@@ -5,6 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Pod returns a mock struct.
 func Pod(name, namespace string, env map[string]string, configmaps, secrets []string) *corev1.Pod {
 	res := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{

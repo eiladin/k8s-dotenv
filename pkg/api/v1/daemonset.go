@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Daemonset returns a single resource in a given namespace with the given name.
+// DaemonSet returns a single resource in a given namespace with the given name.
 func DaemonSet(client *client.Client, namespace string, resource string) (*environment.Result, error) {
 	resp, err := client.AppsV1().DaemonSets(namespace).Get(context.TODO(), resource, metav1.GetOptions{})
 	if err != nil {

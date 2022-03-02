@@ -5,6 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Secret returns a mock struct.
 func Secret(name string, namespace string, data map[string][]byte) *corev1.Secret {
 	res := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

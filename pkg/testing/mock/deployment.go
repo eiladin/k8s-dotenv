@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Deployment returns a mock struct.
 func Deployment(name, namespace string, env map[string]string, configmaps, secrets []string) *appsv1.Deployment {
 	res := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{

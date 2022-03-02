@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Get returns the export value(s) given a secret name in a specific namespace
 func Get(client *client.Client, namespace string, secret string, shouldExport bool) (string, error) {
 	resp, err := client.CoreV1().Secrets(namespace).Get(context.TODO(), secret, metav1.GetOptions{})
 	if err != nil {

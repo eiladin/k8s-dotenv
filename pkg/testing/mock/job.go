@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Job returns a mock struct.
 func Job(name, namespace string, env map[string]string, configmaps, secrets []string) *batchv1.Job {
 	res := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{

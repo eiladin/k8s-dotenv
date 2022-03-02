@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// DaemonSet returns a mock struct.
 func DaemonSet(name, namespace string, env map[string]string, configmaps, secrets []string) *appsv1.DaemonSet {
 	res := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{

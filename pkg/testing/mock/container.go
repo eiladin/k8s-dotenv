@@ -4,6 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// Container returns a mock struct.
 func Container(env map[string]string, configmaps, secrets []string) corev1.Container {
 	c := corev1.Container{}
 

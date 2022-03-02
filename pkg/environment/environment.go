@@ -11,21 +11,23 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+// Result contains the values of environment variables and names of configmaps and secrets related to a resource.
 type Result struct {
 	Environment map[string]string
 	Secrets     []string
 	ConfigMaps  []string
 }
 
+// NewResult constructor.
 func NewResult() *Result {
 	return &Result{
 		Environment: map[string]string{},
 		Secrets:     []string{},
 		ConfigMaps:  []string{},
 	}
-
 }
 
+// FromContainers creates a result object from a list of containers.
 func FromContainers(containers []v1.Container) *Result {
 	res := NewResult()
 	for _, cont := range containers {
@@ -46,7 +48,7 @@ func FromContainers(containers []v1.Container) *Result {
 	return res
 }
 
-func (r *Result) Output(client *client.Client, namespace string, shouldExport bool) (string, error) {
+func (r *Result) output(client *client.Client, namespace string, shouldExport bool) (string, error) {
 	res := ""
 	keys := make([]string, 0, len(r.Environment))
 	for k := range r.Environment {
@@ -79,7 +81,7 @@ func (r *Result) Output(client *client.Client, namespace string, shouldExport bo
 }
 
 func (r *Result) Write(opt *options.Options) error {
-	output, err := r.Output(opt.Client, opt.Namespace, !opt.NoExport)
+	output, err := r.output(opt.Client, opt.Namespace, !opt.NoExport)
 	if err != nil {
 		return err
 	}

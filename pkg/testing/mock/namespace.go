@@ -5,6 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Namespace returns a mock struct.
 func Namespace(name string) *corev1.Namespace {
 	res := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
