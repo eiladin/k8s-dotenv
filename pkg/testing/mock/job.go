@@ -1,12 +1,13 @@
-package mocks
+package mock
 
 import (
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Pod(name, namespace string, env map[string]string, configmaps, secrets []string) *corev1.Pod {
-	res := &corev1.Pod{
+func Job(name, namespace string, env map[string]string, configmaps, secrets []string) *batchv1.Job {
+	res := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Namespace:   namespace,
@@ -29,6 +30,6 @@ func Pod(name, namespace string, env map[string]string, configmaps, secrets []st
 	}
 
 	containers = append(containers, c)
-	res.Spec.Containers = containers
+	res.Spec.Template.Spec.Containers = containers
 	return res
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -38,18 +38,18 @@ func TestResultOutput(t *testing.T) {
 	}
 
 	objs := []runtime.Object{}
-	objs = append(objs, mocks.ConfigMap("test", "test", map[string]string{"cm1": "val", "cm2": "val2"}))
-	objs = append(objs, mocks.Secret("test", "test", map[string][]byte{"sec1": []byte("val"), "sec2": []byte("val2")}))
+	objs = append(objs, mock.ConfigMap("test", "test", map[string]string{"cm1": "val", "cm2": "val2"}))
+	objs = append(objs, mock.Secret("test", "test", map[string][]byte{"sec1": []byte("val"), "sec2": []byte("val2")}))
 	client := fake.NewSimpleClientset(objs...)
 
-	r1 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test"})})
-	r2 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, nil)})
-	r3 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, nil, []string{"test"})})
-	r4 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, nil, nil)})
-	r5 := FromContainers([]v1.Container{mocks.Container(nil, []string{"test"}, nil)})
-	r6 := FromContainers([]v1.Container{mocks.Container(nil, nil, []string{"test"})})
-	r7 := FromContainers([]v1.Container{mocks.Container(nil, nil, []string{"test1"})})
-	r8 := FromContainers([]v1.Container{mocks.Container(nil, []string{"test1"}, nil)})
+	r1 := FromContainers([]v1.Container{mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test"})})
+	r2 := FromContainers([]v1.Container{mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, nil)})
+	r3 := FromContainers([]v1.Container{mock.Container(map[string]string{"env1": "val", "env2": "val2"}, nil, []string{"test"})})
+	r4 := FromContainers([]v1.Container{mock.Container(map[string]string{"env1": "val", "env2": "val2"}, nil, nil)})
+	r5 := FromContainers([]v1.Container{mock.Container(nil, []string{"test"}, nil)})
+	r6 := FromContainers([]v1.Container{mock.Container(nil, nil, []string{"test"})})
+	r7 := FromContainers([]v1.Container{mock.Container(nil, nil, []string{"test1"})})
+	r8 := FromContainers([]v1.Container{mock.Container(nil, []string{"test1"}, nil)})
 
 	envResult := "env1=\"val\"\nenv2=\"val2\"\n"
 	secResult := "##### SECRET - test #####\nsec1=\"val\"\nsec2=\"val2\"\n"
@@ -95,12 +95,12 @@ func TestResultWrite(t *testing.T) {
 	}
 
 	objs := []runtime.Object{}
-	objs = append(objs, mocks.ConfigMap("test", "test", map[string]string{"cm1": "val", "cm2": "val2"}))
-	objs = append(objs, mocks.Secret("test", "test", map[string][]byte{"sec1": []byte("val"), "sec2": []byte("val2")}))
+	objs = append(objs, mock.ConfigMap("test", "test", map[string]string{"cm1": "val", "cm2": "val2"}))
+	objs = append(objs, mock.Secret("test", "test", map[string][]byte{"sec1": []byte("val"), "sec2": []byte("val2")}))
 	client := fake.NewSimpleClientset(objs...)
 
-	r1 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test"})})
-	r2 := FromContainers([]v1.Container{mocks.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test1"})})
+	r1 := FromContainers([]v1.Container{mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test"})})
+	r2 := FromContainers([]v1.Container{mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test1"})})
 
 	envResult := "env1=\"val\"\nenv2=\"val2\"\n"
 	secResult := "##### SECRET - test #####\nsec1=\"val\"\nsec2=\"val2\"\n"

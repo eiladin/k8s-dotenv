@@ -1,4 +1,4 @@
-package mocks
+package mock
 
 import (
 	batchv1 "k8s.io/api/batch/v1"

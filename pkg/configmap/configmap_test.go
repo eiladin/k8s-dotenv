@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes/fake"
@@ -32,7 +32,7 @@ func TestGet(t *testing.T) {
 		})
 	}
 
-	cm := mocks.ConfigMap("test", "test", map[string]string{"n": "v"})
+	cm := mock.ConfigMap("test", "test", map[string]string{"n": "v"})
 	client := fake.NewSimpleClientset(cm)
 	validate(t, &testCase{Name: "Should find test.test", Configmap: "test", Opt: &options.Options{Client: client, Namespace: "test"}, ExpectedString: "##### CONFIGMAP - test #####\nexport n=\"v\"\n"})
 	validate(t, &testCase{Name: "Should not find test.test1", Configmap: "test1", Opt: &options.Options{Client: client, Namespace: "test"}, ErrorChecker: errors.IsNotFound})

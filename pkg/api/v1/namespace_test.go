@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,14 +32,14 @@ func TestNamespaces(t *testing.T) {
 		})
 	}
 
-	client := fake.NewSimpleClientset(mocks.Namespace("one"))
+	client := fake.NewSimpleClientset(mock.Namespace("one"))
 	validate(t, &testCase{
 		Name:          "Should return a single namespace",
 		Opt:           &options.Options{Client: client},
 		ExpectedSlice: []string{"one"},
 	})
 
-	client = fake.NewSimpleClientset(mocks.Namespace("one"), mocks.Namespace("two"))
+	client = fake.NewSimpleClientset(mock.Namespace("one"), mock.Namespace("two"))
 	validate(t, &testCase{
 		Name:          "Should return multiple namespaces",
 		Opt:           &options.Options{Client: client},

@@ -6,14 +6,14 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/errors/cmd"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestNewCmd(t *testing.T) {
-	client := fake.NewSimpleClientset(mocks.Job("test", "test", nil, nil, nil))
+	client := fake.NewSimpleClientset(mock.Job("test", "test", nil, nil, nil))
 
 	got := NewCmd(&options.Options{Client: client, Namespace: "test"})
 	assert.NotNil(t, got)
@@ -54,7 +54,7 @@ func TestRun(t *testing.T) {
 	})
 
 	var b bytes.Buffer
-	client := fake.NewSimpleClientset(mocks.Job("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
+	client := fake.NewSimpleClientset(mock.Job("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
 	validate(t, &testCase{
 		Name: "Should find jobs",
 		Opt: &options.Options{

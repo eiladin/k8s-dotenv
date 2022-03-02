@@ -6,7 +6,7 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/environment"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -32,10 +32,10 @@ func TestDeployment(t *testing.T) {
 		})
 	}
 
-	mockv1 := mocks.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
-	mockSecret := mocks.Secret("test", "test", map[string][]byte{"k": []byte("v")})
-	mockConfigMap := mocks.ConfigMap("test", "test", map[string]string{"k": "v"})
-	client := fake.NewSimpleClientset(mockv1, mockSecret, mockConfigMap)
+	mockv1 := mock.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
+	mockecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
+	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
+	client := fake.NewSimpleClientset(mockv1, mockecret, mockConfigMap)
 	validate(t, &testCase{
 		Name: "Should return deployments",
 		Opt: &options.Options{
@@ -84,7 +84,7 @@ func TestDeployments(t *testing.T) {
 		})
 	}
 
-	mockv1 := mocks.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
+	mockv1 := mock.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	client := fake.NewSimpleClientset(mockv1)
 	validate(t, &testCase{
 		Name: "Should return deployments",

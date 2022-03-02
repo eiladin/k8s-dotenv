@@ -7,7 +7,7 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/errors/cmd"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -16,7 +16,7 @@ import (
 )
 
 func TestNewCmd(t *testing.T) {
-	v1mock := mocks.CronJobv1("my-cronjob", "test", nil, nil, nil)
+	v1mock := mock.CronJobv1("my-cronjob", "test", nil, nil, nil)
 	client := fake.NewSimpleClientset(v1mock)
 	client.Fake.Resources = []*metav1.APIResourceList{
 		{
@@ -61,8 +61,8 @@ func TestRun(t *testing.T) {
 		})
 	}
 
-	v1mock := mocks.CronJobv1("my-cronjob", "test", map[string]string{"k1": "v1", "k2": "v2"}, nil, nil)
-	v1beta1mock := mocks.CronJobv1beta1("my-beta-cronjob", "test", map[string]string{"k1": "v1", "k2": "v2"}, nil, nil)
+	v1mock := mock.CronJobv1("my-cronjob", "test", map[string]string{"k1": "v1", "k2": "v2"}, nil, nil)
+	v1beta1mock := mock.CronJobv1beta1("my-beta-cronjob", "test", map[string]string{"k1": "v1", "k2": "v2"}, nil, nil)
 	fakeResources := map[string]*metav1.APIResourceList{
 		"invalid": {
 			GroupVersion: "a/b/c",
@@ -175,8 +175,8 @@ func TestValidArgs(t *testing.T) {
 		ExpectedSlice []string
 	}
 
-	v1mock := mocks.CronJobv1("my-cronjob", "test", nil, nil, nil)
-	v1beta1mock := mocks.CronJobv1beta1("my-beta-cronjob", "test", nil, nil, nil)
+	v1mock := mock.CronJobv1("my-cronjob", "test", nil, nil, nil)
+	v1beta1mock := mock.CronJobv1beta1("my-beta-cronjob", "test", nil, nil, nil)
 	client := fake.NewSimpleClientset(v1mock, v1beta1mock)
 
 	validate := func(t *testing.T, tc *testCase) {
