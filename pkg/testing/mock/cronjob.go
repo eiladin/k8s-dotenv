@@ -18,6 +18,7 @@ func CronJobv1beta1(name, namespace string, env map[string]string, configmaps, s
 	}
 
 	res.Spec.JobTemplate.Spec.Template.Spec.Containers = []corev1.Container{Container(env, configmaps, secrets)}
+
 	return res
 }
 
@@ -32,5 +33,6 @@ func CronJobv1(name, namespace string, env map[string]string, configmaps, secret
 	}
 
 	res.Spec.JobTemplate.Spec.Template.Spec.Containers = []corev1.Container{Container(env, configmaps, secrets)}
+
 	return res
 }

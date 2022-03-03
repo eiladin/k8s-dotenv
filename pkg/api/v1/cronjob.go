@@ -12,8 +12,9 @@ import (
 func CronJob(client *client.Client, namespace string, resource string) (*environment.Result, error) {
 	resp, err := client.BatchV1().CronJobs(namespace).Get(context.TODO(), resource, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return nil, NewResourceLoadError(err)
 	}
+
 	return environment.FromContainers(resp.Spec.JobTemplate.Spec.Template.Spec.Containers), nil
 }
 
@@ -23,8 +24,9 @@ func CronJobs(client *client.Client, namespace string) ([]string, error) {
 
 	resp, err := client.BatchV1().CronJobs(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, NewResourceLoadError(err)
 	}
+
 	for _, item := range resp.Items {
 		res = append(res, item.Name)
 	}

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -12,7 +11,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-var defaultNamespaceConfig = `
+const defaultNamespaceConfig = `
 apiVersion: v1
 clusters:
 - cluster:
@@ -33,7 +32,7 @@ users:
     token: not-a-real-token
 `
 
-var devNamespaceConfig = `
+const devNamespaceConfig = `
 apiVersion: v1
 clusters:
 - cluster:
@@ -55,7 +54,7 @@ users:
     token: not-a-real-token
 `
 
-var errorConfig = `
+const errorConfig = `
 	apiVersion: v1
 clusters:
 - cluster:
@@ -108,27 +107,33 @@ func TestCurrentNamespace(t *testing.T) {
 		ExpectedString: "test",
 	})
 
-	err := ioutil.WriteFile("./default.config", []byte(defaultNamespaceConfig), 0644)
+	err := ioutil.WriteFile("./default.config", []byte(defaultNamespaceConfig), 0600)
 	assert.NoError(t, err)
+
 	defer os.Remove("./default.config")
+
 	validate(t, &testCase{
 		Name:           "Should resolve default",
 		ConfigPath:     "default.config",
 		ExpectedString: "default",
 	})
 
-	err = ioutil.WriteFile("./dev.config", []byte(devNamespaceConfig), 0644)
+	err = ioutil.WriteFile("./dev.config", []byte(devNamespaceConfig), 0600)
 	assert.NoError(t, err)
+
 	defer os.Remove("./dev.config")
+
 	validate(t, &testCase{
 		Name:           "Should resolve dev",
 		ConfigPath:     "dev.config",
 		ExpectedString: "dev",
 	})
 
-	err = ioutil.WriteFile("./error.config", []byte(errorConfig), 0644)
+	err = ioutil.WriteFile("./error.config", []byte(errorConfig), 0600)
 	assert.NoError(t, err)
+
 	defer os.Remove("./error.config")
+
 	validate(t, &testCase{
 		Name:       "Should throw an error on invalid config",
 		ConfigPath: "error.config",
@@ -154,7 +159,9 @@ func TestGetAPIGroup(t *testing.T) {
 			actualString, actualError := tc.Client.GetAPIGroup(tc.Resource)
 
 			assert.Equal(t, tc.ExpectedString, actualString)
-			assert.Equal(t, tc.ExpectedError, actualError)
+			if tc.ExpectedError != nil {
+				assert.EqualError(t, actualError, tc.ExpectedError.Error())
+			}
 		})
 	}
 
@@ -167,6 +174,7 @@ func TestGetAPIGroup(t *testing.T) {
 			},
 		},
 	}
+
 	validate(t, &testCase{
 		Name:           "Should detect resource group",
 		Client:         Client{NewClient(cl)},
@@ -175,11 +183,12 @@ func TestGetAPIGroup(t *testing.T) {
 	})
 
 	cl = fake.NewSimpleClientset(&v1.Job{})
+
 	validate(t, &testCase{
 		Name:          "Should error if the resource is not found",
 		Client:        Client{NewClient(cl)},
 		Resource:      "Job",
-		ExpectedError: errors.New("resource Job not found"),
+		ExpectedError: ErrMissingResource,
 	})
 
 	cl = fake.NewSimpleClientset(&v1.Job{})
@@ -191,10 +200,11 @@ func TestGetAPIGroup(t *testing.T) {
 			},
 		},
 	}
+
 	validate(t, &testCase{
 		Name:          "Should return API errors",
 		Client:        Client{NewClient(cl)},
 		Resource:      "Job",
-		ExpectedError: errors.New("unexpected GroupVersion string: a/b/c"),
+		ExpectedError: ErrAPIGroup,
 	})
 }

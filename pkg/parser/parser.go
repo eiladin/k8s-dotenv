@@ -11,7 +11,12 @@ func Parse(shouldExport bool, key string, value []byte) string {
 	if shouldExport {
 		export = "export "
 	}
-	return fmt.Sprintf("%s%s=\"%s\"\n", export, strings.ReplaceAll(key, ".", ""), strings.ReplaceAll(string(value), "\n", "\\n"))
+
+	return fmt.Sprintf("%s%s=\"%s\"\n",
+		export,
+		strings.ReplaceAll(key, ".", ""),
+		strings.ReplaceAll(string(value), "\n", "\\n"),
+	)
 }
 
 // ParseStr builds an export statement given a k/v pair.

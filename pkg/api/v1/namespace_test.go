@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
@@ -33,6 +32,7 @@ func TestNamespaces(t *testing.T) {
 	}
 
 	cl := fake.NewSimpleClientset(mock.Namespace("one"))
+
 	validate(t, &testCase{
 		Name:          "Should return a single namespace",
 		Client:        client.NewClient(cl),
@@ -40,6 +40,7 @@ func TestNamespaces(t *testing.T) {
 	})
 
 	cl = fake.NewSimpleClientset(mock.Namespace("one"), mock.Namespace("two"))
+
 	validate(t, &testCase{
 		Name:          "Should return multiple namespaces",
 		Client:        client.NewClient(cl),
@@ -48,11 +49,12 @@ func TestNamespaces(t *testing.T) {
 
 	cl = fake.NewSimpleClientset()
 	cl.PrependReactor("list", "namespaces", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, &corev1.NamespaceList{}, errors.New("error getting namespaces")
+		return true, &corev1.NamespaceList{}, mock.NewError("error getting namespaces")
 	})
+
 	validate(t, &testCase{
 		Name:          "Should return multiple namespaces",
 		Client:        client.NewClient(cl),
-		ExpectedError: errors.New("error getting namespaces"),
+		ExpectedError: NewResourceLoadError(mock.NewError("error getting namespaces")),
 	})
 }

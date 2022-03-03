@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var defaultNamespaceConfig = `
+const defaultNamespaceConfig = `
 apiVersion: v1
 clusters:
 - cluster:
@@ -30,7 +30,7 @@ users:
     token: not-a-real-token
 `
 
-var devNamespaceConfig = `
+const devNamespaceConfig = `
 apiVersion: v1
 clusters:
 - cluster:
@@ -52,7 +52,7 @@ users:
     token: not-a-real-token
 `
 
-var errorConfig = `
+const errorConfig = `
 	apiVersion: v1
 clusters:
 - cluster:
@@ -109,9 +109,11 @@ func TestOptionsResolveNamespace(t *testing.T) {
 		},
 	})
 
-	err := ioutil.WriteFile("./default.config", []byte(defaultNamespaceConfig), 0644)
+	err := ioutil.WriteFile("./default.config", []byte(defaultNamespaceConfig), 0600)
 	assert.NoError(t, err)
+
 	defer os.Remove("./default.config")
+
 	validate(t, &testCase{
 		Name:       "Should resolve default",
 		Options:    &Options{},
@@ -121,9 +123,11 @@ func TestOptionsResolveNamespace(t *testing.T) {
 		},
 	})
 
-	err = ioutil.WriteFile("./dev.config", []byte(devNamespaceConfig), 0644)
+	err = ioutil.WriteFile("./dev.config", []byte(devNamespaceConfig), 0600)
 	assert.NoError(t, err)
+
 	defer os.Remove("./dev.config")
+
 	validate(t, &testCase{
 		Name:       "Should resolve dev",
 		Options:    &Options{},
@@ -133,9 +137,11 @@ func TestOptionsResolveNamespace(t *testing.T) {
 		},
 	})
 
-	err = ioutil.WriteFile("./error.config", []byte(errorConfig), 0644)
+	err = ioutil.WriteFile("./error.config", []byte(errorConfig), 0600)
 	assert.NoError(t, err)
+
 	defer os.Remove("./error.config")
+
 	validate(t, &testCase{
 		Name:       "Should throw an error on invalid config",
 		Options:    &Options{},
@@ -164,8 +170,22 @@ func TestOptionsSetDefaultWriter(t *testing.T) {
 	}
 
 	var b bytes.Buffer
+
 	defer os.Remove("./out.test")
-	validate(t, &testCase{Name: "Should use the passed in writer", Options: &Options{Writer: &b}})
-	validate(t, &testCase{Name: "Should Error given no filename or writer", Options: &Options{}, ExpectedError: ErrNoFilename})
-	validate(t, &testCase{Name: "Should not error given a filename", Options: &Options{Filename: "./out.test"}})
+
+	validate(t, &testCase{
+		Name:    "Should use the passed in writer",
+		Options: &Options{Writer: &b},
+	})
+
+	validate(t, &testCase{
+		Name:          "Should Error given no filename or writer",
+		Options:       &Options{},
+		ExpectedError: ErrNoFilename,
+	})
+
+	validate(t, &testCase{
+		Name:    "Should not error given a filename",
+		Options: &Options{Filename: "./out.test"},
+	})
 }

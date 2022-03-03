@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
@@ -37,6 +36,7 @@ func TestDaemonSet(t *testing.T) {
 	mockecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	cl := fake.NewSimpleClientset(mockv1, mockecret, mockConfigMap)
+
 	validate(t, &testCase{
 		Name:      "Should return daemonsets",
 		Client:    client.NewClient(cl),
@@ -51,14 +51,15 @@ func TestDaemonSet(t *testing.T) {
 
 	cl = fake.NewSimpleClientset()
 	cl.PrependReactor("get", "daemonsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, nil, errors.New("error getting daemonset")
+		return true, nil, mock.NewError("error getting daemonsets")
 	})
+
 	validate(t, &testCase{
 		Name:          "Should return API errors",
 		Client:        client.NewClient(cl),
 		Namespace:     "test",
 		Resource:      "test",
-		ExpectedError: errors.New("error getting daemonset"),
+		ExpectedError: NewResourceLoadError(mock.NewError("error getting daemonsets")),
 	})
 }
 
@@ -84,6 +85,7 @@ func TestDaemonSets(t *testing.T) {
 
 	mockv1 := mock.DaemonSet("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	cl := fake.NewSimpleClientset(mockv1)
+
 	validate(t, &testCase{
 		Name:          "Should return daemonsets",
 		Client:        client.NewClient(cl),
@@ -93,12 +95,13 @@ func TestDaemonSets(t *testing.T) {
 
 	cl = fake.NewSimpleClientset()
 	cl.PrependReactor("list", "daemonsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, nil, errors.New("error getting daemonset list")
+		return true, nil, mock.NewError("error getting daemonsets")
 	})
+
 	validate(t, &testCase{
 		Name:          "Should return API errors",
 		Client:        client.NewClient(cl),
 		Namespace:     "test",
-		ExpectedError: errors.New("error getting daemonset list"),
+		ExpectedError: NewResourceLoadError(mock.NewError("error getting daemonsets")),
 	})
 }

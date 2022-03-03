@@ -13,5 +13,6 @@ func Namespace(name string) *corev1.Namespace {
 			Annotations: map[string]string{},
 		},
 	}
+
 	return res
 }

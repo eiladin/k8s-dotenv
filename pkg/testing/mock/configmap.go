@@ -14,5 +14,6 @@ func ConfigMap(name string, namespace string, data map[string]string) *corev1.Co
 		},
 		Data: data,
 	}
+
 	return res
 }

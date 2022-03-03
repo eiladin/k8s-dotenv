@@ -14,5 +14,6 @@ func Secret(name string, namespace string, data map[string][]byte) *corev1.Secre
 		},
 		Data: data,
 	}
+
 	return res
 }

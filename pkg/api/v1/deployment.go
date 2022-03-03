@@ -12,8 +12,9 @@ import (
 func Deployment(client *client.Client, namespace string, resource string) (*environment.Result, error) {
 	resp, err := client.AppsV1().Deployments(namespace).Get(context.TODO(), resource, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return nil, NewResourceLoadError(err)
 	}
+
 	return environment.FromContainers(resp.Spec.Template.Spec.Containers), nil
 }
 
@@ -21,12 +22,13 @@ func Deployment(client *client.Client, namespace string, resource string) (*envi
 func Deployments(client *client.Client, namespace string) ([]string, error) {
 	resp, err := client.AppsV1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, NewResourceLoadError(err)
 	}
 
 	res := []string{}
 	for _, item := range resp.Items {
 		res = append(res, item.Name)
 	}
+
 	return res, nil
 }

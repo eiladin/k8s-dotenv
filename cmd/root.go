@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -15,7 +16,7 @@ import (
 var opt *options.Options = &options.Options{}
 var stdOut bool
 
-// Execute creates the `k8s-dotenv` command with version and calls execute
+// Execute creates the `k8s-dotenv` command with version and calls execute.
 func Execute(version string, args []string) {
 	newRootCmd(version).execute(args)
 }
@@ -34,6 +35,7 @@ func (cmd *rootCmd) execute(args []string) {
 
 func newRootCmd(version string) *rootCmd {
 	var root = &rootCmd{}
+
 	var cmd = &cobra.Command{
 		Use:   "k8s-dotenv",
 		Short: "Convert kubernetes secrets or configmaps to .env files",
@@ -49,19 +51,25 @@ func newRootCmd(version string) *rootCmd {
 				opt.Writer = os.Stdout
 			}
 
-			return opt.ResolveNamespace("")
+			if err := opt.ResolveNamespace(""); err != nil {
+				return fmt.Errorf("resolve namespace error: %w", err)
+			}
+
+			return nil
 		},
 		Version: version,
 	}
 
 	cmd.PersistentFlags().StringVarP(&opt.Namespace, "namespace", "n", "", "Namespace")
-	_ = cmd.RegisterFlagCompletionFunc("namespace", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		list, err := v1.Namespaces(opt.Client)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return list, cobra.ShellCompDirectiveDefault
-	})
+	_ = cmd.RegisterFlagCompletionFunc("namespace",
+		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			list, err := v1.Namespaces(opt.Client)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			return list, cobra.ShellCompDirectiveDefault
+		})
 
 	cmd.PersistentFlags().StringVarP(&opt.Filename, "outfile", "o", ".env", "Output file")
 
@@ -75,5 +83,6 @@ func newRootCmd(version string) *rootCmd {
 	)
 
 	root.cmd = cmd
+
 	return root
 }

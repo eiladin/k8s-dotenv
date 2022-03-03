@@ -2,18 +2,24 @@ package v1beta1
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/environment"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func newResourceLoadError(err error) error {
+	return fmt.Errorf("error loading resource: %w", err)
+}
+
 // CronJob returns a single resource in a given namespace with the given name.
 func CronJob(client *client.Client, namespace string, resource string) (*environment.Result, error) {
 	resp, err := client.BatchV1beta1().CronJobs(namespace).Get(context.TODO(), resource, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return nil, newResourceLoadError(err)
 	}
+
 	return environment.FromContainers(resp.Spec.JobTemplate.Spec.Template.Spec.Containers), nil
 }
 
@@ -23,8 +29,9 @@ func CronJobs(client *client.Client, namespace string) ([]string, error) {
 
 	resp, err := client.BatchV1beta1().CronJobs(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, newResourceLoadError(err)
 	}
+
 	for _, item := range resp.Items {
 		res = append(res, item.Name)
 	}

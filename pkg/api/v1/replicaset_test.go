@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
@@ -38,6 +37,7 @@ func TestReplicaSet(t *testing.T) {
 	mockecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	cl := fake.NewSimpleClientset(mockv1, mockecret, mockConfigMap)
+
 	validate(t, &testCase{
 		Name:      "Should return replicasets",
 		Client:    client.NewClient(cl),
@@ -52,14 +52,15 @@ func TestReplicaSet(t *testing.T) {
 
 	cl = fake.NewSimpleClientset()
 	cl.PrependReactor("get", "replicasets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, nil, errors.New("error getting replicaset")
+		return true, nil, mock.NewError("error getting replicasets")
 	})
+
 	validate(t, &testCase{
 		Name:          "Should return API errors",
 		Client:        client.NewClient(cl),
 		Namespace:     "test",
 		Resource:      "test",
-		ExpectedError: errors.New("error getting replicaset"),
+		ExpectedError: NewResourceLoadError(mock.NewError("error getting replicasets")),
 	})
 }
 
@@ -85,6 +86,7 @@ func TestReplicaSets(t *testing.T) {
 
 	mockv1 := mock.ReplicaSet("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	cl := fake.NewSimpleClientset(mockv1)
+
 	validate(t, &testCase{
 		Name:          "Should return replicasets",
 		Client:        client.NewClient(cl),
@@ -94,12 +96,13 @@ func TestReplicaSets(t *testing.T) {
 
 	cl = fake.NewSimpleClientset()
 	cl.PrependReactor("list", "replicasets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, nil, errors.New("error getting replicaset list")
+		return true, nil, mock.NewError("error getting replicasets")
 	})
+
 	validate(t, &testCase{
 		Name:          "Should return API errors",
 		Client:        client.NewClient(cl),
 		Namespace:     "test",
-		ExpectedError: errors.New("error getting replicaset list"),
+		ExpectedError: NewResourceLoadError(mock.NewError("error getting replicasets")),
 	})
 }
