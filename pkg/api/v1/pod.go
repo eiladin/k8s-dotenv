@@ -12,7 +12,7 @@ import (
 func Pod(client *client.Client, namespace string, resource string) (*environment.Result, error) {
 	resp, err := client.CoreV1().Pods(namespace).Get(context.TODO(), resource, metav1.GetOptions{})
 	if err != nil {
-		return nil, NewResourceLoadError(err)
+		return nil, NewResourceLoadError("Pod", err)
 	}
 
 	return environment.FromContainers(resp.Spec.Containers), nil
@@ -22,7 +22,7 @@ func Pod(client *client.Client, namespace string, resource string) (*environment
 func Pods(client *client.Client, namespace string) ([]string, error) {
 	resp, err := client.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, NewResourceLoadError(err)
+		return nil, NewResourceLoadError("Pods", err)
 	}
 
 	res := []string{}

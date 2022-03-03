@@ -5,10 +5,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/resources"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/batch/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 const defaultNamespaceConfig = `
@@ -78,14 +78,11 @@ users:
 
 func TestCurrentNamespace(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Namespace  string
-		ConfigPath string
-
+		Name           string
+		Namespace      string
+		ConfigPath     string
 		ExpectedString string
-		ExpectedError  error
-		ErrorChecker   func(err error) bool
+		ExpectError    bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
@@ -93,10 +90,11 @@ func TestCurrentNamespace(t *testing.T) {
 			actualString, actualError := CurrentNamespace(tc.Namespace, tc.ConfigPath)
 
 			assert.Equal(t, tc.ExpectedString, actualString)
-			if tc.ErrorChecker != nil {
-				assert.True(t, tc.ErrorChecker(actualError))
+
+			if tc.ExpectError {
+				assert.Error(t, actualError)
 			} else {
-				assert.Equal(t, tc.ExpectedError, actualError)
+				assert.NoError(t, actualError)
 			}
 		})
 	}
@@ -135,23 +133,19 @@ func TestCurrentNamespace(t *testing.T) {
 	defer os.Remove("./error.config")
 
 	validate(t, &testCase{
-		Name:       "Should throw an error on invalid config",
-		ConfigPath: "error.config",
-		ErrorChecker: func(err error) bool {
-			return err != nil
-		},
+		Name:        "Should throw an error on invalid config",
+		ConfigPath:  "error.config",
+		ExpectError: true,
 	})
 }
 
 func TestGetAPIGroup(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Client   Client
-		Resource string
-
+		Name           string
+		Client         *Client
+		Resource       string
 		ExpectedString string
-		ExpectedError  error
+		ExpectError    bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
@@ -159,52 +153,39 @@ func TestGetAPIGroup(t *testing.T) {
 			actualString, actualError := tc.Client.GetAPIGroup(tc.Resource)
 
 			assert.Equal(t, tc.ExpectedString, actualString)
-			if tc.ExpectedError != nil {
-				assert.EqualError(t, actualError, tc.ExpectedError.Error())
+
+			if tc.ExpectError {
+				assert.Error(t, actualError)
+			} else {
+				assert.NoError(t, actualError)
 			}
 		})
 	}
 
-	cl := fake.NewSimpleClientset(&v1.Job{})
-	cl.Fake.Resources = []*metav1.APIResourceList{
-		{
-			GroupVersion: "v1",
-			APIResources: []metav1.APIResource{
-				{Name: "Jobs", SingularName: "Job", Kind: "Job", Namespaced: false, Group: "v1"},
-			},
-		},
-	}
+	cl := mock.NewFakeClient(&v1.Job{}).WithResources(resources.Jobv1())
 
 	validate(t, &testCase{
 		Name:           "Should detect resource group",
-		Client:         Client{NewClient(cl)},
+		Client:         NewClient(cl),
 		Resource:       "Job",
 		ExpectedString: "v1",
 	})
 
-	cl = fake.NewSimpleClientset(&v1.Job{})
+	cl = mock.NewFakeClient(&v1.Job{})
 
 	validate(t, &testCase{
-		Name:          "Should error if the resource is not found",
-		Client:        Client{NewClient(cl)},
-		Resource:      "Job",
-		ExpectedError: ErrMissingResource,
+		Name:        "Should error if the resource is not found",
+		Client:      NewClient(cl),
+		Resource:    "Job",
+		ExpectError: true,
 	})
 
-	cl = fake.NewSimpleClientset(&v1.Job{})
-	cl.Fake.Resources = []*metav1.APIResourceList{
-		{
-			GroupVersion: "a/b/c",
-			APIResources: []metav1.APIResource{
-				{Name: "Jobs", SingularName: "Job", Kind: "Job", Namespaced: false, Group: "a/b/c"},
-			},
-		},
-	}
+	cl = mock.NewFakeClient(&v1.Job{}).WithResources(resources.InvalidGroup())
 
 	validate(t, &testCase{
-		Name:          "Should return API errors",
-		Client:        Client{NewClient(cl)},
-		Resource:      "Job",
-		ExpectedError: ErrAPIGroup,
+		Name:        "Should return API errors",
+		Client:      NewClient(cl),
+		Resource:    "Job",
+		ExpectError: true,
 	})
 }

@@ -6,20 +6,17 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestGet(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Client       *client.Client
-		Namespace    string
-		Configmap    string
-		ShouldExport bool
-
+		Name           string
+		Client         *client.Client
+		Namespace      string
+		Configmap      string
 		ExpectedString string
-		ExpectedError  error
+		ShouldExport   bool
+		ExpectError    bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
@@ -27,12 +24,16 @@ func TestGet(t *testing.T) {
 			actualString, actualError := Get(tc.Client, tc.Namespace, tc.Configmap, true)
 
 			assert.Equal(t, tc.ExpectedString, actualString)
-			assert.Equal(t, tc.ExpectedError, actualError)
+			if tc.ExpectError {
+				assert.Error(t, actualError)
+			} else {
+				assert.NoError(t, actualError)
+			}
 		})
 	}
 
 	cm := mock.ConfigMap("test", "test", map[string]string{"n": "v"})
-	cl := fake.NewSimpleClientset(cm)
+	cl := mock.NewFakeClient(cm)
 
 	validate(t, &testCase{
 		Name:           "Should find test.test",
@@ -43,18 +44,18 @@ func TestGet(t *testing.T) {
 	})
 
 	validate(t, &testCase{
-		Name:          "Should not find test.test1",
-		Client:        client.NewClient(cl),
-		Namespace:     "test",
-		Configmap:     "test1",
-		ExpectedError: ErrMissingResource,
+		Name:        "Should not find test.test1",
+		Client:      client.NewClient(cl),
+		Namespace:   "test",
+		Configmap:   "test1",
+		ExpectError: true,
 	})
 
 	validate(t, &testCase{
-		Name:          "Should not find test2.test",
-		Client:        client.NewClient(cl),
-		Namespace:     "test2",
-		Configmap:     "test",
-		ExpectedError: ErrMissingResource,
+		Name:        "Should not find test2.test",
+		Client:      client.NewClient(cl),
+		Namespace:   "test2",
+		Configmap:   "test",
+		ExpectError: true,
 	})
 }

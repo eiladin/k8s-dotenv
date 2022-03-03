@@ -12,14 +12,6 @@ import (
 // ErrNoFilename is returned when no filename is provided.
 var ErrNoFilename = errors.New("no filename provided")
 
-// ErrFileCreate is returned when the output file cannot be created.
-var ErrFileCreate = errors.New("error creating output file")
-
-// NewClientError wraps client errors.
-func NewClientError(err error) error {
-	return fmt.Errorf("client error: %w", err)
-}
-
 // Options contains configuration used to interact with the kubernetes API.
 type Options struct {
 	Client       *client.Client
@@ -34,7 +26,7 @@ type Options struct {
 func (opt *Options) ResolveNamespace(configPath string) error {
 	ns, err := client.CurrentNamespace(opt.Namespace, configPath)
 	if err != nil {
-		return NewClientError(err)
+		return fmt.Errorf("resolve namespace: %w", err)
 	}
 
 	opt.Namespace = ns
@@ -55,7 +47,7 @@ func (opt *Options) SetDefaultWriter() error {
 	f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 
 	if err != nil {
-		return ErrFileCreate
+		return fmt.Errorf("creating output file: %w", err)
 	}
 
 	opt.Writer = f
