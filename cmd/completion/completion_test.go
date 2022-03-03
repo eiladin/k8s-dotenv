@@ -2,13 +2,11 @@ package completion
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
-	"io"
 	"os"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
+	tests "github.com/eiladin/k8s-dotenv/pkg/testing"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,6 +23,7 @@ func TestPreRun(t *testing.T) {
 	assert.Equal(t, os.Stdout, opt.Writer)
 
 	var b bytes.Buffer
+
 	opt = &options.Options{Writer: &b}
 	cmd = NewCmd(opt)
 	cmd.PreRun(cmd, []string{})
@@ -52,35 +51,60 @@ func TestRun(t *testing.T) {
 	}
 
 	var b bytes.Buffer
-	validate(t, &testCase{Name: "Should run", Cmd: NewCmd(&options.Options{Writer: &b}), Args: []string{"zsh"}})
-	validate(t, &testCase{Name: "Should error with too many shell types", Cmd: NewCmd(&options.Options{Writer: &b}), Args: []string{"zsh", "bash"}, ExpectedError: ErrTooManyArguments})
-	validate(t, &testCase{Name: "Should error with no arguments", Cmd: NewCmd(&options.Options{Writer: &b}), ExpectedError: ErrShellNotSpecified})
-	validate(t, &testCase{Name: "Should error with unsupported shell type", Cmd: NewCmd(&options.Options{Writer: &b}), Args: []string{"not-a-shell"}, ExpectedError: fmt.Errorf(ErrUnsupportedShellType, "not-a-shell")})
+
+	validate(t, &testCase{
+		Name: "Should run",
+		Cmd:  NewCmd(&options.Options{Writer: &b}),
+		Args: []string{"zsh"},
+	})
+
+	validate(t, &testCase{
+		Name: "Should error with too many shell types",
+		Cmd:  NewCmd(&options.Options{Writer: &b}),
+		Args: []string{"zsh", "bash"}, ExpectedError: ErrTooManyArguments,
+	})
+
+	validate(t, &testCase{
+		Name:          "Should error with no arguments",
+		Cmd:           NewCmd(&options.Options{Writer: &b}),
+		ExpectedError: ErrShellNotSpecified,
+	})
+
+	validate(t, &testCase{
+		Name:          "Should error with unsupported shell type",
+		Cmd:           NewCmd(&options.Options{Writer: &b}),
+		Args:          []string{"not-a-shell"},
+		ExpectedError: ErrUnsupportedShell,
+	})
 }
 
 func TestCompletionShells(t *testing.T) {
-	for sh, run := range completionShells {
-		testCmd := &cobra.Command{Use: "test"}
+	for sh, run := range completionShells() {
 		var b bytes.Buffer
+
+		var errB bytes.Buffer
+
+		testCmd := &cobra.Command{Use: "test"}
 		err := run(&b, testCmd)
 		assert.NoError(t, err)
 		assert.Contains(t, b.String(), sh)
 
-		var errB bytes.Buffer
-		errW := newErrorWriter(&errB)
+		errorAfter := 0
+
+		if sh == "zsh" {
+			errorAfter = 1
+		}
+
+		errW := tests.NewErrorWriter(&errB).ErrorAfter(errorAfter)
 		err = run(errW, testCmd)
 		assert.Error(t, err)
+
+		errB.Reset()
+
+		errorAfter += 2
+
+		errW2 := tests.NewErrorWriter(&errB).ErrorAfter(errorAfter)
+		err = run(errW2, testCmd)
+		assert.Error(t, err)
 	}
-}
-
-func newErrorWriter(w io.Writer) io.Writer {
-	return &errorWriter{w}
-}
-
-type errorWriter struct {
-	w io.Writer
-}
-
-func (w *errorWriter) Write(p []byte) (int, error) {
-	return 0, errors.New("error")
 }

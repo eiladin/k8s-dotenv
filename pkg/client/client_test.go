@@ -1,7 +1,6 @@
 package client
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -9,11 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-var defaultNamespaceConfig = `
+const defaultNamespaceConfig = `
 apiVersion: v1
 clusters:
 - cluster:
@@ -34,7 +32,7 @@ users:
     token: not-a-real-token
 `
 
-var devNamespaceConfig = `
+const devNamespaceConfig = `
 apiVersion: v1
 clusters:
 - cluster:
@@ -56,7 +54,7 @@ users:
     token: not-a-real-token
 `
 
-var errorConfig = `
+const errorConfig = `
 	apiVersion: v1
 clusters:
 - cluster:
@@ -109,27 +107,33 @@ func TestCurrentNamespace(t *testing.T) {
 		ExpectedString: "test",
 	})
 
-	err := ioutil.WriteFile("./default.config", []byte(defaultNamespaceConfig), 0644)
+	err := ioutil.WriteFile("./default.config", []byte(defaultNamespaceConfig), 0600)
 	assert.NoError(t, err)
+
 	defer os.Remove("./default.config")
+
 	validate(t, &testCase{
 		Name:           "Should resolve default",
 		ConfigPath:     "default.config",
 		ExpectedString: "default",
 	})
 
-	err = ioutil.WriteFile("./dev.config", []byte(devNamespaceConfig), 0644)
+	err = ioutil.WriteFile("./dev.config", []byte(devNamespaceConfig), 0600)
 	assert.NoError(t, err)
+
 	defer os.Remove("./dev.config")
+
 	validate(t, &testCase{
 		Name:           "Should resolve dev",
 		ConfigPath:     "dev.config",
 		ExpectedString: "dev",
 	})
 
-	err = ioutil.WriteFile("./error.config", []byte(errorConfig), 0644)
+	err = ioutil.WriteFile("./error.config", []byte(errorConfig), 0600)
 	assert.NoError(t, err)
+
 	defer os.Remove("./error.config")
+
 	validate(t, &testCase{
 		Name:       "Should throw an error on invalid config",
 		ConfigPath: "error.config",
@@ -139,11 +143,11 @@ func TestCurrentNamespace(t *testing.T) {
 	})
 }
 
-func TestGetApiGroup(t *testing.T) {
+func TestGetAPIGroup(t *testing.T) {
 	type testCase struct {
 		Name string
 
-		Client   kubernetes.Interface
+		Client   Client
 		Resource string
 
 		ExpectedString string
@@ -152,15 +156,17 @@ func TestGetApiGroup(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualString, actualError := GetApiGroup(tc.Client, tc.Resource)
+			actualString, actualError := tc.Client.GetAPIGroup(tc.Resource)
 
 			assert.Equal(t, tc.ExpectedString, actualString)
-			assert.Equal(t, tc.ExpectedError, actualError)
+			if tc.ExpectedError != nil {
+				assert.EqualError(t, actualError, tc.ExpectedError.Error())
+			}
 		})
 	}
 
-	client := fake.NewSimpleClientset(&v1.Job{})
-	client.Fake.Resources = []*metav1.APIResourceList{
+	cl := fake.NewSimpleClientset(&v1.Job{})
+	cl.Fake.Resources = []*metav1.APIResourceList{
 		{
 			GroupVersion: "v1",
 			APIResources: []metav1.APIResource{
@@ -168,23 +174,25 @@ func TestGetApiGroup(t *testing.T) {
 			},
 		},
 	}
+
 	validate(t, &testCase{
 		Name:           "Should detect resource group",
-		Client:         client,
+		Client:         Client{NewClient(cl)},
 		Resource:       "Job",
 		ExpectedString: "v1",
 	})
 
-	client = fake.NewSimpleClientset(&v1.Job{})
+	cl = fake.NewSimpleClientset(&v1.Job{})
+
 	validate(t, &testCase{
 		Name:          "Should error if the resource is not found",
-		Client:        client,
+		Client:        Client{NewClient(cl)},
 		Resource:      "Job",
-		ExpectedError: errors.New("resource Job not found"),
+		ExpectedError: ErrMissingResource,
 	})
 
-	client = fake.NewSimpleClientset(&v1.Job{})
-	client.Fake.Resources = []*metav1.APIResourceList{
+	cl = fake.NewSimpleClientset(&v1.Job{})
+	cl.Fake.Resources = []*metav1.APIResourceList{
 		{
 			GroupVersion: "a/b/c",
 			APIResources: []metav1.APIResource{
@@ -192,10 +200,11 @@ func TestGetApiGroup(t *testing.T) {
 			},
 		},
 	}
+
 	validate(t, &testCase{
 		Name:          "Should return API errors",
-		Client:        client,
+		Client:        Client{NewClient(cl)},
 		Resource:      "Job",
-		ExpectedError: errors.New("unexpected GroupVersion string: a/b/c"),
+		ExpectedError: ErrAPIGroup,
 	})
 }

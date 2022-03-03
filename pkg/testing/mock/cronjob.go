@@ -1,4 +1,4 @@
-package mocks
+package mock
 
 import (
 	batchv1 "k8s.io/api/batch/v1"
@@ -7,6 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// CronJobv1beta1 returns a mock struct.
 func CronJobv1beta1(name, namespace string, env map[string]string, configmaps, secrets []string) *batchv1beta1.CronJob {
 	res := &batchv1beta1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
@@ -17,9 +18,11 @@ func CronJobv1beta1(name, namespace string, env map[string]string, configmaps, s
 	}
 
 	res.Spec.JobTemplate.Spec.Template.Spec.Containers = []corev1.Container{Container(env, configmaps, secrets)}
+
 	return res
 }
 
+// CronJobv1 returns a mock struct.
 func CronJobv1(name, namespace string, env map[string]string, configmaps, secrets []string) *batchv1.CronJob {
 	res := &batchv1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
@@ -30,5 +33,6 @@ func CronJobv1(name, namespace string, env map[string]string, configmaps, secret
 	}
 
 	res.Spec.JobTemplate.Spec.Template.Spec.Containers = []corev1.Container{Container(env, configmaps, secrets)}
+
 	return res
 }

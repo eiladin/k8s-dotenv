@@ -1,4 +1,4 @@
-package mocks
+package mock
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ReplicaSet returns a mock struct.
 func ReplicaSet(name, namespace string, env map[string]string, configmaps, secrets []string) *appsv1.ReplicaSet {
 	res := &appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -23,13 +24,27 @@ func ReplicaSet(name, namespace string, env map[string]string, configmaps, secre
 	}
 
 	for _, cm := range configmaps {
-		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{ConfigMapRef: &corev1.ConfigMapEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: cm}}})
+		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{
+			ConfigMapRef: &corev1.ConfigMapEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: cm,
+				},
+			},
+		})
 	}
+
 	for _, s := range secrets {
-		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{SecretRef: &corev1.SecretEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: s}}})
+		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: s,
+				},
+			},
+		})
 	}
 
 	containers = append(containers, c)
 	res.Spec.Template.Spec.Containers = containers
+
 	return res
 }

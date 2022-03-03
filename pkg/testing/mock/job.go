@@ -1,4 +1,4 @@
-package mocks
+package mock
 
 import (
 	batchv1 "k8s.io/api/batch/v1"
@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Job returns a mock struct.
 func Job(name, namespace string, env map[string]string, configmaps, secrets []string) *batchv1.Job {
 	res := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -23,13 +24,27 @@ func Job(name, namespace string, env map[string]string, configmaps, secrets []st
 	}
 
 	for _, cm := range configmaps {
-		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{ConfigMapRef: &corev1.ConfigMapEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: cm}}})
+		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{
+			ConfigMapRef: &corev1.ConfigMapEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: cm,
+				},
+			},
+		})
 	}
+
 	for _, s := range secrets {
-		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{SecretRef: &corev1.SecretEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: s}}})
+		c.EnvFrom = append(c.EnvFrom, corev1.EnvFromSource{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: s,
+				},
+			},
+		})
 	}
 
 	containers = append(containers, c)
 	res.Spec.Template.Spec.Containers = containers
+
 	return res
 }

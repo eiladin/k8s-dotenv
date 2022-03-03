@@ -3,19 +3,21 @@ package v1
 import (
 	"context"
 
-	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/client"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Namespaces(opt *options.Options) ([]string, error) {
-	namespaces, err := opt.Client.CoreV1().Namespaces().List(context.TODO(), v1.ListOptions{})
+// Namespaces returns a list of namespaces.
+func Namespaces(client *client.Client) ([]string, error) {
+	namespaces, err := client.CoreV1().Namespaces().List(context.TODO(), v1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, NewResourceLoadError(err)
 	}
 
 	res := []string{}
 	for _, ns := range namespaces.Items {
 		res = append(res, ns.Name)
 	}
+
 	return res, nil
 }

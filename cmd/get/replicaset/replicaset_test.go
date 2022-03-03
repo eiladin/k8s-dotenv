@@ -4,25 +4,26 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/errors/cmd"
+	"github.com/eiladin/k8s-dotenv/pkg/client"
+	"github.com/eiladin/k8s-dotenv/pkg/environment"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
+	tests "github.com/eiladin/k8s-dotenv/pkg/testing"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestNewCmd(t *testing.T) {
-	client := fake.NewSimpleClientset(mocks.ReplicaSet("test", "test", nil, nil, nil))
+	cl := fake.NewSimpleClientset(mock.ReplicaSet("test", "test", nil, nil, nil))
 
-	got := NewCmd(&options.Options{Client: client, Namespace: "test"})
+	got := NewCmd(&options.Options{Client: client.NewClient(cl), Namespace: "test"})
 	assert.NotNil(t, got)
 
 	objs, _ := got.ValidArgsFunction(got, []string{}, "")
 	assert.Equal(t, []string{"test"}, objs)
 
 	actualError := got.RunE(got, []string{})
-	assert.Equal(t, cmd.ErrResourceNameRequired, actualError)
+	assert.Equal(t, ErrResourceNameRequired, actualError)
 }
 
 func TestRun(t *testing.T) {
@@ -32,17 +33,22 @@ func TestRun(t *testing.T) {
 		Opt  *options.Options
 		Args []string
 
+		ExpectError   bool
 		ExpectedError error
-		ErrorChecker  func(err error) bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
 			actualError := run(tc.Opt, tc.Args)
 
-			if tc.ErrorChecker != nil {
-				assert.True(t, tc.ErrorChecker(actualError))
-			} else {
+			checkErrNilFn := assert.Nil
+			if tc.ExpectError || tc.ExpectedError != nil {
+				checkErrNilFn = assert.NotNil
+			}
+
+			checkErrNilFn(t, actualError)
+
+			if tc.ExpectedError != nil {
 				assert.Equal(t, tc.ExpectedError, actualError)
 			}
 		})
@@ -50,36 +56,50 @@ func TestRun(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:          "Should error with no args",
-		ExpectedError: cmd.ErrResourceNameRequired,
+		ExpectedError: ErrResourceNameRequired,
 	})
 
 	var b bytes.Buffer
-	client := fake.NewSimpleClientset(mocks.ReplicaSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
+
+	cl := fake.NewSimpleClientset(mock.ReplicaSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
+
 	validate(t, &testCase{
 		Name: "Should find replicasets",
 		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-			Writer:    &b,
+			Client:       client.NewClient(cl),
+			Namespace:    "test",
+			ResourceName: "test",
+			Writer:       &b,
 		},
 		Args: []string{"test"},
 	})
 
+	validate(t, &testCase{
+		Name: "Should return writer errors",
+		Opt: &options.Options{
+			Client:    client.NewClient(cl),
+			Namespace: "test",
+			Writer:    tests.NewErrorWriter(&b).ErrorAfter(1),
+		},
+		Args:          []string{"test"},
+		ExpectedError: newRunError(environment.NewWriteError(mock.NewError("error"))),
+	})
+
 	b.Reset()
-	client = fake.NewSimpleClientset()
+
+	cl = fake.NewSimpleClientset()
+
 	validate(t, &testCase{
 		Name: "Should not find a job in an empty cluster",
 		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-			Writer:    &b,
+			Client:       client.NewClient(cl),
+			Namespace:    "test",
+			ResourceName: "test",
+			Writer:       &b,
 		},
-		Args:         []string{"test"},
-		ErrorChecker: errors.IsNotFound,
+		Args:        []string{"test"},
+		ExpectError: true,
 	})
-
 }
 
 func TestValidArgs(t *testing.T) {
@@ -102,9 +122,8 @@ func TestValidArgs(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should return replicasets",
 		Opt: &options.Options{
-			Client:    fake.NewSimpleClientset(),
+			Client:    client.NewClient(fake.NewSimpleClientset()),
 			Namespace: "test",
-			Name:      "test",
 		},
 		ExpectedSlice: []string{},
 	})

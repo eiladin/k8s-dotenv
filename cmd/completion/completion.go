@@ -10,10 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ErrShellNotSpecified = errors.New("shell not specified")
-var ErrTooManyArguments = errors.New("Too many arguments. Expected only the shell type.")
-var ErrUnsupportedShellType = "Unsupported shell type %q."
-
 const defaultBoilerPlate = `
 # The MIT License (MIT)
 # 
@@ -38,13 +34,13 @@ const defaultBoilerPlate = `
 # THE SOFTWARE.
 `
 
-var (
-	completionLong = `
-Output shell completion code for the specified shell (bash, zsh, fish, or powershell). The shell code must be evaluated to provide interactive
-completion of k8s-dotenv commands.  This can be done by sourcing it from the .bash_profile.
+const completionLong = `
+Output shell completion code for the specified shell (bash, zsh, fish, or powershell). 
+The shell code must be evaluated to provide interactive completion of k8s-dotenv commands. 
+This can be done by sourcing it from the .bash_profile.
   Note for zsh users: zsh completions are only supported in versions of zsh >= 5.2.`
 
-	completionExample = `
+const completionExample = `
 To load completions:
 
 Bash:
@@ -83,20 +79,33 @@ PowerShell:
   # To load completions for every new session, run:
     PS> k8s-dotenv completion powershell > k8s-dotenv.ps1
   # and source this file from your PowerShell profile.`
-)
 
-var (
-	completionShells = map[string]func(out io.Writer, cmd *cobra.Command) error{
+func completionShells() map[string]func(out io.Writer, cmd *cobra.Command) error {
+	return map[string]func(out io.Writer, cmd *cobra.Command) error{
 		"bash":       runCompletionBash,
 		"zsh":        runCompletionZsh,
 		"fish":       runCompletionFish,
 		"powershell": runCompletionPwsh,
 	}
-)
+}
 
+// ErrShellNotSpecified is returned when `completion` is called with no arguments.
+var ErrShellNotSpecified = errors.New("shell not specified")
+
+// ErrTooManyArguments is returned when `completion` is called with more than one argument.
+var ErrTooManyArguments = errors.New("too many arguments. Expected only the shell type")
+
+// ErrUnsupportedShell is returned when the argument is invalid.
+var ErrUnsupportedShell = errors.New("unsupported shell")
+
+func newCompletionGenerationError(err error) error {
+	return fmt.Errorf("completion error: %w", err)
+}
+
+// NewCmd creates the `completion` command.
 func NewCmd(opt *options.Options) *cobra.Command {
 	shells := []string{}
-	for s := range completionShells {
+	for s := range completionShells() {
 		shells = append(shells, s)
 	}
 
@@ -112,7 +121,7 @@ func NewCmd(opt *options.Options) *cobra.Command {
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return RunCompletion(opt, cmd, args)
+			return runCompletion(opt, cmd, args)
 		},
 		ValidArgs: shells,
 	}
@@ -120,16 +129,18 @@ func NewCmd(opt *options.Options) *cobra.Command {
 	return cmd
 }
 
-func RunCompletion(opt *options.Options, cmd *cobra.Command, args []string) error {
+func runCompletion(opt *options.Options, cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return ErrShellNotSpecified
 	}
+
 	if len(args) > 1 {
 		return ErrTooManyArguments
 	}
-	run, found := completionShells[args[0]]
+
+	run, found := completionShells()[args[0]]
 	if !found {
-		return fmt.Errorf(ErrUnsupportedShellType, args[0])
+		return ErrUnsupportedShell
 	}
 
 	return run(opt.Writer, cmd.Parent())
@@ -137,10 +148,14 @@ func RunCompletion(opt *options.Options, cmd *cobra.Command, args []string) erro
 
 func runCompletionBash(out io.Writer, root *cobra.Command) error {
 	if _, err := out.Write([]byte(defaultBoilerPlate)); err != nil {
-		return err
+		return newCompletionGenerationError(err)
 	}
 
-	return root.GenBashCompletionV2(out, true)
+	if err := root.GenBashCompletionV2(out, true); err != nil {
+		return newCompletionGenerationError(err)
+	}
+
+	return nil
 }
 
 func runCompletionZsh(out io.Writer, root *cobra.Command) error {
@@ -148,25 +163,36 @@ func runCompletionZsh(out io.Writer, root *cobra.Command) error {
 	_, _ = out.Write([]byte(zshHead))
 
 	if _, err := out.Write([]byte(defaultBoilerPlate)); err != nil {
-		return err
+		return newCompletionGenerationError(err)
 	}
 
-	return root.GenZshCompletion(out)
+	if err := root.GenZshCompletion(out); err != nil {
+		return newCompletionGenerationError(err)
+	}
+
+	return nil
 }
 
 func runCompletionFish(out io.Writer, root *cobra.Command) error {
 	if _, err := out.Write([]byte(defaultBoilerPlate)); err != nil {
-		return err
+		return newCompletionGenerationError(err)
 	}
 
-	return root.GenFishCompletion(out, true)
+	if err := root.GenFishCompletion(out, true); err != nil {
+		return newCompletionGenerationError(err)
+	}
+
+	return nil
 }
 
 func runCompletionPwsh(out io.Writer, root *cobra.Command) error {
-
 	if _, err := out.Write([]byte(defaultBoilerPlate)); err != nil {
-		return err
+		return newCompletionGenerationError(err)
 	}
 
-	return root.GenPowerShellCompletionWithDesc(out)
+	if err := root.GenPowerShellCompletionWithDesc(out); err != nil {
+		return newCompletionGenerationError(err)
+	}
+
+	return nil
 }

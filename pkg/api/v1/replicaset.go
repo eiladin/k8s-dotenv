@@ -3,28 +3,32 @@ package v1
 import (
 	"context"
 
+	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/environment"
-	"github.com/eiladin/k8s-dotenv/pkg/options"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ReplicaSet(opt *options.Options) (*environment.Result, error) {
-	resp, err := opt.Client.AppsV1().ReplicaSets(opt.Namespace).Get(context.TODO(), opt.Name, metav1.GetOptions{})
+// ReplicaSet returns a single resource in a given namespace with the given name.
+func ReplicaSet(client *client.Client, namespace string, resource string) (*environment.Result, error) {
+	resp, err := client.AppsV1().ReplicaSets(namespace).Get(context.TODO(), resource, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return nil, NewResourceLoadError(err)
 	}
+
 	return environment.FromContainers(resp.Spec.Template.Spec.Containers), nil
 }
 
-func ReplicaSets(opt *options.Options) ([]string, error) {
-	resp, err := opt.Client.AppsV1().ReplicaSets(opt.Namespace).List(context.TODO(), metav1.ListOptions{})
+// ReplicaSets returns a list of resources in a given namespace.
+func ReplicaSets(client *client.Client, namespace string) ([]string, error) {
+	resp, err := client.AppsV1().ReplicaSets(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, NewResourceLoadError(err)
 	}
 
 	res := []string{}
 	for _, item := range resp.Items {
 		res = append(res, item.Name)
 	}
+
 	return res, nil
 }

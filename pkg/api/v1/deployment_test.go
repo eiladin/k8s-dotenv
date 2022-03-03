@@ -1,12 +1,11 @@
 package v1
 
 import (
-	"errors"
 	"testing"
 
+	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/environment"
-	"github.com/eiladin/k8s-dotenv/pkg/options"
-	"github.com/eiladin/k8s-dotenv/pkg/testing/mocks"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -17,7 +16,9 @@ func TestDeployment(t *testing.T) {
 	type testCase struct {
 		Name string
 
-		Opt *options.Options
+		Client    *client.Client
+		Namespace string
+		Resource  string
 
 		ExpectedResult *environment.Result
 		ExpectedError  error
@@ -25,24 +26,23 @@ func TestDeployment(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualResult, actualError := Deployment(tc.Opt)
+			actualResult, actualError := Deployment(tc.Client, tc.Namespace, tc.Resource)
 
 			assert.Equal(t, tc.ExpectedResult, actualResult)
 			assert.Equal(t, tc.ExpectedError, actualError)
 		})
 	}
 
-	mockv1 := mocks.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
-	mockSecret := mocks.Secret("test", "test", map[string][]byte{"k": []byte("v")})
-	mockConfigMap := mocks.ConfigMap("test", "test", map[string]string{"k": "v"})
-	client := fake.NewSimpleClientset(mockv1, mockSecret, mockConfigMap)
+	mockv1 := mock.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
+	mockecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
+	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
+	cl := fake.NewSimpleClientset(mockv1, mockecret, mockConfigMap)
+
 	validate(t, &testCase{
-		Name: "Should return deployments",
-		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-		},
+		Name:      "Should return deployments",
+		Client:    client.NewClient(cl),
+		Namespace: "test",
+		Resource:  "test",
 		ExpectedResult: &environment.Result{
 			Environment: map[string]string{"k": "v"},
 			Secrets:     []string{"test"},
@@ -50,18 +50,17 @@ func TestDeployment(t *testing.T) {
 		},
 	})
 
-	client = fake.NewSimpleClientset()
-	client.PrependReactor("get", "deployments", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, nil, errors.New("error getting deployment")
+	cl = fake.NewSimpleClientset()
+	cl.PrependReactor("get", "deployments", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, mock.NewError("error getting deployments")
 	})
+
 	validate(t, &testCase{
-		Name: "Should return API errors",
-		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-		},
-		ExpectedError: errors.New("error getting deployment"),
+		Name:          "Should return API errors",
+		Client:        client.NewClient(cl),
+		Namespace:     "test",
+		Resource:      "test",
+		ExpectedError: NewResourceLoadError(mock.NewError("error getting deployments")),
 	})
 }
 
@@ -69,7 +68,8 @@ func TestDeployments(t *testing.T) {
 	type testCase struct {
 		Name string
 
-		Opt *options.Options
+		Client    *client.Client
+		Namespace string
 
 		ExpectedSlice []string
 		ExpectedError error
@@ -77,36 +77,32 @@ func TestDeployments(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := Deployments(tc.Opt)
+			actualSlice, actualError := Deployments(tc.Client, tc.Namespace)
 
 			assert.Equal(t, tc.ExpectedSlice, actualSlice)
 			assert.Equal(t, tc.ExpectedError, actualError)
 		})
 	}
 
-	mockv1 := mocks.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
-	client := fake.NewSimpleClientset(mockv1)
+	mockv1 := mock.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
+	cl := fake.NewSimpleClientset(mockv1)
+
 	validate(t, &testCase{
-		Name: "Should return deployments",
-		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-		},
+		Name:          "Should return deployments",
+		Client:        client.NewClient(cl),
+		Namespace:     "test",
 		ExpectedSlice: []string{"test"},
 	})
 
-	client = fake.NewSimpleClientset()
-	client.PrependReactor("list", "deployments", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, nil, errors.New("error getting deployment list")
+	cl = fake.NewSimpleClientset()
+	cl.PrependReactor("list", "deployments", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, mock.NewError("error getting deployments")
 	})
+
 	validate(t, &testCase{
-		Name: "Should return API errors",
-		Opt: &options.Options{
-			Client:    client,
-			Namespace: "test",
-			Name:      "test",
-		},
-		ExpectedError: errors.New("error getting deployment list"),
+		Name:          "Should return API errors",
+		Client:        client.NewClient(cl),
+		Namespace:     "test",
+		ExpectedError: NewResourceLoadError(mock.NewError("error getting deployments")),
 	})
 }

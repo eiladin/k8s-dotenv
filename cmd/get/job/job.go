@@ -1,12 +1,22 @@
 package job
 
 import (
+	"errors"
+	"fmt"
+
 	v1 "github.com/eiladin/k8s-dotenv/pkg/api/v1"
-	"github.com/eiladin/k8s-dotenv/pkg/errors/cmd"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
 
+// ErrResourceNameRequired is returned when no resource name is provided.
+var ErrResourceNameRequired = errors.New("resource name required")
+
+func newRunError(err error) error {
+	return fmt.Errorf("job error: %w", err)
+}
+
+// NewCmd creates the `job` command.
 func NewCmd(opt *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "job RESOURCE_NAME",
@@ -24,20 +34,24 @@ func NewCmd(opt *options.Options) *cobra.Command {
 }
 
 func validArgs(opt *options.Options) []string {
-	list, _ := v1.Jobs(opt)
+	list, _ := v1.Jobs(opt.Client, opt.Namespace)
+
 	return list
 }
 
 func run(opt *options.Options, args []string) error {
 	if len(args) == 0 {
-		return cmd.ErrResourceNameRequired
+		return ErrResourceNameRequired
 	}
 
-	opt.Name = args[0]
-	res, err := v1.Job(opt)
+	res, err := v1.Job(opt.Client, opt.Namespace, args[0])
 	if err != nil {
-		return err
+		return newRunError(err)
 	}
 
-	return res.Write(opt)
+	if err := res.Write(opt); err != nil {
+		return newRunError(err)
+	}
+
+	return nil
 }
