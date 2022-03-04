@@ -1,20 +1,16 @@
 package deployment
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"github.com/eiladin/k8s-dotenv/pkg/environment"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	tests "github.com/eiladin/k8s-dotenv/pkg/testing"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestNewCmd(t *testing.T) {
-	cl := fake.NewSimpleClientset(mock.Deployment("test", "test", nil, nil, nil))
+	cl := mock.NewFakeClient(mock.Deployment("test", "test", nil, nil, nil))
 
 	got := NewCmd(&options.Options{Client: client.NewClient(cl), Namespace: "test"})
 	assert.NotNil(t, got)
@@ -28,49 +24,37 @@ func TestNewCmd(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Opt  *options.Options
-		Args []string
-
-		ExpectedError error
-		ExpectError   bool
-		ErrorChecker  func(err error) bool
+		Name        string
+		Opt         *options.Options
+		Args        []string
+		ExpectError bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
 			actualError := run(tc.Opt, tc.Args)
 
-			checkErrNilFn := assert.Nil
-			if tc.ExpectError || tc.ExpectedError != nil {
-				checkErrNilFn = assert.NotNil
-			}
-
-			checkErrNilFn(t, actualError)
-
-			if tc.ExpectedError != nil {
-				assert.Equal(t, tc.ExpectedError, actualError)
+			if tc.ExpectError {
+				assert.Error(t, actualError)
+			} else {
+				assert.NoError(t, actualError)
 			}
 		})
 	}
 
 	validate(t, &testCase{
-		Name:          "Should error with no args",
-		ExpectedError: ErrResourceNameRequired,
+		Name:        "Should error with no args",
+		ExpectError: true,
 	})
 
-	var b bytes.Buffer
-
-	cl := fake.NewSimpleClientset(mock.Deployment("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
+	cl := mock.NewFakeClient(mock.Deployment("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
 
 	validate(t, &testCase{
 		Name: "Should find deployments",
 		Opt: &options.Options{
-			Client:       client.NewClient(cl),
-			Namespace:    "test",
-			ResourceName: "test",
-			Writer:       &b,
+			Client:    client.NewClient(cl),
+			Namespace: "test",
+			Writer:    mock.NewWriter(),
 		},
 		Args: []string{"test"},
 	})
@@ -80,23 +64,18 @@ func TestRun(t *testing.T) {
 		Opt: &options.Options{
 			Client:    client.NewClient(cl),
 			Namespace: "test",
-			Writer:    tests.NewErrorWriter(&b).ErrorAfter(1),
+			Writer:    mock.NewErrorWriter().ErrorAfter(1),
 		},
-		Args:          []string{"test"},
-		ExpectedError: newRunError(environment.NewWriteError(mock.NewError("error"))),
+		Args:        []string{"test"},
+		ExpectError: true,
 	})
-
-	b.Reset()
-
-	cl = fake.NewSimpleClientset()
 
 	validate(t, &testCase{
 		Name: "Should not find a deployment in an empty cluster",
 		Opt: &options.Options{
-			Client:       client.NewClient(cl),
-			Namespace:    "test",
-			ResourceName: "test",
-			Writer:       &b,
+			Client:    client.NewClient(mock.NewFakeClient()),
+			Namespace: "test",
+			Writer:    mock.NewWriter(),
 		},
 		Args:        []string{"test"},
 		ExpectError: true,
@@ -105,10 +84,8 @@ func TestRun(t *testing.T) {
 
 func TestValidArgs(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Opt *options.Options
-
+		Name          string
+		Opt           *options.Options
 		ExpectedSlice []string
 	}
 
@@ -120,12 +97,14 @@ func TestValidArgs(t *testing.T) {
 		})
 	}
 
+	cl := mock.NewFakeClient(mock.Deployment("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
+
 	validate(t, &testCase{
 		Name: "Should return deployments",
 		Opt: &options.Options{
-			Client:    client.NewClient(fake.NewSimpleClientset()),
+			Client:    client.NewClient(cl),
 			Namespace: "test",
 		},
-		ExpectedSlice: []string{},
+		ExpectedSlice: []string{"test"},
 	})
 }

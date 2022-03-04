@@ -1,20 +1,16 @@
 package daemonset
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"github.com/eiladin/k8s-dotenv/pkg/environment"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	tests "github.com/eiladin/k8s-dotenv/pkg/testing"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestNewCmd(t *testing.T) {
-	cl := fake.NewSimpleClientset(mock.DaemonSet("test", "test", nil, nil, nil))
+	cl := mock.NewFakeClient(mock.DaemonSet("test", "test", nil, nil, nil))
 
 	got := NewCmd(&options.Options{Client: client.NewClient(cl), Namespace: "test"})
 	assert.NotNil(t, got)
@@ -28,48 +24,34 @@ func TestNewCmd(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Opt  *options.Options
-		Args []string
-
-		ExpectedError error
-		ExpectError   bool
+		Name        string
+		Opt         *options.Options
+		Args        []string
+		ExpectError bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
 			actualError := run(tc.Opt, tc.Args)
 
-			checkErrNilFn := assert.Nil
-			if tc.ExpectError || tc.ExpectedError != nil {
-				checkErrNilFn = assert.NotNil
-			}
-
-			checkErrNilFn(t, actualError)
-
-			if tc.ExpectedError != nil {
-				assert.Equal(t, tc.ExpectedError, actualError)
+			if tc.ExpectError {
+				assert.Error(t, actualError)
+			} else {
+				assert.NoError(t, actualError)
 			}
 		})
 	}
 
 	validate(t, &testCase{
-		Name:          "Should error with no args",
-		ExpectedError: ErrResourceNameRequired,
+		Name:        "Should error with no args",
+		ExpectError: true,
 	})
 
-	var b bytes.Buffer
-
-	cl := fake.NewSimpleClientset(mock.DaemonSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
+	cl := mock.NewFakeClient(mock.DaemonSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
 
 	validate(t, &testCase{
 		Name: "Should find daemonsets",
-		Opt: &options.Options{
-			Client:    client.NewClient(cl),
-			Namespace: "test",
-			Writer:    &b,
-		},
+		Opt:  &options.Options{Client: client.NewClient(cl), Namespace: "test", Writer: mock.NewWriter()},
 		Args: []string{"test"},
 	})
 
@@ -78,22 +60,18 @@ func TestRun(t *testing.T) {
 		Opt: &options.Options{
 			Client:    client.NewClient(cl),
 			Namespace: "test",
-			Writer:    tests.NewErrorWriter(&b).ErrorAfter(1),
+			Writer:    mock.NewErrorWriter().ErrorAfter(1),
 		},
-		Args:          []string{"test"},
-		ExpectedError: newRunError(environment.NewWriteError(mock.NewError("error"))),
+		Args:        []string{"test"},
+		ExpectError: true,
 	})
-
-	b.Reset()
-
-	cl = fake.NewSimpleClientset()
 
 	validate(t, &testCase{
 		Name: "Should not find a daemonset in an empty cluster",
 		Opt: &options.Options{
-			Client:    client.NewClient(cl),
+			Client:    client.NewClient(mock.NewFakeClient()),
 			Namespace: "test",
-			Writer:    &b,
+			Writer:    mock.NewWriter(),
 		},
 		Args:        []string{"test"},
 		ExpectError: true,
@@ -120,7 +98,7 @@ func TestValidArgs(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should return daemonsets",
 		Opt: &options.Options{
-			Client:    client.NewClient(fake.NewSimpleClientset()),
+			Client:    client.NewClient(mock.NewFakeClient()),
 			Namespace: "test",
 		},
 		ExpectedSlice: []string{},

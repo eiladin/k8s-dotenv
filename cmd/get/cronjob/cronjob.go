@@ -14,7 +14,7 @@ import (
 // ErrResourceNameRequired is returned when no resource name is provided.
 var ErrResourceNameRequired = errors.New("resource name required")
 
-// ErrUnsupportedGroup is returned when a group/resource combination is invalid
+// ErrUnsupportedGroup is returned when a group/resource combination is invalid.
 var ErrUnsupportedGroup = errors.New("group/resource not supported")
 
 func newClientError(err error) error {

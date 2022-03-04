@@ -1,12 +1,11 @@
 package completion
 
 import (
-	"bytes"
 	"os"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	tests "github.com/eiladin/k8s-dotenv/pkg/testing"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,22 +21,18 @@ func TestPreRun(t *testing.T) {
 	cmd.PreRun(cmd, []string{})
 	assert.Equal(t, os.Stdout, opt.Writer)
 
-	var b bytes.Buffer
-
-	opt = &options.Options{Writer: &b}
+	opt = &options.Options{Writer: mock.NewWriter()}
 	cmd = NewCmd(opt)
 	cmd.PreRun(cmd, []string{})
-	assert.Equal(t, &b, opt.Writer)
+	assert.Equal(t, mock.NewWriter(), opt.Writer)
 }
 
 func TestRun(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Cmd  *cobra.Command
-		Args []string
-
-		ExpectedError error
+		Name        string
+		Cmd         *cobra.Command
+		Args        []string
+		ExpectError bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
@@ -46,48 +41,48 @@ func TestRun(t *testing.T) {
 			parentCmd.AddCommand(tc.Cmd)
 			actualError := tc.Cmd.RunE(tc.Cmd, tc.Args)
 
-			assert.Equal(t, tc.ExpectedError, actualError)
+			if tc.ExpectError {
+				assert.Error(t, actualError)
+			} else {
+				assert.NoError(t, actualError)
+			}
 		})
 	}
 
-	var b bytes.Buffer
-
 	validate(t, &testCase{
 		Name: "Should run",
-		Cmd:  NewCmd(&options.Options{Writer: &b}),
+		Cmd:  NewCmd(&options.Options{Writer: mock.NewWriter()}),
 		Args: []string{"zsh"},
 	})
 
 	validate(t, &testCase{
-		Name: "Should error with too many shell types",
-		Cmd:  NewCmd(&options.Options{Writer: &b}),
-		Args: []string{"zsh", "bash"}, ExpectedError: ErrTooManyArguments,
+		Name:        "Should error with too many shell types",
+		Cmd:         NewCmd(&options.Options{Writer: mock.NewWriter()}),
+		Args:        []string{"zsh", "bash"},
+		ExpectError: true,
 	})
 
 	validate(t, &testCase{
-		Name:          "Should error with no arguments",
-		Cmd:           NewCmd(&options.Options{Writer: &b}),
-		ExpectedError: ErrShellNotSpecified,
+		Name:        "Should error with no arguments",
+		Cmd:         NewCmd(&options.Options{Writer: mock.NewWriter()}),
+		ExpectError: true,
 	})
 
 	validate(t, &testCase{
-		Name:          "Should error with unsupported shell type",
-		Cmd:           NewCmd(&options.Options{Writer: &b}),
-		Args:          []string{"not-a-shell"},
-		ExpectedError: ErrUnsupportedShell,
+		Name:        "Should error with unsupported shell type",
+		Cmd:         NewCmd(&options.Options{Writer: mock.NewWriter()}),
+		Args:        []string{"not-a-shell"},
+		ExpectError: true,
 	})
 }
 
 func TestCompletionShells(t *testing.T) {
 	for sh, run := range completionShells() {
-		var b bytes.Buffer
-
-		var errB bytes.Buffer
-
 		testCmd := &cobra.Command{Use: "test"}
-		err := run(&b, testCmd)
+		wr := mock.NewWriter()
+		err := run(wr, testCmd)
 		assert.NoError(t, err)
-		assert.Contains(t, b.String(), sh)
+		assert.Contains(t, wr.String(), sh)
 
 		errorAfter := 0
 
@@ -95,15 +90,12 @@ func TestCompletionShells(t *testing.T) {
 			errorAfter = 1
 		}
 
-		errW := tests.NewErrorWriter(&errB).ErrorAfter(errorAfter)
+		errW := mock.NewErrorWriter().ErrorAfter(errorAfter)
 		err = run(errW, testCmd)
 		assert.Error(t, err)
 
-		errB.Reset()
-
 		errorAfter += 2
-
-		errW2 := tests.NewErrorWriter(&errB).ErrorAfter(errorAfter)
+		errW2 := mock.NewErrorWriter().ErrorAfter(errorAfter)
 		err = run(errW2, testCmd)
 		assert.Error(t, err)
 	}

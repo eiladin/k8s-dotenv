@@ -13,7 +13,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+//nolint
 var opt *options.Options = &options.Options{}
+
+//nolint
 var stdOut bool
 
 // Execute creates the `k8s-dotenv` command with version and calls execute.
@@ -44,6 +47,7 @@ func newRootCmd(version string) *rootCmd {
 			log.SetFlags(0)
 			cs, err := client.Get()
 			if err != nil {
+				//nolint
 				return err
 			}
 			opt.Client = cs

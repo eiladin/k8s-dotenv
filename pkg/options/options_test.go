@@ -154,18 +154,20 @@ func TestOptionsResolveNamespace(t *testing.T) {
 
 func TestOptionsSetDefaultWriter(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Options *Options
-
-		ExpectedError error
+		Name        string
+		Options     *Options
+		ExpectError bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
 			actualError := tc.Options.SetDefaultWriter()
 
-			assert.Equal(t, tc.ExpectedError, actualError)
+			if tc.ExpectError {
+				assert.Error(t, actualError)
+			} else {
+				assert.NoError(t, actualError)
+			}
 		})
 	}
 
@@ -179,9 +181,9 @@ func TestOptionsSetDefaultWriter(t *testing.T) {
 	})
 
 	validate(t, &testCase{
-		Name:          "Should Error given no filename or writer",
-		Options:       &Options{},
-		ExpectedError: ErrNoFilename,
+		Name:        "Should Error given no filename or writer",
+		Options:     &Options{},
+		ExpectError: true,
 	})
 
 	validate(t, &testCase{

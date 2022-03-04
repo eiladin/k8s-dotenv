@@ -12,7 +12,7 @@ import (
 func DaemonSet(client *client.Client, namespace string, resource string) (*environment.Result, error) {
 	resp, err := client.AppsV1().DaemonSets(namespace).Get(context.TODO(), resource, metav1.GetOptions{})
 	if err != nil {
-		return nil, NewResourceLoadError(err)
+		return nil, NewResourceLoadError("DaemonSet", err)
 	}
 
 	return environment.FromContainers(resp.Spec.Template.Spec.Containers), nil
@@ -22,7 +22,7 @@ func DaemonSet(client *client.Client, namespace string, resource string) (*envir
 func DaemonSets(client *client.Client, namespace string) ([]string, error) {
 	resp, err := client.AppsV1().DaemonSets(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, NewResourceLoadError(err)
+		return nil, NewResourceLoadError("DaemonSets", err)
 	}
 
 	res := []string{}

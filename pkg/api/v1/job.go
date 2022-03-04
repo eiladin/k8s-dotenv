@@ -12,7 +12,7 @@ import (
 func Job(client *client.Client, namespace string, resource string) (*environment.Result, error) {
 	resp, err := client.BatchV1().Jobs(namespace).Get(context.TODO(), resource, metav1.GetOptions{})
 	if err != nil {
-		return nil, NewResourceLoadError(err)
+		return nil, NewResourceLoadError("Job", err)
 	}
 
 	return environment.FromContainers(resp.Spec.Template.Spec.Containers), nil
@@ -22,7 +22,7 @@ func Job(client *client.Client, namespace string, resource string) (*environment
 func Jobs(client *client.Client, namespace string) ([]string, error) {
 	resp, err := client.BatchV1().Jobs(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, NewResourceLoadError(err)
+		return nil, NewResourceLoadError("Jobs", err)
 	}
 
 	res := []string{}

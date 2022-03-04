@@ -9,24 +9,19 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/configmap"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/secret"
-	tests "github.com/eiladin/k8s-dotenv/pkg/testing"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestResultOutput(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Result *Result
-
-		Client       *client.Client
-		Namespace    string
-		ShouldExport bool
-
+		Name           string
+		Result         *Result
+		Client         *client.Client
+		Namespace      string
+		ShouldExport   bool
 		ExpectedString string
 		ErrorChecker   func(err error) bool
 	}
@@ -45,7 +40,7 @@ func TestResultOutput(t *testing.T) {
 	objs := []runtime.Object{}
 	objs = append(objs, mock.ConfigMap("test", "test", map[string]string{"cm1": "val", "cm2": "val2"}))
 	objs = append(objs, mock.Secret("test", "test", map[string][]byte{"sec1": []byte("val"), "sec2": []byte("val2")}))
-	cl := fake.NewSimpleClientset(objs...)
+	cl := mock.NewFakeClient(objs...)
 	envMap := map[string]string{"env1": "val", "env2": "val2"}
 
 	r1 := FromContainers([]v1.Container{mock.Container(envMap, []string{"test"}, []string{"test"})})
@@ -132,14 +127,12 @@ func TestResultOutput(t *testing.T) {
 
 func TestResultWrite(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Result *Result
-		Opt    *options.Options
-		Reader func() string
-
+		Name           string
+		Result         *Result
+		Opt            *options.Options
+		Reader         func() string
 		ExpectedResult string
-		ErrorChecker   func(err error) bool
+		ExpectError    bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
@@ -150,8 +143,10 @@ func TestResultWrite(t *testing.T) {
 				assert.Equal(t, tc.ExpectedResult, tc.Reader())
 			}
 
-			if tc.ErrorChecker != nil {
-				assert.True(t, tc.ErrorChecker(actualError))
+			if tc.ExpectError {
+				assert.Error(t, actualError)
+			} else {
+				assert.NoError(t, actualError)
 			}
 		})
 	}
@@ -159,7 +154,7 @@ func TestResultWrite(t *testing.T) {
 	objs := []runtime.Object{}
 	objs = append(objs, mock.ConfigMap("test", "test", map[string]string{"cm1": "val", "cm2": "val2"}))
 	objs = append(objs, mock.Secret("test", "test", map[string][]byte{"sec1": []byte("val"), "sec2": []byte("val2")}))
-	cl := fake.NewSimpleClientset(objs...)
+	cl := mock.NewFakeClient(objs...)
 	envMap := map[string]string{"env1": "val", "env2": "val2"}
 
 	r1 := FromContainers([]v1.Container{mock.Container(envMap, []string{"test"}, []string{"test"})})
@@ -182,23 +177,19 @@ func TestResultWrite(t *testing.T) {
 	var b2 bytes.Buffer
 
 	validate(t, &testCase{
-		Name:   "Should Error with missing secret",
-		Result: r2,
-		Opt:    &options.Options{Client: client.NewClient(cl), Namespace: "test", NoExport: true, Writer: &b2},
-		Reader: b2.String,
-		ErrorChecker: func(err error) bool {
-			return assert.ErrorIs(t, err, secret.ErrMissingResource)
-		},
+		Name:        "Should Error with missing secret",
+		Result:      r2,
+		Opt:         &options.Options{Client: client.NewClient(cl), Namespace: "test", NoExport: true, Writer: &b2},
+		Reader:      b2.String,
+		ExpectError: true,
 	})
 
 	defer os.Remove("./test.out")
 	validate(t, &testCase{
-		Name:   "Should Error with missing writer",
-		Result: r1,
-		Opt:    &options.Options{Client: client.NewClient(cl), Namespace: "test"},
-		ErrorChecker: func(err error) bool {
-			return assert.ErrorIs(t, err, err, options.ErrNoFilename)
-		},
+		Name:        "Should Error with missing writer",
+		Result:      r1,
+		Opt:         &options.Options{Client: client.NewClient(cl), Namespace: "test"},
+		ExpectError: true,
 	})
 
 	validate(t, &testCase{
@@ -207,10 +198,8 @@ func TestResultWrite(t *testing.T) {
 		Opt: &options.Options{
 			Client:    client.NewClient(cl),
 			Namespace: "test",
-			Writer:    tests.NewErrorWriter(&b2).ErrorAfter(1),
+			Writer:    mock.NewErrorWriter().ErrorAfter(1),
 		},
-		ErrorChecker: func(err error) bool {
-			return assert.Equal(t, NewWriteError(mock.NewError("error")), err)
-		},
+		ExpectError: true,
 	})
 }

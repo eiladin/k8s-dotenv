@@ -27,7 +27,7 @@ func NewOptionsError(err error) error {
 	return fmt.Errorf("options error: %w", err)
 }
 
-// NewWriteError wraps writer errors
+// NewWriteError wraps writer errors.
 func NewWriteError(err error) error {
 	return fmt.Errorf("write error: %w", err)
 }
