@@ -5,7 +5,6 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	tests "github.com/eiladin/k8s-dotenv/pkg/testing"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -55,7 +54,7 @@ func TestRun(t *testing.T) {
 		Opt: &options.Options{
 			Client:    client.NewClient(cl),
 			Namespace: "test",
-			Writer:    tests.NewWriter(),
+			Writer:    mock.NewWriter(),
 		},
 		Args: []string{"test"},
 	})
@@ -65,7 +64,7 @@ func TestRun(t *testing.T) {
 		Opt: &options.Options{
 			Client:    client.NewClient(cl),
 			Namespace: "test",
-			Writer:    tests.NewErrorWriter().ErrorAfter(1),
+			Writer:    mock.NewErrorWriter().ErrorAfter(1),
 		},
 		Args:        []string{"test"},
 		ExpectError: true,
@@ -76,7 +75,7 @@ func TestRun(t *testing.T) {
 		Opt: &options.Options{
 			Client:    client.NewClient(mock.NewFakeClient()),
 			Namespace: "test",
-			Writer:    tests.NewWriter(),
+			Writer:    mock.NewWriter(),
 		},
 		Args:        []string{"test"},
 		ExpectError: true,

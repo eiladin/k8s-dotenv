@@ -44,6 +44,7 @@ func (opt *Options) SetDefaultWriter() error {
 		return ErrNoFilename
 	}
 
+	//nolint
 	f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 
 	if err != nil {

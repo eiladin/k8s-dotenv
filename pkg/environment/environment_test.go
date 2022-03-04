@@ -9,7 +9,6 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/configmap"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/secret"
-	tests "github.com/eiladin/k8s-dotenv/pkg/testing"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -199,7 +198,7 @@ func TestResultWrite(t *testing.T) {
 		Opt: &options.Options{
 			Client:    client.NewClient(cl),
 			Namespace: "test",
-			Writer:    tests.NewErrorWriter().ErrorAfter(1),
+			Writer:    mock.NewErrorWriter().ErrorAfter(1),
 		},
 		ExpectError: true,
 	})

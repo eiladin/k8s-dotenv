@@ -6,16 +6,14 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-	tests "github.com/eiladin/k8s-dotenv/pkg/testing"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	"github.com/eiladin/k8s-dotenv/pkg/testing/resources"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNewCmd(t *testing.T) {
 	v1mock := mock.CronJobv1("my-cronjob", "test", nil, nil, nil)
-	cl := mock.NewFakeClient(v1mock).WithResources(resources.CronJobv1())
+	cl := mock.NewFakeClient(v1mock).WithResources(mock.CronJobv1Resource())
 
 	got := NewCmd(&options.Options{Client: client.NewClient(cl), Namespace: "test"})
 	assert.NotNil(t, got)
@@ -60,7 +58,7 @@ func TestRun(t *testing.T) {
 		ExpectError: true,
 	})
 
-	cl := mock.NewFakeClient().WithResources(resources.InvalidGroup())
+	cl := mock.NewFakeClient().WithResources(mock.InvalidGroupResource())
 
 	validate(t, &testCase{
 		Name:        "Should return client errors",
@@ -71,7 +69,7 @@ func TestRun(t *testing.T) {
 
 	var b bytes.Buffer
 
-	cl = mock.NewFakeClient(v1mock).WithResources(resources.CronJobv1())
+	cl = mock.NewFakeClient(v1mock).WithResources(mock.CronJobv1Resource())
 
 	validate(t, &testCase{
 		Name: "Should write v1 CronJobs",
@@ -86,7 +84,7 @@ func TestRun(t *testing.T) {
 		},
 	})
 
-	cl = mock.NewFakeClient(v1beta1mock).WithResources(resources.CronJobv1beta1())
+	cl = mock.NewFakeClient(v1beta1mock).WithResources(mock.CronJobv1beta1Resource())
 
 	b.Reset()
 
@@ -108,13 +106,13 @@ func TestRun(t *testing.T) {
 		Opt: &options.Options{
 			Client:    client.NewClient(cl),
 			Namespace: "test",
-			Writer:    tests.NewErrorWriter().ErrorAfter(1),
+			Writer:    mock.NewErrorWriter().ErrorAfter(1),
 		},
 		Args:        []string{"my-beta-cronjob"},
 		ExpectError: true,
 	})
 
-	cl = mock.NewFakeClient().WithResources(resources.UnsupportedGroup())
+	cl = mock.NewFakeClient().WithResources(mock.UnsupportedGroupResource())
 
 	b.Reset()
 
@@ -130,7 +128,7 @@ func TestRun(t *testing.T) {
 	})
 
 	cl = mock.NewFakeClient().
-		WithResources(resources.CronJobv1()).
+		WithResources(mock.CronJobv1Resource()).
 		PrependReactor("get", "cronjobs", true, nil, assert.AnError)
 
 	validate(t, &testCase{
@@ -170,7 +168,7 @@ func TestValidArgs(t *testing.T) {
 		Name:          "Should find v1 cronjobs",
 		Group:         "batch/v1",
 		Opt:           &options.Options{Client: client.NewClient(cl), Namespace: "test"},
-		APIResource:   resources.CronJobv1(),
+		APIResource:   mock.CronJobv1Resource(),
 		ExpectedSlice: []string{"my-cronjob"},
 	})
 
@@ -178,14 +176,14 @@ func TestValidArgs(t *testing.T) {
 		Name:          "Should find v1beta1 cronjobs",
 		Group:         "batch/v1beta1",
 		Opt:           &options.Options{Client: client.NewClient(cl), Namespace: "test"},
-		APIResource:   resources.CronJobv1beta1(),
+		APIResource:   mock.CronJobv1beta1Resource(),
 		ExpectedSlice: []string{"my-beta-cronjob"},
 	})
 
 	validate(t, &testCase{
 		Name:        "Should not find non-existent groups",
 		Group:       "batch/not-a-version",
-		APIResource: resources.InvalidGroup(),
+		APIResource: mock.InvalidGroupResource(),
 		Opt:         &options.Options{Client: client.NewClient(cl), Namespace: "test"},
 	})
 }

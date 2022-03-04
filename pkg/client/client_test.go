@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	"github.com/eiladin/k8s-dotenv/pkg/testing/resources"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/batch/v1"
 )
@@ -162,7 +161,7 @@ func TestGetAPIGroup(t *testing.T) {
 		})
 	}
 
-	cl := mock.NewFakeClient(&v1.Job{}).WithResources(resources.Jobv1())
+	cl := mock.NewFakeClient(&v1.Job{}).WithResources(mock.Jobv1Resource())
 
 	validate(t, &testCase{
 		Name:           "Should detect resource group",
@@ -180,7 +179,7 @@ func TestGetAPIGroup(t *testing.T) {
 		ExpectError: true,
 	})
 
-	cl = mock.NewFakeClient(&v1.Job{}).WithResources(resources.InvalidGroup())
+	cl = mock.NewFakeClient(&v1.Job{}).WithResources(mock.InvalidGroupResource())
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
