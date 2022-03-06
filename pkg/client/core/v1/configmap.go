@@ -1,22 +1,17 @@
-package configmap
+package corev1
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 
-	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/parser"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ErrMissingResource is returned when the configmap is not found.
-var ErrMissingResource = errors.New("configmap not found")
-
 // Get returns the export value(s) given a configmap name in a specific namespace.
-func Get(client *client.Client, namespace string, resource string, shouldExport bool) (string, error) {
-	resp, err := client.CoreV1().ConfigMaps(namespace).Get(context.TODO(), resource, metav1.GetOptions{})
+func (client *CoreV1) ConfigMapV1(resource string, shouldExport bool) (string, error) {
+	resp, err := client.ConfigMaps(client.namespace).Get(context.TODO(), resource, metav1.GetOptions{})
 	if err != nil {
 		return "", ErrMissingResource
 	}

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	v1 "github.com/eiladin/k8s-dotenv/pkg/api/v1"
+	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
@@ -34,7 +34,10 @@ func NewCmd(opt *options.Options) *cobra.Command {
 }
 
 func validArgs(opt *options.Options) []string {
-	list, _ := v1.Pods(opt.Client, opt.Namespace)
+	list, _ := client.NewClient(
+		opt.Client,
+		client.WithNamespace(opt.Namespace),
+	).PodsV1()
 
 	return list
 }
@@ -44,12 +47,15 @@ func run(opt *options.Options, args []string) error {
 		return ErrResourceNameRequired
 	}
 
-	res, err := v1.Pod(opt.Client, opt.Namespace, args[0])
-	if err != nil {
-		return newRunError(err)
-	}
+	err := client.NewClient(
+		opt.Client,
+		client.WithNamespace(opt.Namespace),
+		client.WithFilename(opt.Filename),
+		client.WithWriter(opt.Writer),
+		client.WithExport(!opt.NoExport),
+	).PodV1(args[0]).Write()
 
-	if err := res.Write(opt); err != nil {
+	if err != nil {
 		return newRunError(err)
 	}
 

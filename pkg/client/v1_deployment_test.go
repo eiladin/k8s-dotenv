@@ -1,82 +1,76 @@
-package v1
+package client
 
 import (
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"github.com/eiladin/k8s-dotenv/pkg/environment"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDeployment(t *testing.T) {
+func TestClientDeploymentV1(t *testing.T) {
 	type testCase struct {
 		Name           string
-		Client         *client.Client
-		Namespace      string
+		Client         *Client
 		Resource       string
-		ExpectedResult *environment.Result
+		ExpectedResult *Result
 		ExpectError    bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualResult, actualError := Deployment(tc.Client, tc.Namespace, tc.Resource)
+			actualClient := tc.Client.DeploymentV1(tc.Resource)
 
-			assert.Equal(t, tc.ExpectedResult, actualResult)
+			assert.Equal(t, tc.ExpectedResult, actualClient.result)
 
 			if tc.ExpectError {
-				assert.Error(t, actualError)
+				assert.Error(t, tc.Client.Error)
 			} else {
-				assert.NoError(t, actualError)
+				assert.NoError(t, tc.Client.Error)
 			}
 		})
 	}
 
 	mockv1 := mock.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
-	mockecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
+	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
-	cl := mock.NewFakeClient(mockv1, mockecret, mockConfigMap)
+	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
+	client := NewClient(kubeClient, WithNamespace("test"))
 
 	validate(t, &testCase{
-		Name:      "Should return deployments",
-		Client:    client.NewClient(cl),
-		Namespace: "test",
-		Resource:  "test",
-		ExpectedResult: &environment.Result{
+		Name:     "Should return deployments",
+		Client:   client,
+		Resource: "test",
+		ExpectedResult: &Result{
 			Environment: map[string]string{"k": "v"},
 			Secrets:     []string{"test"},
 			ConfigMaps:  []string{"test"},
 		},
 	})
 
-	cl = mock.NewFakeClient().
-		PrependReactor("get", "deployments", true, nil, assert.AnError)
+	kubeClient.PrependReactor("get", "deployments", true, nil, assert.AnError)
+	client = NewClient(kubeClient, WithNamespace("test"))
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
-		Client:      client.NewClient(cl),
-		Namespace:   "test",
+		Client:      client,
 		Resource:    "test",
 		ExpectError: true,
 	})
 }
 
-func TestDeployments(t *testing.T) {
+func TestClientDeploymentsV1(t *testing.T) {
 	type testCase struct {
 		Name          string
-		Client        *client.Client
-		Namespace     string
+		Client        *Client
 		ExpectedSlice []string
 		ExpectError   bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := Deployments(tc.Client, tc.Namespace)
+			actualSlice, actualError := tc.Client.DeploymentsV1()
 
 			assert.Equal(t, tc.ExpectedSlice, actualSlice)
-
 			if tc.ExpectError {
 				assert.Error(t, actualError)
 			} else {
@@ -86,22 +80,21 @@ func TestDeployments(t *testing.T) {
 	}
 
 	mockv1 := mock.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
-	cl := mock.NewFakeClient(mockv1)
+	kubeClient := mock.NewFakeClient(mockv1)
+	client := NewClient(kubeClient, WithNamespace("test"))
 
 	validate(t, &testCase{
 		Name:          "Should return deployments",
-		Client:        client.NewClient(cl),
-		Namespace:     "test",
+		Client:        client,
 		ExpectedSlice: []string{"test"},
 	})
 
-	cl = mock.NewFakeClient().
-		PrependReactor("list", "deployments", true, nil, assert.AnError)
+	kubeClient.PrependReactor("list", "deployments", true, nil, assert.AnError)
+	client = NewClient(kubeClient, WithNamespace("test"))
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
-		Client:      client.NewClient(cl),
-		Namespace:   "test",
+		Client:      client,
 		ExpectError: true,
 	})
 }

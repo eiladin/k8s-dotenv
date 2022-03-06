@@ -1,7 +1,6 @@
 package options
 
 import (
-	"bytes"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -76,14 +75,10 @@ users:
 
 func TestOptionsResolveNamespace(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Options *Options
-
-		ConfigPath string
-
+		Name         string
+		Options      *Options
+		ConfigPath   string
 		ErrorChecker func(err error) bool
-
 		ValueChecker func(opt *Options) bool
 	}
 
@@ -149,45 +144,5 @@ func TestOptionsResolveNamespace(t *testing.T) {
 		ErrorChecker: func(err error) bool {
 			return err != nil
 		},
-	})
-}
-
-func TestOptionsSetDefaultWriter(t *testing.T) {
-	type testCase struct {
-		Name        string
-		Options     *Options
-		ExpectError bool
-	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualError := tc.Options.SetDefaultWriter()
-
-			if tc.ExpectError {
-				assert.Error(t, actualError)
-			} else {
-				assert.NoError(t, actualError)
-			}
-		})
-	}
-
-	var b bytes.Buffer
-
-	defer os.Remove("./out.test")
-
-	validate(t, &testCase{
-		Name:    "Should use the passed in writer",
-		Options: &Options{Writer: &b},
-	})
-
-	validate(t, &testCase{
-		Name:        "Should Error given no filename or writer",
-		Options:     &Options{},
-		ExpectError: true,
-	})
-
-	validate(t, &testCase{
-		Name:    "Should not error given a filename",
-		Options: &Options{Filename: "./out.test"},
 	})
 }

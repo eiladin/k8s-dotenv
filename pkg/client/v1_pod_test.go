@@ -1,82 +1,76 @@
-package v1
+package client
 
 import (
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"github.com/eiladin/k8s-dotenv/pkg/environment"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPod(t *testing.T) {
+func TestClientPodV1(t *testing.T) {
 	type testCase struct {
 		Name           string
-		Client         *client.Client
-		Namespace      string
+		Client         *Client
 		Resource       string
-		ExpectedResult *environment.Result
+		ExpectedResult *Result
 		ExpectError    bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualResult, actualError := Pod(tc.Client, tc.Namespace, tc.Resource)
+			actualClient := tc.Client.PodV1(tc.Resource)
 
-			assert.Equal(t, tc.ExpectedResult, actualResult)
+			assert.Equal(t, tc.ExpectedResult, actualClient.result)
 
 			if tc.ExpectError {
-				assert.Error(t, actualError)
+				assert.Error(t, tc.Client.Error)
 			} else {
-				assert.NoError(t, actualError)
+				assert.NoError(t, tc.Client.Error)
 			}
 		})
 	}
 
 	mockv1 := mock.Pod("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
-	mockecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
+	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
-	cl := mock.NewFakeClient(mockv1, mockecret, mockConfigMap)
+	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
+	client := NewClient(kubeClient, WithNamespace("test"))
 
 	validate(t, &testCase{
-		Name:      "Should return pods",
-		Client:    client.NewClient(cl),
-		Namespace: "test",
-		Resource:  "test",
-		ExpectedResult: &environment.Result{
+		Name:     "Should return pods",
+		Client:   client,
+		Resource: "test",
+		ExpectedResult: &Result{
 			Environment: map[string]string{"k": "v"},
 			Secrets:     []string{"test"},
 			ConfigMaps:  []string{"test"},
 		},
 	})
 
-	cl = mock.NewFakeClient().
-		PrependReactor("get", "pods", true, nil, assert.AnError)
+	kubeClient.PrependReactor("get", "pods", true, nil, assert.AnError)
+	client = NewClient(kubeClient, WithNamespace("test"))
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
-		Client:      client.NewClient(cl),
-		Namespace:   "test",
+		Client:      client,
 		Resource:    "test",
 		ExpectError: true,
 	})
 }
 
-func TestPods(t *testing.T) {
+func TestClientPodsV1(t *testing.T) {
 	type testCase struct {
 		Name          string
-		Client        *client.Client
-		Namespace     string
+		Client        *Client
 		ExpectedSlice []string
 		ExpectError   bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := Pods(tc.Client, tc.Namespace)
+			actualSlice, actualError := tc.Client.PodsV1()
 
 			assert.Equal(t, tc.ExpectedSlice, actualSlice)
-
 			if tc.ExpectError {
 				assert.Error(t, actualError)
 			} else {
@@ -86,22 +80,21 @@ func TestPods(t *testing.T) {
 	}
 
 	mockv1 := mock.Pod("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
-	cl := mock.NewFakeClient(mockv1)
+	kubeClient := mock.NewFakeClient(mockv1)
+	client := NewClient(kubeClient, WithNamespace("test"))
 
 	validate(t, &testCase{
 		Name:          "Should return pods",
-		Client:        client.NewClient(cl),
-		Namespace:     "test",
+		Client:        client,
 		ExpectedSlice: []string{"test"},
 	})
 
-	cl = mock.NewFakeClient().
-		PrependReactor("list", "pods", true, nil, assert.AnError)
+	kubeClient.PrependReactor("list", "pods", true, nil, assert.AnError)
+	client = NewClient(kubeClient, WithNamespace("test"))
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
-		Client:      client.NewClient(cl),
-		Namespace:   "test",
+		Client:      client,
 		ExpectError: true,
 	})
 }

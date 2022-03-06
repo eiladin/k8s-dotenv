@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +14,7 @@ func TestNewCmd(t *testing.T) {
 	v1mock := mock.CronJobv1("my-cronjob", "test", nil, nil, nil)
 	cl := mock.NewFakeClient(v1mock).WithResources(mock.CronJobv1Resource())
 
-	got := NewCmd(&options.Options{Client: client.NewClient(cl), Namespace: "test"})
+	got := NewCmd(&options.Options{Client: cl, Namespace: "test"})
 	assert.NotNil(t, got)
 
 	cronjobs, _ := got.ValidArgsFunction(got, []string{}, "")
@@ -62,7 +61,7 @@ func TestRun(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:        "Should return client errors",
-		Opt:         &options.Options{Client: client.NewClient(cl)},
+		Opt:         &options.Options{Client: cl},
 		Args:        []string{"test"},
 		ExpectError: true,
 	})
@@ -74,7 +73,7 @@ func TestRun(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should write v1 CronJobs",
 		Opt: &options.Options{
-			Client:    client.NewClient(cl),
+			Client:    cl,
 			Namespace: "test",
 			Writer:    &b,
 		},
@@ -91,7 +90,7 @@ func TestRun(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should write v1beta1 CronJobs",
 		Opt: &options.Options{
-			Client:    client.NewClient(cl),
+			Client:    cl,
 			Namespace: "test",
 			Writer:    &b,
 		},
@@ -104,7 +103,7 @@ func TestRun(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should return writer errors",
 		Opt: &options.Options{
-			Client:    client.NewClient(cl),
+			Client:    cl,
 			Namespace: "test",
 			Writer:    mock.NewErrorWriter().ErrorAfter(1),
 		},
@@ -119,7 +118,7 @@ func TestRun(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should error on unsupported group",
 		Opt: &options.Options{
-			Client:    client.NewClient(cl),
+			Client:    cl,
 			Namespace: "test",
 			Writer:    &b,
 		},
@@ -134,7 +133,7 @@ func TestRun(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should return API errors",
 		Opt: &options.Options{
-			Client:    client.NewClient(cl),
+			Client:    cl,
 			Namespace: "test",
 		},
 		Args:        []string{"test"},
@@ -167,7 +166,7 @@ func TestValidArgs(t *testing.T) {
 	validate(t, &testCase{
 		Name:          "Should find v1 cronjobs",
 		Group:         "batch/v1",
-		Opt:           &options.Options{Client: client.NewClient(cl), Namespace: "test"},
+		Opt:           &options.Options{Client: cl, Namespace: "test"},
 		APIResource:   mock.CronJobv1Resource(),
 		ExpectedSlice: []string{"my-cronjob"},
 	})
@@ -175,7 +174,7 @@ func TestValidArgs(t *testing.T) {
 	validate(t, &testCase{
 		Name:          "Should find v1beta1 cronjobs",
 		Group:         "batch/v1beta1",
-		Opt:           &options.Options{Client: client.NewClient(cl), Namespace: "test"},
+		Opt:           &options.Options{Client: cl, Namespace: "test"},
 		APIResource:   mock.CronJobv1beta1Resource(),
 		ExpectedSlice: []string{"my-beta-cronjob"},
 	})
@@ -184,6 +183,6 @@ func TestValidArgs(t *testing.T) {
 		Name:        "Should not find non-existent groups",
 		Group:       "batch/not-a-version",
 		APIResource: mock.InvalidGroupResource(),
-		Opt:         &options.Options{Client: client.NewClient(cl), Namespace: "test"},
+		Opt:         &options.Options{Client: cl, Namespace: "test"},
 	})
 }

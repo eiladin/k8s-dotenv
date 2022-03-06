@@ -1,36 +1,11 @@
-package environment
+package client
 
 import (
-	"fmt"
 	"sort"
 
-	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"github.com/eiladin/k8s-dotenv/pkg/configmap"
-	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/parser"
-	"github.com/eiladin/k8s-dotenv/pkg/secret"
 	v1 "k8s.io/api/core/v1"
 )
-
-// NewSecretErr wraps secret errors.
-func NewSecretErr(err error) error {
-	return fmt.Errorf("secret error: %w", err)
-}
-
-// NewConfigMapError wraps config map errors.
-func NewConfigMapError(err error) error {
-	return fmt.Errorf("configmap error: %w", err)
-}
-
-// NewOptionsError wraps options errors.
-func NewOptionsError(err error) error {
-	return fmt.Errorf("options error: %w", err)
-}
-
-// NewWriteError wraps writer errors.
-func NewWriteError(err error) error {
-	return fmt.Errorf("write error: %w", err)
-}
 
 // Result contains the values of environment variables and names of configmaps and secrets related to a resource.
 type Result struct {
@@ -48,8 +23,7 @@ func NewResult() *Result {
 	}
 }
 
-// FromContainers creates a result object from a list of containers.
-func FromContainers(containers []v1.Container) *Result {
+func resultFromContainers(containers []v1.Container) *Result {
 	res := NewResult()
 
 	for _, cont := range containers {
@@ -71,7 +45,7 @@ func FromContainers(containers []v1.Container) *Result {
 	return res
 }
 
-func (r *Result) output(client *client.Client, namespace string, shouldExport bool) (string, error) {
+func (r *Result) output(client *Client) (string, error) {
 	res := ""
 	keys := make([]string, 0, len(r.Environment))
 
@@ -84,11 +58,11 @@ func (r *Result) output(client *client.Client, namespace string, shouldExport bo
 	sort.Strings(r.ConfigMaps)
 
 	for _, k := range keys {
-		res += parser.ParseStr(shouldExport, k, r.Environment[k])
+		res += parser.ParseStr(client.shouldExport, k, r.Environment[k])
 	}
 
 	for _, s := range r.Secrets {
-		secretVal, err := secret.Get(client, namespace, s, shouldExport)
+		secretVal, err := client.CoreV1().Secret(s, client.shouldExport)
 		if err != nil {
 			return "", NewSecretErr(err)
 		}
@@ -97,7 +71,7 @@ func (r *Result) output(client *client.Client, namespace string, shouldExport bo
 	}
 
 	for _, c := range r.ConfigMaps {
-		configmapVal, err := configmap.Get(client, namespace, c, shouldExport)
+		configmapVal, err := client.CoreV1().ConfigMapV1(c, client.shouldExport)
 		if err != nil {
 			return "", NewConfigMapError(err)
 		}
@@ -108,18 +82,22 @@ func (r *Result) output(client *client.Client, namespace string, shouldExport bo
 	return res, nil
 }
 
-func (r *Result) Write(opt *options.Options) error {
-	output, err := r.output(opt.Client, opt.Namespace, !opt.NoExport)
+func (client *Client) Write() error {
+	if client.Error != nil {
+		return client.Error
+	}
+
+	output, err := client.result.output(client)
 	if err != nil {
 		return err
 	}
 
-	err = opt.SetDefaultWriter()
+	err = client.setDefaultWriter()
 	if err != nil {
-		return NewOptionsError(err)
+		return NewWriteError(err)
 	}
 
-	if _, err := opt.Writer.Write([]byte(output)); err != nil {
+	if _, err := client.writer.Write([]byte(output)); err != nil {
 		return NewWriteError(err)
 	}
 

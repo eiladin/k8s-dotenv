@@ -4,9 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	v1 "github.com/eiladin/k8s-dotenv/pkg/api/v1"
-	"github.com/eiladin/k8s-dotenv/pkg/api/v1beta1"
-	"github.com/eiladin/k8s-dotenv/pkg/environment"
+	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +15,7 @@ var ErrResourceNameRequired = errors.New("resource name required")
 // ErrUnsupportedGroup is returned when a group/resource combination is invalid.
 var ErrUnsupportedGroup = errors.New("group/resource not supported")
 
-func newClientError(err error) error {
+func clientError(err error) error {
 	return fmt.Errorf("client error: %w", err)
 }
 
@@ -43,15 +41,16 @@ func NewCmd(opt *options.Options) *cobra.Command {
 }
 
 func validArgs(opt *options.Options) []string {
-	group, _ := opt.Client.GetAPIGroup("CronJob")
+	client := client.NewClient(opt.Client, client.WithNamespace(opt.Namespace))
+	group, _ := client.GetAPIGroup("CronJob")
 
 	var list []string
 
 	switch group {
 	case "batch/v1beta1":
-		list, _ = v1beta1.CronJobs(opt.Client, opt.Namespace)
+		list, _ = client.CronJobsV1beta1()
 	case "batch/v1":
-		list, _ = v1.CronJobs(opt.Client, opt.Namespace)
+		list, _ = client.CronJobsV1()
 	}
 
 	return list
@@ -62,27 +61,29 @@ func run(opt *options.Options, args []string) error {
 		return ErrResourceNameRequired
 	}
 
-	group, err := opt.Client.GetAPIGroup("CronJob")
-	if err != nil {
-		return newClientError(err)
-	}
+	cl := client.NewClient(
+		opt.Client,
+		client.WithNamespace(opt.Namespace),
+		client.WithFilename(opt.Filename),
+		client.WithWriter(opt.Writer),
+		client.WithExport(!opt.NoExport),
+	)
 
-	var res *environment.Result
+	group, err := cl.GetAPIGroup("CronJob")
+	if err != nil {
+		return clientError(err)
+	}
 
 	switch group {
 	case "batch/v1beta1":
-		res, err = v1beta1.CronJob(opt.Client, opt.Namespace, args[0])
+		err = cl.CronJobV1Beta1(args[0]).Write()
 	case "batch/v1":
-		res, err = v1.CronJob(opt.Client, opt.Namespace, args[0])
+		err = cl.CronJobV1(args[0]).Write()
 	default:
 		return ErrUnsupportedGroup
 	}
 
 	if err != nil {
-		return newRunError(err)
-	}
-
-	if err := res.Write(opt); err != nil {
 		return newRunError(err)
 	}
 

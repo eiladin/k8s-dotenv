@@ -1,57 +1,63 @@
 package client
 
 import (
-	"errors"
-	"path/filepath"
+	"fmt"
+	"io"
+	"os"
 
+	corev1 "github.com/eiladin/k8s-dotenv/pkg/client/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
-// ErrResourceNameRequired is returned when no resource name is provided.
-var ErrResourceNameRequired = errors.New("resource name required")
+type ConfigureFunc = func(client *Client)
 
-// ErrMissingResource is returned when the resource is not found.
-var ErrMissingResource = errors.New("resource not found")
-
-// ErrCreatingClient is returned when the client cannot be created.
-var ErrCreatingClient = errors.New("client create error")
-
-// ErrNamespaceResolution is returned when the current namespace cannot be resolved.
-var ErrNamespaceResolution = errors.New("current resolution error")
-
-// ErrAPIGroup is returned when a kubernetes api call fails.
-var ErrAPIGroup = errors.New("api group error")
-
-// Client is a wrapper around kubernetes.Interface.
 type Client struct {
 	kubernetes.Interface
+	shouldExport bool
+	namespace    string
+	filename     string
+	writer       io.Writer
+	result       *Result
+	Error        error
+	corev1       *corev1.CoreV1
 }
 
-// NewClient returns a Client wrapping the given kubernetes.Interface.
-func NewClient(cl kubernetes.Interface) *Client {
-	return &Client{cl}
+func NewClient(kubeClient kubernetes.Interface, configures ...ConfigureFunc) *Client {
+	client := Client{}
+	client.Interface = kubeClient
+	client.corev1 = corev1.NewCoreV1(client.Interface.CoreV1(), "")
+
+	for _, configure := range configures {
+		configure(&client)
+	}
+
+	return &client
 }
 
-// Get returns a configured Client loaded from ~/.kube/config.
-func Get() (*Client, error) {
-	var home string
-	if home = homedir.HomeDir(); home == "" {
-		return nil, ErrCreatingClient
+func (client *Client) CoreV1() *corev1.CoreV1 {
+	return client.corev1
+}
+
+func (client *Client) setDefaultWriter() error {
+	if client.writer != nil {
+		return nil
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", filepath.Join(home, ".kube", "config"))
+	if client.filename == "" {
+		return ErrNoFilename
+	}
+
+	//nolint
+	f, err := os.OpenFile(client.filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+
 	if err != nil {
-		return nil, ErrCreatingClient
+		return fmt.Errorf("creating output file: %w", err)
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, ErrCreatingClient
-	}
+	client.writer = f
 
-	return &Client{clientset}, nil
+	return nil
 }
 
 // CurrentNamespace returns the namespace from `~/.kube/config`.

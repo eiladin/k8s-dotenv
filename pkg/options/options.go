@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
+	"k8s.io/client-go/kubernetes"
 )
 
 // ErrNoFilename is returned when no filename is provided.
@@ -14,7 +14,7 @@ var ErrNoFilename = errors.New("no filename provided")
 
 // Options contains configuration used to interact with the kubernetes API.
 type Options struct {
-	Client       *client.Client
+	Client       kubernetes.Interface
 	Namespace    string
 	ResourceName string
 	Filename     string
@@ -30,28 +30,6 @@ func (opt *Options) ResolveNamespace(configPath string) error {
 	}
 
 	opt.Namespace = ns
-
-	return nil
-}
-
-// SetDefaultWriter sets the Writer property of an Options struct.
-func (opt *Options) SetDefaultWriter() error {
-	if opt.Writer != nil {
-		return nil
-	}
-
-	if opt.Filename == "" {
-		return ErrNoFilename
-	}
-
-	//nolint
-	f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-
-	if err != nil {
-		return fmt.Errorf("creating output file: %w", err)
-	}
-
-	opt.Writer = f
 
 	return nil
 }

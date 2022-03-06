@@ -1,19 +1,17 @@
-package configmap
+package corev1
 
 import (
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGet(t *testing.T) {
+func TestSecretV1(t *testing.T) {
 	type testCase struct {
 		Name           string
-		Client         *client.Client
-		Namespace      string
-		Configmap      string
+		Client         *CoreV1
+		Secret         string
 		ExpectedString string
 		ShouldExport   bool
 		ExpectError    bool
@@ -21,9 +19,10 @@ func TestGet(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualString, actualError := Get(tc.Client, tc.Namespace, tc.Configmap, true)
+			actualString, actualError := tc.Client.Secret(tc.Secret, tc.ShouldExport)
 
 			assert.Equal(t, tc.ExpectedString, actualString)
+
 			if tc.ExpectError {
 				assert.Error(t, actualError)
 			} else {
@@ -32,30 +31,27 @@ func TestGet(t *testing.T) {
 		})
 	}
 
-	cm := mock.ConfigMap("test", "test", map[string]string{"n": "v"})
-	cl := mock.NewFakeClient(cm)
+	cm := mock.Secret("test", "test", map[string][]byte{"n": []byte("v")})
+	kubeClient := mock.NewFakeClient(cm)
 
 	validate(t, &testCase{
 		Name:           "Should find test.test",
-		Client:         client.NewClient(cl),
-		Namespace:      "test",
-		Configmap:      "test",
-		ExpectedString: "##### CONFIGMAP - test #####\nexport n=\"v\"\n",
+		Secret:         "test",
+		Client:         NewCoreV1(kubeClient.CoreV1(), "test"),
+		ExpectedString: "##### SECRET - test #####\nn=\"v\"\n",
 	})
 
 	validate(t, &testCase{
 		Name:        "Should not find test.test1",
-		Client:      client.NewClient(cl),
-		Namespace:   "test",
-		Configmap:   "test1",
+		Secret:      "test1",
+		Client:      NewCoreV1(kubeClient.CoreV1(), "test"),
 		ExpectError: true,
 	})
 
 	validate(t, &testCase{
 		Name:        "Should not find test2.test",
-		Client:      client.NewClient(cl),
-		Namespace:   "test2",
-		Configmap:   "test",
+		Secret:      "test",
+		Client:      NewCoreV1(kubeClient.CoreV1(), "test2"),
 		ExpectError: true,
 	})
 }

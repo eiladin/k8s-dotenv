@@ -3,7 +3,6 @@ package replicaset
 import (
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +11,7 @@ import (
 func TestNewCmd(t *testing.T) {
 	cl := mock.NewFakeClient(mock.ReplicaSet("test", "test", nil, nil, nil))
 
-	got := NewCmd(&options.Options{Client: client.NewClient(cl), Namespace: "test"})
+	got := NewCmd(&options.Options{Client: cl, Namespace: "test"})
 	assert.NotNil(t, got)
 
 	objs, _ := got.ValidArgsFunction(got, []string{}, "")
@@ -52,7 +51,7 @@ func TestRun(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should find replicasets",
 		Opt: &options.Options{
-			Client:       client.NewClient(cl),
+			Client:       cl,
 			Namespace:    "test",
 			ResourceName: "test",
 			Writer:       mock.NewWriter(),
@@ -63,7 +62,7 @@ func TestRun(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should return writer errors",
 		Opt: &options.Options{
-			Client:    client.NewClient(cl),
+			Client:    cl,
 			Namespace: "test",
 			Writer:    mock.NewErrorWriter().ErrorAfter(1),
 		},
@@ -74,7 +73,7 @@ func TestRun(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should not find a job in an empty cluster",
 		Opt: &options.Options{
-			Client:       client.NewClient(mock.NewFakeClient()),
+			Client:       mock.NewFakeClient(),
 			Namespace:    "test",
 			ResourceName: "test",
 			Writer:       mock.NewWriter(),
@@ -104,7 +103,7 @@ func TestValidArgs(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should return replicasets",
 		Opt: &options.Options{
-			Client:    client.NewClient(cl),
+			Client:    cl,
 			Namespace: "test",
 		},
 		ExpectedSlice: []string{"test"},
