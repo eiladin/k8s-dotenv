@@ -9,8 +9,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// ConfigureFunc is used for configuring `Client` settings.
 type ConfigureFunc = func(client *Client)
 
+// Client is used to interact with the kubernetes API.
 type Client struct {
 	kubernetes.Interface
 	shouldExport bool
@@ -25,6 +27,7 @@ type Client struct {
 	corev1       *CoreV1
 }
 
+// NewClient creates `Client` from a kubernetes client.
 func NewClient(kubeClient kubernetes.Interface, configures ...ConfigureFunc) *Client {
 	client := Client{}
 	client.Interface = kubeClient
@@ -40,18 +43,22 @@ func NewClient(kubeClient kubernetes.Interface, configures ...ConfigureFunc) *Cl
 	return &client
 }
 
+// AppsV1 is used to interact with features provided by the apps group.
 func (client *Client) AppsV1() *AppsV1 {
 	return client.appsv1
 }
 
+// BatchV1 is used to interact with features provided by the batch group.
 func (client *Client) BatchV1() *BatchV1 {
 	return client.batchv1
 }
 
+// BatchV1Beta1 is used to interact with features provided by the batch group.
 func (client *Client) BatchV1Beta1() *BatchV1Beta1 {
 	return client.batchv1beta1
 }
 
+// CoreV1 is used to interact with features provided by the core group.
 func (client *Client) CoreV1() *CoreV1 {
 	return client.corev1
 }

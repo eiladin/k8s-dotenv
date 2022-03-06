@@ -50,6 +50,7 @@ func TestCoreV1ConfigMapValues(t *testing.T) {
 	})
 
 	client = NewClient(kubeClient, WithNamespace("test2"))
+
 	validate(t, &testCase{
 		Name:        "Should not find test2.test",
 		Client:      NewCoreV1(client),

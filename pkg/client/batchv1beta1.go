@@ -7,11 +7,13 @@ import (
 	v1 "k8s.io/client-go/kubernetes/typed/batch/v1beta1"
 )
 
+// BatchV1Beta1 is used to interact with features provided by the batch group.
 type BatchV1Beta1 struct {
 	v1.BatchV1beta1Interface
 	client *Client
 }
 
+// NewBatchV1Beta1 creates `BatchV1Beta1`.
 func NewBatchV1Beta1(client *Client) *BatchV1Beta1 {
 	return &BatchV1Beta1{
 		client:                client,
