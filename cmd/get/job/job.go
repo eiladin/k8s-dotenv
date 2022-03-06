@@ -35,7 +35,7 @@ func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
 
 func validArgs(opt *clioptions.CLIOptions) []string {
 	list, _ := client.NewClient(
-		opt.KubeClient,
+		client.WithKubeClient(opt.KubeClient),
 		client.WithNamespace(opt.Namespace),
 	).BatchV1().Jobs()
 
@@ -48,7 +48,7 @@ func run(opt *clioptions.CLIOptions, args []string) error {
 	}
 
 	err := client.NewClient(
-		opt.KubeClient,
+		client.WithKubeClient(opt.KubeClient),
 		client.WithNamespace(opt.Namespace),
 		client.WithFilename(opt.Filename),
 		client.WithWriter(opt.Writer),

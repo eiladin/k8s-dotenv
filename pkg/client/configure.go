@@ -1,6 +1,21 @@
 package client
 
-import "io"
+import (
+	"io"
+
+	"k8s.io/client-go/kubernetes"
+)
+
+// WithKubeClient sets the underlying kubernetes API client.
+func WithKubeClient(kubeClient kubernetes.Interface) ConfigureFunc {
+	return func(client *Client) {
+		client.Interface = kubeClient
+		client.appsv1 = NewAppsV1(client)
+		client.batchv1 = NewBatchV1(client)
+		client.batchv1beta1 = NewBatchV1Beta1(client)
+		client.corev1 = NewCoreV1(client)
+	}
+}
 
 // WithExport flags the client to include `export` statements in the output.
 func WithExport(shouldExport bool) ConfigureFunc {

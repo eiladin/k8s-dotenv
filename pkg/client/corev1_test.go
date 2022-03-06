@@ -33,7 +33,10 @@ func TestCoreV1ConfigMapData(t *testing.T) {
 
 	cm := mock.ConfigMap("test", "test", map[string]string{"n": "v"})
 	kubeClient := mock.NewFakeClient(cm)
-	client := NewClient(kubeClient, WithNamespace("test"))
+	client := NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:           "Should find test.test",
@@ -49,7 +52,7 @@ func TestCoreV1ConfigMapData(t *testing.T) {
 		ExpectError: true,
 	})
 
-	client = NewClient(kubeClient, WithNamespace("test2"))
+	client = NewClient(WithKubeClient(kubeClient), WithNamespace("test2"))
 
 	validate(t, &testCase{
 		Name:        "Should not find test2.test",
@@ -89,21 +92,21 @@ func TestCoreV1SecretData(t *testing.T) {
 	validate(t, &testCase{
 		Name:           "Should find test.test",
 		Secret:         "test",
-		Client:         NewCoreV1(NewClient(kubeClient, WithNamespace("test"))),
+		Client:         NewCoreV1(NewClient(WithKubeClient(kubeClient), WithNamespace("test"))),
 		ExpectedValues: map[string]string{"n": "v"},
 	})
 
 	validate(t, &testCase{
 		Name:        "Should not find test.test1",
 		Secret:      "test1",
-		Client:      NewCoreV1(NewClient(kubeClient, WithNamespace("test"))),
+		Client:      NewCoreV1(NewClient(WithKubeClient(kubeClient), WithNamespace("test"))),
 		ExpectError: true,
 	})
 
 	validate(t, &testCase{
 		Name:        "Should not find test2.test",
 		Secret:      "test",
-		Client:      NewCoreV1(NewClient(kubeClient, WithNamespace("test2"))),
+		Client:      NewCoreV1(NewClient(WithKubeClient(kubeClient), WithNamespace("test2"))),
 		ExpectError: true,
 	})
 }
@@ -134,7 +137,7 @@ func TestCoreV1Namespaces(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:          "Should return a single namespace",
-		CoreV1:        NewCoreV1(NewClient(kubeClient)),
+		CoreV1:        NewCoreV1(NewClient(WithKubeClient(kubeClient))),
 		ExpectedSlice: []string{"one"},
 	})
 
@@ -142,7 +145,7 @@ func TestCoreV1Namespaces(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:          "Should return multiple namespaces",
-		CoreV1:        NewCoreV1(NewClient(kubeClient)),
+		CoreV1:        NewCoreV1(NewClient(WithKubeClient(kubeClient))),
 		ExpectedSlice: []string{"one", "two"},
 	})
 
@@ -151,7 +154,7 @@ func TestCoreV1Namespaces(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:        "Should return multiple namespaces",
-		CoreV1:      NewCoreV1(NewClient(kubeClient)),
+		CoreV1:      NewCoreV1(NewClient(WithKubeClient(kubeClient))),
 		ExpectError: true,
 	})
 }
@@ -183,7 +186,10 @@ func TestCoreV1Pod(t *testing.T) {
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
-	client := NewClient(kubeClient, WithNamespace("test"))
+	client := NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:     "Should return pods",
@@ -197,7 +203,10 @@ func TestCoreV1Pod(t *testing.T) {
 	})
 
 	kubeClient.PrependReactor("get", "pods", true, nil, assert.AnError)
-	client = NewClient(kubeClient, WithNamespace("test"))
+	client = NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
@@ -230,7 +239,10 @@ func TestCoreV1Pods(t *testing.T) {
 
 	mockv1 := mock.Pod("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
-	client := NewClient(kubeClient, WithNamespace("test"))
+	client := NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:          "Should return pods",
@@ -239,7 +251,10 @@ func TestCoreV1Pods(t *testing.T) {
 	})
 
 	kubeClient.PrependReactor("list", "pods", true, nil, assert.AnError)
-	client = NewClient(kubeClient, WithNamespace("test"))
+	client = NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",

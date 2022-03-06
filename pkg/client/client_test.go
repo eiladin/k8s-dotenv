@@ -8,7 +8,6 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/batch/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 func TestClientGetAPIGroup(t *testing.T) {
@@ -38,7 +37,7 @@ func TestClientGetAPIGroup(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:           "Should detect resource group",
-		Client:         NewClient(kubeClient),
+		Client:         NewClient(WithKubeClient(kubeClient)),
 		Resource:       "Job",
 		ExpectedString: "v1",
 	})
@@ -47,7 +46,7 @@ func TestClientGetAPIGroup(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:        "Should error if the resource is not found",
-		Client:      NewClient(kubeClient),
+		Client:      NewClient(WithKubeClient(kubeClient)),
 		Resource:    "Job",
 		ExpectError: true,
 	})
@@ -56,7 +55,7 @@ func TestClientGetAPIGroup(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
-		Client:      NewClient(kubeClient),
+		Client:      NewClient(WithKubeClient(kubeClient)),
 		Resource:    "Job",
 		ExpectError: true,
 	})
@@ -83,32 +82,31 @@ func TestClientSetDefaultWriter(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:   "Should use the passed in writer",
-		Client: NewClient(mock.NewFakeClient(), WithWriter(&b)),
+		Client: NewClient(WithKubeClient(mock.NewFakeClient()), WithWriter(&b)),
 	})
 
 	validate(t, &testCase{
 		Name:          "Should Error given no filename or writer",
-		Client:        NewClient(mock.NewFakeClient()),
+		Client:        NewClient(WithKubeClient(mock.NewFakeClient())),
 		ExpectedError: ErrNoFilename,
 	})
 
 	validate(t, &testCase{
 		Name:   "Should not error given a filename",
-		Client: NewClient(mock.NewFakeClient(), WithFilename("./out.test")),
+		Client: NewClient(WithKubeClient(mock.NewFakeClient()), WithFilename("./out.test")),
 	})
 }
 
 func TestNewClient(t *testing.T) {
 	type testCase struct {
 		Name           string
-		C              kubernetes.Interface
 		Configures     []ConfigureFunc
 		ExpectedClient *Client
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualClient := NewClient(tc.C, tc.Configures...)
+			actualClient := NewClient(tc.Configures...)
 
 			assert.Equal(t, tc.ExpectedClient.shouldExport, actualClient.shouldExport)
 			assert.Equal(t, tc.ExpectedClient.namespace, actualClient.namespace)
@@ -120,8 +118,8 @@ func TestNewClient(t *testing.T) {
 
 	validate(t, &testCase{
 		Name: "Should run configures",
-		C:    mock.NewFakeClient(),
 		Configures: []ConfigureFunc{
+			WithKubeClient(mock.NewFakeClient()),
 			WithFilename("string"),
 		},
 		ExpectedClient: &Client{
@@ -136,7 +134,7 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestAPIs(t *testing.T) {
-	client := NewClient(mock.NewFakeClient())
+	client := NewClient(WithKubeClient(mock.NewFakeClient()))
 	assert.NotNil(t, client.AppsV1())
 	assert.NotNil(t, client.BatchV1())
 	assert.NotNil(t, client.BatchV1Beta1())

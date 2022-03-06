@@ -34,7 +34,10 @@ func TestAppsV1DaemonSet(t *testing.T) {
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
-	client := NewClient(kubeClient, WithNamespace("test"))
+	client := NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:     "Should return jobs",
@@ -48,7 +51,10 @@ func TestAppsV1DaemonSet(t *testing.T) {
 	})
 
 	kubeClient.PrependReactor("get", "daemonsets", true, nil, assert.AnError)
-	client = NewClient(kubeClient, WithNamespace("test"))
+	client = NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
@@ -81,7 +87,10 @@ func TestAppsV1DaemonSets(t *testing.T) {
 
 	mockv1 := mock.DaemonSet("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
-	client := NewClient(kubeClient, WithNamespace("test"))
+	client := NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:          "Should return jobs",
@@ -90,7 +99,10 @@ func TestAppsV1DaemonSets(t *testing.T) {
 	})
 
 	kubeClient.PrependReactor("list", "daemonsets", true, nil, assert.AnError)
-	client = NewClient(kubeClient, WithNamespace("test"))
+	client = NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
@@ -126,7 +138,10 @@ func TestAppsV1Deployment(t *testing.T) {
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
-	client := NewClient(kubeClient, WithNamespace("test"))
+	client := NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:     "Should return jobs",
@@ -140,7 +155,10 @@ func TestAppsV1Deployment(t *testing.T) {
 	})
 
 	kubeClient.PrependReactor("get", "deployments", true, nil, assert.AnError)
-	client = NewClient(kubeClient, WithNamespace("test"))
+	client = NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
@@ -173,7 +191,10 @@ func TestAppsV1Deployments(t *testing.T) {
 
 	mockv1 := mock.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
-	client := NewClient(kubeClient, WithNamespace("test"))
+	client := NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:          "Should return jobs",
@@ -182,7 +203,10 @@ func TestAppsV1Deployments(t *testing.T) {
 	})
 
 	kubeClient.PrependReactor("list", "deployments", true, nil, assert.AnError)
-	client = NewClient(kubeClient, WithNamespace("test"))
+	client = NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
@@ -218,7 +242,10 @@ func TestAppsV1ReplicaSet(t *testing.T) {
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
-	client := NewClient(kubeClient, WithNamespace("test"))
+	client := NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:     "Should return jobs",
@@ -232,7 +259,10 @@ func TestAppsV1ReplicaSet(t *testing.T) {
 	})
 
 	kubeClient.PrependReactor("get", "replicasets", true, nil, assert.AnError)
-	client = NewClient(kubeClient, WithNamespace("test"))
+	client = NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",
@@ -265,7 +295,10 @@ func TestAppsV1ReplicaSets(t *testing.T) {
 
 	mockv1 := mock.ReplicaSet("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
-	client := NewClient(kubeClient, WithNamespace("test"))
+	client := NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:          "Should return jobs",
@@ -274,7 +307,10 @@ func TestAppsV1ReplicaSets(t *testing.T) {
 	})
 
 	kubeClient.PrependReactor("list", "replicasets", true, nil, assert.AnError)
-	client = NewClient(kubeClient, WithNamespace("test"))
+	client = NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:        "Should return API errors",

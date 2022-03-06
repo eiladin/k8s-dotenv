@@ -29,7 +29,7 @@ func TestWithExport(t *testing.T) {
 	validate(t, &testCase{
 		Name:         "Should update Client.shouldExport",
 		ShouldExport: true,
-		Client:       NewClient(mock.NewFakeClient()),
+		Client:       NewClient(WithKubeClient(mock.NewFakeClient())),
 	})
 }
 
@@ -53,7 +53,7 @@ func TestWithFilename(t *testing.T) {
 	validate(t, &testCase{
 		Name:     "Should update Client.filename",
 		Filename: "test",
-		Client:   NewClient(mock.NewFakeClient()),
+		Client:   NewClient(WithKubeClient(mock.NewFakeClient())),
 	})
 }
 
@@ -77,7 +77,7 @@ func TestWithNamespace(t *testing.T) {
 	validate(t, &testCase{
 		Name:      "Should update Client.namespace",
 		Namespace: "test",
-		Client:    NewClient(mock.NewFakeClient()),
+		Client:    NewClient(WithKubeClient(mock.NewFakeClient())),
 	})
 }
 
@@ -103,6 +103,6 @@ func TestWithWriter(t *testing.T) {
 	validate(t, &testCase{
 		Name:   "Should update Client.writer",
 		Writer: &b,
-		Client: NewClient(mock.NewFakeClient()),
+		Client: NewClient(WithKubeClient(mock.NewFakeClient())),
 	})
 }

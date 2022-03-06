@@ -41,7 +41,10 @@ func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
 }
 
 func validArgs(opt *clioptions.CLIOptions) []string {
-	client := client.NewClient(opt.KubeClient, client.WithNamespace(opt.Namespace))
+	client := client.NewClient(
+		client.WithKubeClient(opt.KubeClient),
+		client.WithNamespace(opt.Namespace),
+	)
 	group, _ := client.GetAPIGroup("CronJob")
 
 	var list []string
@@ -62,7 +65,7 @@ func run(opt *clioptions.CLIOptions, args []string) error {
 	}
 
 	client := client.NewClient(
-		opt.KubeClient,
+		client.WithKubeClient(opt.KubeClient),
 		client.WithNamespace(opt.Namespace),
 		client.WithFilename(opt.Filename),
 		client.WithWriter(opt.Writer),

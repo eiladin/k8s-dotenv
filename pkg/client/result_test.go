@@ -53,7 +53,7 @@ func TestResultWrite(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:           "Should write results",
-		Client:         NewClient(kubeClient, WithNamespace("test"), WithWriter(&b)),
+		Client:         NewClient(WithKubeClient(kubeClient), WithNamespace("test"), WithWriter(&b)),
 		Result:         r1,
 		Reader:         b.String,
 		ExpectedResult: envResult + cmResult + secResult,
@@ -63,18 +63,22 @@ func TestResultWrite(t *testing.T) {
 	validate(t, &testCase{
 		Name:        "Should Error with missing writer",
 		Result:      r1,
-		Client:      NewClient(kubeClient, WithNamespace("test")),
+		Client:      NewClient(WithKubeClient(kubeClient), WithNamespace("test")),
 		ExpectError: true,
 	})
 
 	validate(t, &testCase{
-		Name:        "Should return writer errors",
-		Result:      r1,
-		Client:      NewClient(kubeClient, WithNamespace("test"), WithWriter(mock.NewErrorWriter().ErrorAfter(1))),
+		Name:   "Should return writer errors",
+		Result: r1,
+		Client: NewClient(
+			WithKubeClient(kubeClient),
+			WithNamespace("test"),
+			WithWriter(mock.NewErrorWriter().ErrorAfter(1)),
+		),
 		ExpectError: true,
 	})
 
-	client := NewClient(kubeClient)
+	client := NewClient(WithKubeClient(kubeClient))
 	client.Error = assert.AnError
 
 	validate(t, &testCase{
@@ -110,7 +114,7 @@ func TestResultParse(t *testing.T) {
 	secResult := "##### SECRET - test #####\nsec1=\"val\"\nsec2=\"val2\"\n"
 	cmResult := "##### CONFIGMAP - test #####\ncm1=\"val\"\ncm2=\"val2\"\n"
 
-	client := NewClient(mock.NewFakeClient(), WithNamespace("test"))
+	client := NewClient(WithKubeClient(mock.NewFakeClient()), WithNamespace("test"))
 
 	validate(t, &testCase{
 		Name:           "Should get env configmaps and secrets",
@@ -205,7 +209,7 @@ func TestResultFromContainers(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:   "Should return results from containers",
-		Client: NewClient(kubeClient, WithNamespace("test")),
+		Client: NewClient(WithKubeClient(kubeClient), WithNamespace("test")),
 		Containers: []v1.Container{
 			mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test"}),
 		},
@@ -218,7 +222,7 @@ func TestResultFromContainers(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:   "Should set client.Error with missing secret",
-		Client: NewClient(kubeClient, WithNamespace("test")),
+		Client: NewClient(WithKubeClient(kubeClient), WithNamespace("test")),
 		Containers: []v1.Container{
 			mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test1"}),
 		},
@@ -227,7 +231,7 @@ func TestResultFromContainers(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:   "Should set client.Error with missing configmap",
-		Client: NewClient(kubeClient, WithNamespace("test")),
+		Client: NewClient(WithKubeClient(kubeClient), WithNamespace("test")),
 		Containers: []v1.Container{
 			mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test1"}, []string{"test"}),
 		},

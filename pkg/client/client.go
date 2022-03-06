@@ -27,13 +27,8 @@ type Client struct {
 }
 
 // NewClient creates `Client` from a kubernetes client.
-func NewClient(kubeClient kubernetes.Interface, configures ...ConfigureFunc) *Client {
+func NewClient(configures ...ConfigureFunc) *Client {
 	client := Client{}
-	client.Interface = kubeClient
-	client.appsv1 = NewAppsV1(&client)
-	client.batchv1 = NewBatchV1(&client)
-	client.batchv1beta1 = NewBatchV1Beta1(&client)
-	client.corev1 = NewCoreV1(&client)
 
 	for _, configure := range configures {
 		configure(&client)

@@ -67,7 +67,7 @@ func newRootCmd(version string) *rootCmd {
 	cmd.PersistentFlags().StringVarP(&opt.Namespace, "namespace", "n", "", "Namespace")
 	_ = cmd.RegisterFlagCompletionFunc("namespace",
 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			list, err := client.NewClient(opt.KubeClient).CoreV1().Namespaces()
+			list, err := client.NewClient(client.WithKubeClient(opt.KubeClient)).CoreV1().Namespaces()
 			if err != nil {
 				log.Fatal(err)
 			}

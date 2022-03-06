@@ -34,7 +34,10 @@ func TestBatchV1Beta1CronJob(t *testing.T) {
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
-	client := NewClient(kubeClient, WithNamespace("test"))
+	client := NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:         "Should return cronjobs",
@@ -48,7 +51,10 @@ func TestBatchV1Beta1CronJob(t *testing.T) {
 	})
 
 	kubeClient.PrependReactor("get", "cronjobs", true, nil, assert.AnError)
-	client = NewClient(kubeClient, WithNamespace("test"))
+	client = NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:         "Should return API errors",
@@ -81,7 +87,10 @@ func TestBatchV1Beta1CronJobs(t *testing.T) {
 
 	mockv1 := mock.CronJobv1beta1("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
-	client := NewClient(kubeClient, WithNamespace("test"))
+	client := NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:          "Should return cronjobs",
@@ -90,7 +99,10 @@ func TestBatchV1Beta1CronJobs(t *testing.T) {
 	})
 
 	kubeClient.PrependReactor("list", "cronjobs", true, nil, assert.AnError)
-	client = NewClient(kubeClient, WithNamespace("test"))
+	client = NewClient(
+		WithKubeClient(kubeClient),
+		WithNamespace("test"),
+	)
 
 	validate(t, &testCase{
 		Name:         "Should return API errors",
