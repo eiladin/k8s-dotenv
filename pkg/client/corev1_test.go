@@ -8,7 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestCoreV1ConfigMapValues(t *testing.T) {
+func TestCoreV1ConfigMapData(t *testing.T) {
 	type testCase struct {
 		Name           string
 		Client         *CoreV1
@@ -20,7 +20,7 @@ func TestCoreV1ConfigMapValues(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualValues, actualError := tc.Client.ConfigMapValues(tc.Configmap, true)
+			actualValues, actualError := tc.Client.ConfigMapData(tc.Configmap, true)
 
 			assert.Equal(t, tc.ExpectedValues, actualValues)
 			if tc.ExpectError {
@@ -59,7 +59,7 @@ func TestCoreV1ConfigMapValues(t *testing.T) {
 	})
 }
 
-func TestCoreV1SecretValues(t *testing.T) {
+func TestCoreV1SecretData(t *testing.T) {
 	type testCase struct {
 		Name           string
 		Client         *CoreV1
@@ -71,7 +71,7 @@ func TestCoreV1SecretValues(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualValues, actualError := tc.Client.SecretValues(tc.Secret, tc.ShouldExport)
+			actualValues, actualError := tc.Client.SecretData(tc.Secret, tc.ShouldExport)
 
 			assert.Equal(t, tc.ExpectedValues, actualValues)
 

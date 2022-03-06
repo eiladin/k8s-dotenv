@@ -47,28 +47,22 @@ func (client *Client) resultFromContainers(containers []v1.Container) *Client {
 		}
 
 		for _, envFrom := range cont.EnvFrom {
-			if envFrom.SecretRef != nil {
-				v, err := client.CoreV1().SecretValues(envFrom.SecretRef.Name, client.shouldExport)
+			if envFrom.ConfigMapRef != nil {
+				n := envFrom.ConfigMapRef.Name
+				res.ConfigMaps[n], client.Error = client.CoreV1().ConfigMapData(n, client.shouldExport)
 
-				if err != nil {
-					client.Error = err
-
+				if client.Error != nil {
 					return client
 				}
-
-				res.Secrets[envFrom.SecretRef.Name] = v
 			}
 
-			if envFrom.ConfigMapRef != nil {
-				v, err := client.CoreV1().ConfigMapValues(envFrom.ConfigMapRef.Name, client.shouldExport)
+			if envFrom.SecretRef != nil {
+				n := envFrom.SecretRef.Name
+				res.Secrets[n], client.Error = client.CoreV1().SecretData(n, client.shouldExport)
 
-				if err != nil {
-					client.Error = err
-
+				if client.Error != nil {
 					return client
 				}
-
-				res.ConfigMaps[envFrom.ConfigMapRef.Name] = v
 			}
 		}
 	}

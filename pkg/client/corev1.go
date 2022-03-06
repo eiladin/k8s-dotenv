@@ -21,8 +21,8 @@ func NewCoreV1(client *Client) *CoreV1 {
 	}
 }
 
-// ConfigMapValues returns the export value(s) given a configmap name in a specific namespace.
-func (corev1 *CoreV1) ConfigMapValues(resource string, shouldExport bool) (map[string]string, error) {
+// ConfigMapData returns the export value(s) given a configmap name in a specific namespace.
+func (corev1 *CoreV1) ConfigMapData(resource string, shouldExport bool) (map[string]string, error) {
 	resp, err := corev1.
 		CoreV1Interface.
 		ConfigMaps(corev1.client.namespace).
@@ -35,8 +35,8 @@ func (corev1 *CoreV1) ConfigMapValues(resource string, shouldExport bool) (map[s
 	return resp.Data, nil
 }
 
-// SecretValues returns the export value(s) given a secret name in a specific namespace.
-func (corev1 *CoreV1) SecretValues(secret string, shouldExport bool) (map[string]string, error) {
+// SecretData returns the export value(s) given a secret name in a specific namespace.
+func (corev1 *CoreV1) SecretData(secret string, shouldExport bool) (map[string]string, error) {
 	resp, err := corev1.
 		CoreV1Interface.
 		Secrets(corev1.client.namespace).
