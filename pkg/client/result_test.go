@@ -185,6 +185,7 @@ func TestResultFromContainers(t *testing.T) {
 		Client         *Client
 		Containers     []v1.Container
 		ExpectedResult *Result
+		ExpectedError  error
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
@@ -192,6 +193,8 @@ func TestResultFromContainers(t *testing.T) {
 			actualResult := tc.Client.resultFromContainers(tc.Containers)
 
 			assert.Equal(t, tc.ExpectedResult, actualResult.result)
+
+			assert.ErrorIs(t, tc.Client.Error, tc.ExpectedError)
 		})
 	}
 
@@ -211,5 +214,23 @@ func TestResultFromContainers(t *testing.T) {
 			ConfigMaps:  map[string]envValues{"test": {"cm1": "val", "cm2": "val2"}},
 			Secrets:     map[string]envValues{"test": {"sec1": "val", "sec2": "val2"}},
 		},
+	})
+
+	validate(t, &testCase{
+		Name:   "Should set client.Error with missing secret",
+		Client: NewClient(kubeClient, WithNamespace("test")),
+		Containers: []v1.Container{
+			mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test1"}),
+		},
+		ExpectedError: ErrMissingResource,
+	})
+
+	validate(t, &testCase{
+		Name:   "Should set client.Error with missing configmap",
+		Client: NewClient(kubeClient, WithNamespace("test")),
+		Containers: []v1.Container{
+			mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test1"}, []string{"test"}),
+		},
+		ExpectedError: ErrMissingResource,
 	})
 }

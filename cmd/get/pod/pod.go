@@ -12,7 +12,7 @@ import (
 // ErrResourceNameRequired is returned when no resource name is provided.
 var ErrResourceNameRequired = errors.New("resource name required")
 
-func newRunError(err error) error {
+func runError(err error) error {
 	return fmt.Errorf("pod error: %w", err)
 }
 
@@ -56,7 +56,7 @@ func run(opt *clioptions.CLIOptions, args []string) error {
 	).CoreV1().Pod(args[0]).Write()
 
 	if err != nil {
-		return newRunError(err)
+		return runError(err)
 	}
 
 	return nil

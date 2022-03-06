@@ -19,7 +19,7 @@ func clientError(err error) error {
 	return fmt.Errorf("client error: %w", err)
 }
 
-func newRunError(err error) error {
+func runError(err error) error {
 	return fmt.Errorf("cronjob error: %w", err)
 }
 
@@ -84,7 +84,7 @@ func run(opt *clioptions.CLIOptions, args []string) error {
 	}
 
 	if err != nil {
-		return newRunError(err)
+		return runError(err)
 	}
 
 	return nil
