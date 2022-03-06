@@ -8,13 +8,13 @@ import (
 	"github.com/eiladin/k8s-dotenv/cmd/completion"
 	"github.com/eiladin/k8s-dotenv/cmd/get"
 	"github.com/eiladin/k8s-dotenv/pkg/client"
+	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/eiladin/k8s-dotenv/pkg/kubeclient"
-	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
 
 //nolint
-var opt *options.Options = &options.Options{}
+var opt *clioptions.CLIOptions = &clioptions.CLIOptions{}
 
 //nolint
 var stdOut bool
@@ -50,7 +50,7 @@ func newRootCmd(version string) *rootCmd {
 				//nolint
 				return err
 			}
-			opt.Client = cs
+			opt.KubeClient = cs
 			if stdOut {
 				opt.Writer = os.Stdout
 			}
@@ -67,7 +67,7 @@ func newRootCmd(version string) *rootCmd {
 	cmd.PersistentFlags().StringVarP(&opt.Namespace, "namespace", "n", "", "Namespace")
 	_ = cmd.RegisterFlagCompletionFunc("namespace",
 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			list, err := client.NewClient(opt.Client).CoreV1().Namespaces()
+			list, err := client.NewClient(opt.KubeClient).CoreV1().Namespaces()
 			if err != nil {
 				log.Fatal(err)
 			}

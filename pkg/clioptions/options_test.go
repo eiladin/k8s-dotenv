@@ -1,4 +1,4 @@
-package options
+package clioptions
 
 import (
 	"io/ioutil"
@@ -73,13 +73,13 @@ users:
     token: not-a-real-token
 `
 
-func TestOptionsResolveNamespace(t *testing.T) {
+func TestCLIOptionsResolveNamespace(t *testing.T) {
 	type testCase struct {
 		Name         string
-		Options      *Options
+		Options      *CLIOptions
 		ConfigPath   string
 		ErrorChecker func(err error) bool
-		ValueChecker func(opt *Options) bool
+		ValueChecker func(opt *CLIOptions) bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
@@ -98,8 +98,8 @@ func TestOptionsResolveNamespace(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:    "Should resolve test",
-		Options: &Options{Namespace: "test"},
-		ValueChecker: func(opt *Options) bool {
+		Options: &CLIOptions{Namespace: "test"},
+		ValueChecker: func(opt *CLIOptions) bool {
 			return opt.Namespace == "test"
 		},
 	})
@@ -111,9 +111,9 @@ func TestOptionsResolveNamespace(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:       "Should resolve default",
-		Options:    &Options{},
+		Options:    &CLIOptions{},
 		ConfigPath: "default.config",
-		ValueChecker: func(opt *Options) bool {
+		ValueChecker: func(opt *CLIOptions) bool {
 			return opt.Namespace == "default"
 		},
 	})
@@ -125,9 +125,9 @@ func TestOptionsResolveNamespace(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:       "Should resolve dev",
-		Options:    &Options{},
+		Options:    &CLIOptions{},
 		ConfigPath: "dev.config",
-		ValueChecker: func(opt *Options) bool {
+		ValueChecker: func(opt *CLIOptions) bool {
 			return opt.Namespace == "dev"
 		},
 	})
@@ -139,7 +139,7 @@ func TestOptionsResolveNamespace(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:       "Should throw an error on invalid config",
-		Options:    &Options{},
+		Options:    &CLIOptions{},
 		ConfigPath: "error.config",
 		ErrorChecker: func(err error) bool {
 			return err != nil

@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // ConfigureFunc is used for configuring `Client` settings.
@@ -82,30 +81,6 @@ func (client *Client) setDefaultWriter() error {
 	client.writer = f
 
 	return nil
-}
-
-// CurrentNamespace returns the namespace from `~/.kube/config`.
-func CurrentNamespace(namespace string, configPath string) (string, error) {
-	if namespace != "" {
-		return namespace, nil
-	}
-
-	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	if configPath != "" {
-		rules.ExplicitPath = configPath
-	}
-
-	clientCfg, err := rules.Load()
-	if err != nil {
-		return "", ErrNamespaceResolution
-	}
-
-	ns := clientCfg.Contexts[clientCfg.CurrentContext].Namespace
-	if ns == "" {
-		return "default", nil
-	}
-
-	return ns, nil
 }
 
 // GetAPIGroup returns the GroupVersion (batch/v1, batch/v1beta1, etc) for the given resource.

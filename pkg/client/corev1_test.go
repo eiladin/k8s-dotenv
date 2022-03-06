@@ -13,16 +13,16 @@ func TestCoreV1ConfigMapValues(t *testing.T) {
 		Name           string
 		Client         *CoreV1
 		Configmap      string
-		ExpectedString string
+		ExpectedValues map[string]string
 		ShouldExport   bool
 		ExpectError    bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualString, actualError := tc.Client.ConfigMapValues(tc.Configmap, true)
+			actualValues, actualError := tc.Client.ConfigMapValues(tc.Configmap, true)
 
-			assert.Equal(t, tc.ExpectedString, actualString)
+			assert.Equal(t, tc.ExpectedValues, actualValues)
 			if tc.ExpectError {
 				assert.Error(t, actualError)
 			} else {
@@ -39,7 +39,7 @@ func TestCoreV1ConfigMapValues(t *testing.T) {
 		Name:           "Should find test.test",
 		Client:         NewCoreV1(client),
 		Configmap:      "test",
-		ExpectedString: "##### CONFIGMAP - test #####\nexport n=\"v\"\n",
+		ExpectedValues: map[string]string{"n": "v"},
 	})
 
 	validate(t, &testCase{
@@ -64,16 +64,16 @@ func TestCoreV1SecretValues(t *testing.T) {
 		Name           string
 		Client         *CoreV1
 		Secret         string
-		ExpectedString string
+		ExpectedValues map[string]string
 		ShouldExport   bool
 		ExpectError    bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualString, actualError := tc.Client.SecretValues(tc.Secret, tc.ShouldExport)
+			actualValues, actualError := tc.Client.SecretValues(tc.Secret, tc.ShouldExport)
 
-			assert.Equal(t, tc.ExpectedString, actualString)
+			assert.Equal(t, tc.ExpectedValues, actualValues)
 
 			if tc.ExpectError {
 				assert.Error(t, actualError)
@@ -90,7 +90,7 @@ func TestCoreV1SecretValues(t *testing.T) {
 		Name:           "Should find test.test",
 		Secret:         "test",
 		Client:         NewCoreV1(NewClient(kubeClient, WithNamespace("test"))),
-		ExpectedString: "##### SECRET - test #####\nn=\"v\"\n",
+		ExpectedValues: map[string]string{"n": "v"},
 	})
 
 	validate(t, &testCase{
@@ -130,28 +130,28 @@ func TestCoreV1Namespaces(t *testing.T) {
 		})
 	}
 
-	cl := mock.NewFakeClient(mock.Namespace("one"))
+	kubeClient := mock.NewFakeClient(mock.Namespace("one"))
 
 	validate(t, &testCase{
 		Name:          "Should return a single namespace",
-		CoreV1:        NewCoreV1(NewClient(cl)),
+		CoreV1:        NewCoreV1(NewClient(kubeClient)),
 		ExpectedSlice: []string{"one"},
 	})
 
-	cl = mock.NewFakeClient(mock.Namespace("one"), mock.Namespace("two"))
+	kubeClient = mock.NewFakeClient(mock.Namespace("one"), mock.Namespace("two"))
 
 	validate(t, &testCase{
 		Name:          "Should return multiple namespaces",
-		CoreV1:        NewCoreV1(NewClient(cl)),
+		CoreV1:        NewCoreV1(NewClient(kubeClient)),
 		ExpectedSlice: []string{"one", "two"},
 	})
 
-	cl = mock.NewFakeClient().
+	kubeClient = mock.NewFakeClient().
 		PrependReactor("list", "namespaces", true, &corev1.NamespaceList{}, assert.AnError)
 
 	validate(t, &testCase{
 		Name:        "Should return multiple namespaces",
-		CoreV1:      NewCoreV1(NewClient(cl)),
+		CoreV1:      NewCoreV1(NewClient(kubeClient)),
 		ExpectError: true,
 	})
 }
@@ -190,9 +190,9 @@ func TestCoreV1Pod(t *testing.T) {
 		CoreV1:   NewCoreV1(client),
 		Resource: "test",
 		ExpectedResult: &Result{
-			Environment: map[string]string{"k": "v"},
-			Secrets:     []string{"test"},
-			ConfigMaps:  []string{"test"},
+			Environment: envValues{"k": "v"},
+			Secrets:     map[string]envValues{"test": {"k": "v"}},
+			ConfigMaps:  map[string]envValues{"test": {"k": "v"}},
 		},
 	})
 

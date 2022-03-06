@@ -34,7 +34,7 @@ func (batchv1 *BatchV1) CronJob(resource string) *Client {
 		return batchv1.client
 	}
 
-	batchv1.client.result = resultFromContainers(resp.Spec.JobTemplate.Spec.Template.Spec.Containers)
+	batchv1.client.resultFromContainers(resp.Spec.JobTemplate.Spec.Template.Spec.Containers)
 
 	return batchv1.client
 }
@@ -71,7 +71,7 @@ func (batchv1 *BatchV1) Job(resource string) *Client {
 		return batchv1.client
 	}
 
-	batchv1.client.result = resultFromContainers(resp.Spec.Template.Spec.Containers)
+	batchv1.client.resultFromContainers(resp.Spec.Template.Spec.Containers)
 
 	return batchv1.client
 }

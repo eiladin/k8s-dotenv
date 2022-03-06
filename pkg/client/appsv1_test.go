@@ -41,9 +41,9 @@ func TestAppsV1DaemonSet(t *testing.T) {
 		AppsV1:   NewAppsV1(client),
 		Resource: "test",
 		ExpectedResult: &Result{
-			Environment: map[string]string{"k": "v"},
-			Secrets:     []string{"test"},
-			ConfigMaps:  []string{"test"},
+			Environment: envValues{"k": "v"},
+			Secrets:     map[string]envValues{"test": {"k": "v"}},
+			ConfigMaps:  map[string]envValues{"test": {"k": "v"}},
 		},
 	})
 
@@ -133,9 +133,9 @@ func TestAppsV1Deployment(t *testing.T) {
 		AppsV1:   NewAppsV1(client),
 		Resource: "test",
 		ExpectedResult: &Result{
-			Environment: map[string]string{"k": "v"},
-			Secrets:     []string{"test"},
-			ConfigMaps:  []string{"test"},
+			Environment: envValues{"k": "v"},
+			Secrets:     map[string]envValues{"test": {"k": "v"}},
+			ConfigMaps:  map[string]envValues{"test": {"k": "v"}},
 		},
 	})
 
@@ -225,9 +225,9 @@ func TestAppsV1ReplicaSet(t *testing.T) {
 		AppsV1:   NewAppsV1(client),
 		Resource: "test",
 		ExpectedResult: &Result{
-			Environment: map[string]string{"k": "v"},
-			Secrets:     []string{"test"},
-			ConfigMaps:  []string{"test"},
+			Environment: envValues{"k": "v"},
+			Secrets:     map[string]envValues{"test": {"k": "v"}},
+			ConfigMaps:  map[string]envValues{"test": {"k": "v"}},
 		},
 	})
 

@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -16,12 +16,12 @@ func TestNewCmd(t *testing.T) {
 }
 
 func TestPreRun(t *testing.T) {
-	opt := &options.Options{}
+	opt := &clioptions.CLIOptions{}
 	cmd := NewCmd(opt)
 	cmd.PreRun(cmd, []string{})
 	assert.Equal(t, os.Stdout, opt.Writer)
 
-	opt = &options.Options{Writer: mock.NewWriter()}
+	opt = &clioptions.CLIOptions{Writer: mock.NewWriter()}
 	cmd = NewCmd(opt)
 	cmd.PreRun(cmd, []string{})
 	assert.Equal(t, mock.NewWriter(), opt.Writer)
@@ -51,26 +51,26 @@ func TestRun(t *testing.T) {
 
 	validate(t, &testCase{
 		Name: "Should run",
-		Cmd:  NewCmd(&options.Options{Writer: mock.NewWriter()}),
+		Cmd:  NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
 		Args: []string{"zsh"},
 	})
 
 	validate(t, &testCase{
 		Name:        "Should error with too many shell types",
-		Cmd:         NewCmd(&options.Options{Writer: mock.NewWriter()}),
+		Cmd:         NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
 		Args:        []string{"zsh", "bash"},
 		ExpectError: true,
 	})
 
 	validate(t, &testCase{
 		Name:        "Should error with no arguments",
-		Cmd:         NewCmd(&options.Options{Writer: mock.NewWriter()}),
+		Cmd:         NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
 		ExpectError: true,
 	})
 
 	validate(t, &testCase{
 		Name:        "Should error with unsupported shell type",
-		Cmd:         NewCmd(&options.Options{Writer: mock.NewWriter()}),
+		Cmd:         NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
 		Args:        []string{"not-a-shell"},
 		ExpectError: true,
 	})

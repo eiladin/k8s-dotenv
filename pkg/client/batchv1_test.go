@@ -41,9 +41,9 @@ func TestBatchV1CronJob(t *testing.T) {
 		BatchV1:  client.batchv1,
 		Resource: "test",
 		ExpectedResult: &Result{
-			Environment: map[string]string{"k": "v"},
-			Secrets:     []string{"test"},
-			ConfigMaps:  []string{"test"},
+			Environment: envValues{"k": "v"},
+			Secrets:     map[string]envValues{"test": {"k": "v"}},
+			ConfigMaps:  map[string]envValues{"test": {"k": "v"}},
 		},
 	})
 
@@ -133,9 +133,9 @@ func TestBatchV1Job(t *testing.T) {
 		BatchV1:  NewBatchV1(client),
 		Resource: "test",
 		ExpectedResult: &Result{
-			Environment: map[string]string{"k": "v"},
-			Secrets:     []string{"test"},
-			ConfigMaps:  []string{"test"},
+			Environment: envValues{"k": "v"},
+			Secrets:     map[string]envValues{"test": {"k": "v"}},
+			ConfigMaps:  map[string]envValues{"test": {"k": "v"}},
 		},
 	})
 

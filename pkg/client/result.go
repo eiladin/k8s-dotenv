@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/eiladin/k8s-dotenv/pkg/parser"
@@ -9,21 +10,35 @@ import (
 
 // Result contains the values of environment variables and names of configmaps and secrets related to a resource.
 type Result struct {
-	Environment map[string]string
-	Secrets     []string
-	ConfigMaps  []string
+	Environment envValues
+	Secrets     map[string]envValues
+	ConfigMaps  map[string]envValues
 }
 
 // NewResult constructor.
 func NewResult() *Result {
 	return &Result{
-		Environment: map[string]string{},
-		Secrets:     []string{},
-		ConfigMaps:  []string{},
+		Environment: envValues{},
+		Secrets:     map[string]envValues{},
+		ConfigMaps:  map[string]envValues{},
 	}
 }
 
-func resultFromContainers(containers []v1.Container) *Result {
+type envValues map[string]string
+
+func (env envValues) sortedKeys() []string {
+	keys := make([]string, 0, len(env))
+
+	for k := range env {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	return keys
+}
+
+func (client *Client) resultFromContainers(containers []v1.Container) *Client {
 	res := NewResult()
 
 	for _, cont := range containers {
@@ -33,53 +48,59 @@ func resultFromContainers(containers []v1.Container) *Result {
 
 		for _, envFrom := range cont.EnvFrom {
 			if envFrom.SecretRef != nil {
-				res.Secrets = append(res.Secrets, envFrom.SecretRef.Name)
+				v, err := client.CoreV1().SecretValues(envFrom.SecretRef.Name, client.shouldExport)
+
+				if err != nil {
+					client.Error = err
+
+					return client
+				}
+
+				res.Secrets[envFrom.SecretRef.Name] = v
 			}
 
 			if envFrom.ConfigMapRef != nil {
-				res.ConfigMaps = append(res.ConfigMaps, envFrom.ConfigMapRef.Name)
+				v, err := client.CoreV1().ConfigMapValues(envFrom.ConfigMapRef.Name, client.shouldExport)
+
+				if err != nil {
+					client.Error = err
+
+					return client
+				}
+
+				res.ConfigMaps[envFrom.ConfigMapRef.Name] = v
 			}
+		}
+	}
+
+	client.result = res
+
+	return client
+}
+
+func (r *Result) parse(client *Client) string {
+	var res string
+
+	envKeys := r.Environment.sortedKeys()
+	for _, k := range envKeys {
+		res += parser.ParseStr(client.shouldExport, k, r.Environment[k])
+	}
+
+	for k, v := range r.ConfigMaps {
+		res += fmt.Sprintf("##### CONFIGMAP - %s #####\n", k)
+		for _, key := range v.sortedKeys() {
+			res += parser.ParseStr(client.shouldExport, key, v[key])
+		}
+	}
+
+	for k, v := range r.Secrets {
+		res += fmt.Sprintf("##### SECRET - %s #####\n", k)
+		for _, key := range v.sortedKeys() {
+			res += parser.ParseStr(client.shouldExport, key, v[key])
 		}
 	}
 
 	return res
-}
-
-func (r *Result) output(client *Client) (string, error) {
-	res := ""
-	keys := make([]string, 0, len(r.Environment))
-
-	for k := range r.Environment {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-	sort.Strings(r.Secrets)
-	sort.Strings(r.ConfigMaps)
-
-	for _, k := range keys {
-		res += parser.ParseStr(client.shouldExport, k, r.Environment[k])
-	}
-
-	for _, s := range r.Secrets {
-		secretVal, err := client.CoreV1().SecretValues(s, client.shouldExport)
-		if err != nil {
-			return "", NewSecretErr(err)
-		}
-
-		res += secretVal
-	}
-
-	for _, c := range r.ConfigMaps {
-		configmapVal, err := client.CoreV1().ConfigMapValues(c, client.shouldExport)
-		if err != nil {
-			return "", NewConfigMapError(err)
-		}
-
-		res += configmapVal
-	}
-
-	return res, nil
 }
 
 func (client *Client) Write() error {
@@ -87,12 +108,9 @@ func (client *Client) Write() error {
 		return client.Error
 	}
 
-	output, err := client.result.output(client)
-	if err != nil {
-		return err
-	}
+	output := client.result.parse(client)
 
-	err = client.setDefaultWriter()
+	err := client.setDefaultWriter()
 	if err != nil {
 		return NewWriteError(err)
 	}

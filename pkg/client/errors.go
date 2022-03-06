@@ -14,9 +14,6 @@ var ErrMissingResource = errors.New("resource not found")
 // ErrCreatingClient is returned when the client cannot be created.
 var ErrCreatingClient = errors.New("client create error")
 
-// ErrNamespaceResolution is returned when the current namespace cannot be resolved.
-var ErrNamespaceResolution = errors.New("current namespace resolution error")
-
 // ErrAPIGroup is returned when a kubernetes api call fails.
 var ErrAPIGroup = errors.New("api group error")
 

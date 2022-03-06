@@ -2,10 +2,7 @@ package client
 
 import (
 	"context"
-	"fmt"
-	"sort"
 
-	"github.com/eiladin/k8s-dotenv/pkg/parser"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
@@ -25,54 +22,34 @@ func NewCoreV1(client *Client) *CoreV1 {
 }
 
 // ConfigMapValues returns the export value(s) given a configmap name in a specific namespace.
-func (corev1 *CoreV1) ConfigMapValues(resource string, shouldExport bool) (string, error) {
+func (corev1 *CoreV1) ConfigMapValues(resource string, shouldExport bool) (map[string]string, error) {
 	resp, err := corev1.
 		CoreV1Interface.
 		ConfigMaps(corev1.client.namespace).
 		Get(context.TODO(), resource, metav1.GetOptions{})
 
 	if err != nil {
-		return "", ErrMissingResource
+		return nil, ErrMissingResource
 	}
 
-	res := fmt.Sprintf("##### CONFIGMAP - %s #####\n", resource)
-
-	keys := make([]string, 0, len(resp.Data))
-	for k := range resp.Data {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		res += parser.ParseStr(shouldExport, k, resp.Data[k])
-	}
-
-	return res, nil
+	return resp.Data, nil
 }
 
 // SecretValues returns the export value(s) given a secret name in a specific namespace.
-func (corev1 *CoreV1) SecretValues(secret string, shouldExport bool) (string, error) {
+func (corev1 *CoreV1) SecretValues(secret string, shouldExport bool) (map[string]string, error) {
 	resp, err := corev1.
 		CoreV1Interface.
 		Secrets(corev1.client.namespace).
 		Get(context.TODO(), secret, metav1.GetOptions{})
 
 	if err != nil {
-		return "", ErrMissingResource
+		return nil, ErrMissingResource
 	}
 
-	res := fmt.Sprintf("##### SECRET - %s #####\n", secret)
-	keys := make([]string, 0, len(resp.Data))
+	res := make(map[string]string)
 
-	for k := range resp.Data {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		res += parser.Parse(shouldExport, k, resp.Data[k])
+	for k, v := range resp.Data {
+		res[k] = string(v)
 	}
 
 	return res, nil
@@ -110,7 +87,7 @@ func (corev1 *CoreV1) Pod(resource string) *Client {
 		return corev1.client
 	}
 
-	corev1.client.result = resultFromContainers(resp.Spec.Containers)
+	corev1.client.resultFromContainers(resp.Spec.Containers)
 
 	return corev1.client
 }

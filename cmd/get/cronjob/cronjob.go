@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +24,7 @@ func newRunError(err error) error {
 }
 
 // NewCmd creates the `cronjob` command.
-func NewCmd(opt *options.Options) *cobra.Command {
+func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "cronjob RESOURCE_NAME",
 		Aliases: []string{"cronjobs", "cj"},
@@ -40,8 +40,8 @@ func NewCmd(opt *options.Options) *cobra.Command {
 	return cmd
 }
 
-func validArgs(opt *options.Options) []string {
-	client := client.NewClient(opt.Client, client.WithNamespace(opt.Namespace))
+func validArgs(opt *clioptions.CLIOptions) []string {
+	client := client.NewClient(opt.KubeClient, client.WithNamespace(opt.Namespace))
 	group, _ := client.GetAPIGroup("CronJob")
 
 	var list []string
@@ -56,29 +56,29 @@ func validArgs(opt *options.Options) []string {
 	return list
 }
 
-func run(opt *options.Options, args []string) error {
+func run(opt *clioptions.CLIOptions, args []string) error {
 	if len(args) == 0 {
 		return ErrResourceNameRequired
 	}
 
-	cl := client.NewClient(
-		opt.Client,
+	client := client.NewClient(
+		opt.KubeClient,
 		client.WithNamespace(opt.Namespace),
 		client.WithFilename(opt.Filename),
 		client.WithWriter(opt.Writer),
 		client.WithExport(!opt.NoExport),
 	)
 
-	group, err := cl.GetAPIGroup("CronJob")
+	group, err := client.GetAPIGroup("CronJob")
 	if err != nil {
 		return clientError(err)
 	}
 
 	switch group {
 	case "batch/v1beta1":
-		err = cl.BatchV1Beta1().CronJob(args[0]).Write()
+		err = client.BatchV1Beta1().CronJob(args[0]).Write()
 	case "batch/v1":
-		err = cl.BatchV1().CronJob(args[0]).Write()
+		err = client.BatchV1().CronJob(args[0]).Write()
 	default:
 		return ErrUnsupportedGroup
 	}

@@ -34,7 +34,7 @@ func (appsv1 *AppsV1) DaemonSet(resource string) *Client {
 		return appsv1.client
 	}
 
-	appsv1.client.result = resultFromContainers(resp.Spec.Template.Spec.Containers)
+	appsv1.client.resultFromContainers(resp.Spec.Template.Spec.Containers)
 
 	return appsv1.client
 }
@@ -71,7 +71,7 @@ func (appsv1 *AppsV1) Deployment(resource string) *Client {
 		return appsv1.client
 	}
 
-	appsv1.client.result = resultFromContainers(resp.Spec.Template.Spec.Containers)
+	appsv1.client.resultFromContainers(resp.Spec.Template.Spec.Containers)
 
 	return appsv1.client
 }
@@ -108,7 +108,7 @@ func (appsv1 *AppsV1) ReplicaSet(resource string) *Client {
 		return appsv1.client
 	}
 
-	appsv1.client.result = resultFromContainers(resp.Spec.Template.Spec.Containers)
+	appsv1.client.resultFromContainers(resp.Spec.Template.Spec.Containers)
 
 	return appsv1.client
 }

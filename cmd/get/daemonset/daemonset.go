@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ func newRunError(err error) error {
 }
 
 // NewCmd creates the `daemonset` command.
-func NewCmd(opt *options.Options) *cobra.Command {
+func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "daemonset RESOURCE_NAME",
 		Aliases: []string{"daemonsets", "ds"},
@@ -33,22 +33,22 @@ func NewCmd(opt *options.Options) *cobra.Command {
 	return cmd
 }
 
-func validArgs(opt *options.Options) []string {
+func validArgs(opt *clioptions.CLIOptions) []string {
 	list, _ := client.NewClient(
-		opt.Client,
+		opt.KubeClient,
 		client.WithNamespace(opt.Namespace),
 	).AppsV1().DaemonSets()
 
 	return list
 }
 
-func run(opt *options.Options, args []string) error {
+func run(opt *clioptions.CLIOptions, args []string) error {
 	if len(args) == 0 {
 		return ErrResourceNameRequired
 	}
 
 	err := client.NewClient(
-		opt.Client,
+		opt.KubeClient,
 		client.WithNamespace(opt.Namespace),
 		client.WithFilename(opt.Filename),
 		client.WithWriter(opt.Writer),

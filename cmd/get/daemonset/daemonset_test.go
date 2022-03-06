@@ -3,15 +3,15 @@ package daemonset
 import (
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCmd(t *testing.T) {
-	cl := mock.NewFakeClient(mock.DaemonSet("test", "test", nil, nil, nil))
+	kubeClient := mock.NewFakeClient(mock.DaemonSet("test", "test", nil, nil, nil))
 
-	got := NewCmd(&options.Options{Client: cl, Namespace: "test"})
+	got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
 	assert.NotNil(t, got)
 
 	objs, _ := got.ValidArgsFunction(got, []string{}, "")
@@ -24,7 +24,7 @@ func TestNewCmd(t *testing.T) {
 func TestRun(t *testing.T) {
 	type testCase struct {
 		Name        string
-		Opt         *options.Options
+		Opt         *clioptions.CLIOptions
 		Args        []string
 		ExpectError bool
 	}
@@ -46,20 +46,20 @@ func TestRun(t *testing.T) {
 		ExpectError: true,
 	})
 
-	cl := mock.NewFakeClient(mock.DaemonSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
+	kubeClient := mock.NewFakeClient(mock.DaemonSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
 
 	validate(t, &testCase{
 		Name: "Should find daemonsets",
-		Opt:  &options.Options{Client: cl, Namespace: "test", Writer: mock.NewWriter()},
+		Opt:  &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test", Writer: mock.NewWriter()},
 		Args: []string{"test"},
 	})
 
 	validate(t, &testCase{
 		Name: "Should return writer errors",
-		Opt: &options.Options{
-			Client:    cl,
-			Namespace: "test",
-			Writer:    mock.NewErrorWriter().ErrorAfter(1),
+		Opt: &clioptions.CLIOptions{
+			KubeClient: kubeClient,
+			Namespace:  "test",
+			Writer:     mock.NewErrorWriter().ErrorAfter(1),
 		},
 		Args:        []string{"test"},
 		ExpectError: true,
@@ -67,10 +67,10 @@ func TestRun(t *testing.T) {
 
 	validate(t, &testCase{
 		Name: "Should not find a daemonset in an empty cluster",
-		Opt: &options.Options{
-			Client:    mock.NewFakeClient(),
-			Namespace: "test",
-			Writer:    mock.NewWriter(),
+		Opt: &clioptions.CLIOptions{
+			KubeClient: mock.NewFakeClient(),
+			Namespace:  "test",
+			Writer:     mock.NewWriter(),
 		},
 		Args:        []string{"test"},
 		ExpectError: true,
@@ -79,10 +79,8 @@ func TestRun(t *testing.T) {
 
 func TestValidArgs(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Opt *options.Options
-
+		Name          string
+		Opt           *clioptions.CLIOptions
 		ExpectedSlice []string
 	}
 
@@ -96,9 +94,9 @@ func TestValidArgs(t *testing.T) {
 
 	validate(t, &testCase{
 		Name: "Should return daemonsets",
-		Opt: &options.Options{
-			Client:    mock.NewFakeClient(),
-			Namespace: "test",
+		Opt: &clioptions.CLIOptions{
+			KubeClient: mock.NewFakeClient(),
+			Namespace:  "test",
 		},
 		ExpectedSlice: []string{},
 	})
