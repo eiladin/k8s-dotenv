@@ -5,6 +5,7 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func TestCoreV1ConfigMapValues(t *testing.T) {
@@ -102,6 +103,54 @@ func TestCoreV1SecretValues(t *testing.T) {
 		Name:        "Should not find test2.test",
 		Secret:      "test",
 		Client:      NewCoreV1(NewClient(kubeClient, WithNamespace("test2"))),
+		ExpectError: true,
+	})
+}
+
+func TestCoreV1Namespaces(t *testing.T) {
+	type testCase struct {
+		Name          string
+		CoreV1        *CoreV1
+		ExpectedSlice []string
+		ExpectError   bool
+	}
+
+	validate := func(t *testing.T, tc *testCase) {
+		t.Run(tc.Name, func(t *testing.T) {
+			actualSlice, actualError := tc.CoreV1.Namespaces()
+
+			assert.Equal(t, tc.ExpectedSlice, actualSlice)
+
+			if tc.ExpectError {
+				assert.Error(t, actualError)
+			} else {
+				assert.NoError(t, actualError)
+			}
+		})
+	}
+
+	cl := mock.NewFakeClient(mock.Namespace("one"))
+
+	validate(t, &testCase{
+		Name:          "Should return a single namespace",
+		CoreV1:        NewCoreV1(NewClient(cl)),
+		ExpectedSlice: []string{"one"},
+	})
+
+	cl = mock.NewFakeClient(mock.Namespace("one"), mock.Namespace("two"))
+
+	validate(t, &testCase{
+		Name:          "Should return multiple namespaces",
+		CoreV1:        NewCoreV1(NewClient(cl)),
+		ExpectedSlice: []string{"one", "two"},
+	})
+
+	cl = mock.NewFakeClient().
+		PrependReactor("list", "namespaces", true, &corev1.NamespaceList{}, assert.AnError)
+
+	validate(t, &testCase{
+		Name:        "Should return multiple namespaces",
+		CoreV1:      NewCoreV1(NewClient(cl)),
 		ExpectError: true,
 	})
 }

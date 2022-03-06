@@ -258,3 +258,11 @@ func TestNewClient(t *testing.T) {
 		},
 	})
 }
+
+func TestAPIs(t *testing.T) {
+	client := NewClient(mock.NewFakeClient())
+	assert.NotNil(t, client.AppsV1())
+	assert.NotNil(t, client.BatchV1())
+	assert.NotNil(t, client.BatchV1Beta1())
+	assert.NotNil(t, client.CoreV1())
+}
