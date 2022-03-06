@@ -62,7 +62,7 @@ func (r *Result) output(client *Client) (string, error) {
 	}
 
 	for _, s := range r.Secrets {
-		secretVal, err := client.CoreV1().Secret(s, client.shouldExport)
+		secretVal, err := client.CoreV1().SecretValues(s, client.shouldExport)
 		if err != nil {
 			return "", NewSecretErr(err)
 		}
@@ -71,7 +71,7 @@ func (r *Result) output(client *Client) (string, error) {
 	}
 
 	for _, c := range r.ConfigMaps {
-		configmapVal, err := client.CoreV1().ConfigMapV1(c, client.shouldExport)
+		configmapVal, err := client.CoreV1().ConfigMapValues(c, client.shouldExport)
 		if err != nil {
 			return "", NewConfigMapError(err)
 		}

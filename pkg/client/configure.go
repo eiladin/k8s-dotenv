@@ -17,7 +17,6 @@ func WithWriter(writer io.Writer) ConfigureFunc {
 func WithNamespace(namespace string) ConfigureFunc {
 	return func(client *Client) {
 		client.namespace = namespace
-		client.corev1.SetNamespace(namespace)
 	}
 }
 

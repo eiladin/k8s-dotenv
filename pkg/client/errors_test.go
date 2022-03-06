@@ -125,5 +125,4 @@ func TestErrorWrappers(t *testing.T) {
 		Func:          NewWriteError,
 		ExpectedError: assert.AnError,
 	})
-
 }

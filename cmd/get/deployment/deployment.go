@@ -6,7 +6,6 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/options"
-
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +37,7 @@ func validArgs(opt *options.Options) []string {
 	list, _ := client.NewClient(
 		opt.Client,
 		client.WithNamespace(opt.Namespace),
-	).DeploymentsV1()
+	).AppsV1().Deployments()
 
 	return list
 }
@@ -54,7 +53,7 @@ func run(opt *options.Options, args []string) error {
 		client.WithFilename(opt.Filename),
 		client.WithWriter(opt.Writer),
 		client.WithExport(!opt.NoExport),
-	).DeploymentV1(args[0]).Write()
+	).AppsV1().Deployment(args[0]).Write()
 
 	if err != nil {
 		return newRunError(err)

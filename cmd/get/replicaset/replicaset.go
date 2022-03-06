@@ -37,7 +37,7 @@ func validArgs(opt *options.Options) []string {
 	list, _ := client.NewClient(
 		opt.Client,
 		client.WithNamespace(opt.Namespace),
-	).ReplicaSetsV1()
+	).AppsV1().ReplicaSets()
 
 	return list
 }
@@ -53,7 +53,7 @@ func run(opt *options.Options, args []string) error {
 		client.WithFilename(opt.Filename),
 		client.WithWriter(opt.Writer),
 		client.WithExport(!opt.NoExport),
-	).ReplicaSetV1(args[0]).Write()
+	).AppsV1().ReplicaSet(args[0]).Write()
 
 	if err != nil {
 		return newRunError(err)

@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	corev1 "github.com/eiladin/k8s-dotenv/pkg/client/core/v1"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -179,7 +178,7 @@ func TestResultOutput(t *testing.T) {
 		Result: &Result{Secrets: []string{"test1"}},
 		Client: cl,
 		ErrorChecker: func(err error) bool {
-			return assert.ErrorIs(t, err, corev1.ErrMissingResource)
+			return assert.ErrorIs(t, err, ErrMissingResource)
 		},
 	})
 
@@ -188,7 +187,7 @@ func TestResultOutput(t *testing.T) {
 		Result: &Result{ConfigMaps: []string{"test1"}},
 		Client: cl,
 		ErrorChecker: func(err error) bool {
-			return assert.ErrorIs(t, err, corev1.ErrMissingResource)
+			return assert.ErrorIs(t, err, ErrMissingResource)
 		},
 	})
 }

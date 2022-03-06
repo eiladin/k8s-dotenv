@@ -37,7 +37,7 @@ func validArgs(opt *options.Options) []string {
 	list, _ := client.NewClient(
 		opt.Client,
 		client.WithNamespace(opt.Namespace),
-	).DaemonSetsV1()
+	).AppsV1().DaemonSets()
 
 	return list
 }
@@ -53,7 +53,7 @@ func run(opt *options.Options, args []string) error {
 		client.WithFilename(opt.Filename),
 		client.WithWriter(opt.Writer),
 		client.WithExport(!opt.NoExport),
-	).DaemonSetV1(args[0]).Write()
+	).AppsV1().DaemonSet(args[0]).Write()
 
 	if err != nil {
 		return newRunError(err)

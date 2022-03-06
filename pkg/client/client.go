@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 
-	corev1 "github.com/eiladin/k8s-dotenv/pkg/client/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -20,13 +19,19 @@ type Client struct {
 	writer       io.Writer
 	result       *Result
 	Error        error
-	corev1       *corev1.CoreV1
+	appsv1       *AppsV1
+	batchv1      *BatchV1
+	batchv1beta1 *BatchV1Beta1
+	corev1       *CoreV1
 }
 
 func NewClient(kubeClient kubernetes.Interface, configures ...ConfigureFunc) *Client {
 	client := Client{}
 	client.Interface = kubeClient
-	client.corev1 = corev1.NewCoreV1(client.Interface.CoreV1(), "")
+	client.appsv1 = NewAppsV1(&client)
+	client.batchv1 = NewBatchV1(&client)
+	client.batchv1beta1 = NewBatchV1Beta1(&client)
+	client.corev1 = NewCoreV1(&client)
 
 	for _, configure := range configures {
 		configure(&client)
@@ -35,7 +40,19 @@ func NewClient(kubeClient kubernetes.Interface, configures ...ConfigureFunc) *Cl
 	return &client
 }
 
-func (client *Client) CoreV1() *corev1.CoreV1 {
+func (client *Client) AppsV1() *AppsV1 {
+	return client.appsv1
+}
+
+func (client *Client) BatchV1() *BatchV1 {
+	return client.batchv1
+}
+
+func (client *Client) BatchV1Beta1() *BatchV1Beta1 {
+	return client.batchv1beta1
+}
+
+func (client *Client) CoreV1() *CoreV1 {
 	return client.corev1
 }
 

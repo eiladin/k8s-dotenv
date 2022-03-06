@@ -48,9 +48,9 @@ func validArgs(opt *options.Options) []string {
 
 	switch group {
 	case "batch/v1beta1":
-		list, _ = client.CronJobsV1beta1()
+		list, _ = client.BatchV1Beta1().CronJobs()
 	case "batch/v1":
-		list, _ = client.CronJobsV1()
+		list, _ = client.BatchV1().CronJobs()
 	}
 
 	return list
@@ -76,9 +76,9 @@ func run(opt *options.Options, args []string) error {
 
 	switch group {
 	case "batch/v1beta1":
-		err = cl.CronJobV1Beta1(args[0]).Write()
+		err = cl.BatchV1Beta1().CronJob(args[0]).Write()
 	case "batch/v1":
-		err = cl.CronJobV1(args[0]).Write()
+		err = cl.BatchV1().CronJob(args[0]).Write()
 	default:
 		return ErrUnsupportedGroup
 	}
