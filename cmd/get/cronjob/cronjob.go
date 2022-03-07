@@ -4,10 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	v1 "github.com/eiladin/k8s-dotenv/pkg/api/v1"
-	"github.com/eiladin/k8s-dotenv/pkg/api/v1beta1"
-	"github.com/eiladin/k8s-dotenv/pkg/environment"
-	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/client"
+	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/spf13/cobra"
 )
 
@@ -17,16 +15,16 @@ var ErrResourceNameRequired = errors.New("resource name required")
 // ErrUnsupportedGroup is returned when a group/resource combination is invalid.
 var ErrUnsupportedGroup = errors.New("group/resource not supported")
 
-func newClientError(err error) error {
+func clientError(err error) error {
 	return fmt.Errorf("client error: %w", err)
 }
 
-func newRunError(err error) error {
+func runError(err error) error {
 	return fmt.Errorf("cronjob error: %w", err)
 }
 
 // NewCmd creates the `cronjob` command.
-func NewCmd(opt *options.Options) *cobra.Command {
+func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "cronjob RESOURCE_NAME",
 		Aliases: []string{"cronjobs", "cj"},
@@ -42,48 +40,54 @@ func NewCmd(opt *options.Options) *cobra.Command {
 	return cmd
 }
 
-func validArgs(opt *options.Options) []string {
-	group, _ := opt.Client.GetAPIGroup("CronJob")
+func validArgs(opt *clioptions.CLIOptions) []string {
+	client := client.NewClient(
+		client.WithKubeClient(opt.KubeClient),
+		client.WithNamespace(opt.Namespace),
+	)
+	group, _ := client.GetAPIGroup("CronJob")
 
 	var list []string
 
 	switch group {
 	case "batch/v1beta1":
-		list, _ = v1beta1.CronJobs(opt.Client, opt.Namespace)
+		list, _ = client.BatchV1Beta1().CronJobList()
 	case "batch/v1":
-		list, _ = v1.CronJobs(opt.Client, opt.Namespace)
+		list, _ = client.BatchV1().CronJobList()
 	}
 
 	return list
 }
 
-func run(opt *options.Options, args []string) error {
+func run(opt *clioptions.CLIOptions, args []string) error {
 	if len(args) == 0 {
 		return ErrResourceNameRequired
 	}
 
-	group, err := opt.Client.GetAPIGroup("CronJob")
-	if err != nil {
-		return newClientError(err)
-	}
+	client := client.NewClient(
+		client.WithKubeClient(opt.KubeClient),
+		client.WithNamespace(opt.Namespace),
+		client.WithFilename(opt.Filename),
+		client.WithWriter(opt.Writer),
+		client.WithExport(!opt.NoExport),
+	)
 
-	var res *environment.Result
+	group, err := client.GetAPIGroup("CronJob")
+	if err != nil {
+		return clientError(err)
+	}
 
 	switch group {
 	case "batch/v1beta1":
-		res, err = v1beta1.CronJob(opt.Client, opt.Namespace, args[0])
+		err = client.BatchV1Beta1().CronJob(args[0]).Write()
 	case "batch/v1":
-		res, err = v1.CronJob(opt.Client, opt.Namespace, args[0])
+		err = client.BatchV1().CronJob(args[0]).Write()
 	default:
 		return ErrUnsupportedGroup
 	}
 
 	if err != nil {
-		return newRunError(err)
-	}
-
-	if err := res.Write(opt); err != nil {
-		return newRunError(err)
+		return runError(err)
 	}
 
 	return nil

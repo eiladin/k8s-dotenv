@@ -1,81 +1,97 @@
 package client
 
 import (
-	"errors"
-	"path/filepath"
+	"fmt"
+	"io"
+	"os"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
-// ErrResourceNameRequired is returned when no resource name is provided.
-var ErrResourceNameRequired = errors.New("resource name required")
+// ConfigureFunc is used for configuring `Client` settings.
+type ConfigureFunc = func(client *Client)
 
-// ErrMissingResource is returned when the resource is not found.
-var ErrMissingResource = errors.New("resource not found")
-
-// ErrCreatingClient is returned when the client cannot be created.
-var ErrCreatingClient = errors.New("client create error")
-
-// ErrNamespaceResolution is returned when the current namespace cannot be resolved.
-var ErrNamespaceResolution = errors.New("current resolution error")
-
-// ErrAPIGroup is returned when a kubernetes api call fails.
-var ErrAPIGroup = errors.New("api group error")
-
-// Client is a wrapper around kubernetes.Interface.
+// Client is used to interact with the kubernetes API.
 type Client struct {
 	kubernetes.Interface
+	shouldExport bool
+	namespace    string
+	filename     string
+	writer       io.Writer
+	result       *Result
+	Error        error
+	appsv1       *AppsV1
+	batchv1      *BatchV1
+	batchv1beta1 *BatchV1Beta1
+	corev1       *CoreV1
 }
 
-// NewClient returns a Client wrapping the given kubernetes.Interface.
-func NewClient(cl kubernetes.Interface) *Client {
-	return &Client{cl}
+// NewClient creates `Client` from a kubernetes client.
+func NewClient(configures ...ConfigureFunc) *Client {
+	client := Client{}
+
+	for _, configure := range configures {
+		configure(&client)
+	}
+
+	return &client
 }
 
-// Get returns a configured Client loaded from ~/.kube/config.
-func Get() (*Client, error) {
-	var home string
-	if home = homedir.HomeDir(); home == "" {
-		return nil, ErrCreatingClient
+// AppsV1 is used to interact with features provided by the apps group.
+func (client *Client) AppsV1() *AppsV1 {
+	if client.Interface == nil {
+		panic(newMissingKubeClientError("AppsV1"))
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", filepath.Join(home, ".kube", "config"))
-	if err != nil {
-		return nil, ErrCreatingClient
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, ErrCreatingClient
-	}
-
-	return &Client{clientset}, nil
+	return client.appsv1
 }
 
-// CurrentNamespace returns the namespace from `~/.kube/config`.
-func CurrentNamespace(namespace string, configPath string) (string, error) {
-	if namespace != "" {
-		return namespace, nil
+// BatchV1 is used to interact with features provided by the batch group.
+func (client *Client) BatchV1() *BatchV1 {
+	if client.Interface == nil {
+		panic(newMissingKubeClientError("BatchV1"))
 	}
 
-	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	if configPath != "" {
-		rules.ExplicitPath = configPath
+	return client.batchv1
+}
+
+// BatchV1Beta1 is used to interact with features provided by the batch group.
+func (client *Client) BatchV1Beta1() *BatchV1Beta1 {
+	if client.Interface == nil {
+		panic(newMissingKubeClientError("BatchV1Beta1"))
 	}
 
-	clientCfg, err := rules.Load()
+	return client.batchv1beta1
+}
+
+// CoreV1 is used to interact with features provided by the core group.
+func (client *Client) CoreV1() *CoreV1 {
+	if client.Interface == nil {
+		panic(newMissingKubeClientError("CoreV1"))
+	}
+
+	return client.corev1
+}
+
+func (client *Client) setDefaultWriter() error {
+	if client.writer != nil {
+		return nil
+	}
+
+	if client.filename == "" {
+		return ErrNoFilename
+	}
+
+	//nolint
+	f, err := os.OpenFile(client.filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+
 	if err != nil {
-		return "", ErrNamespaceResolution
+		return fmt.Errorf("creating output file: %w", err)
 	}
 
-	ns := clientCfg.Contexts[clientCfg.CurrentContext].Namespace
-	if ns == "" {
-		return "default", nil
-	}
+	client.writer = f
 
-	return ns, nil
+	return nil
 }
 
 // GetAPIGroup returns the GroupVersion (batch/v1, batch/v1beta1, etc) for the given resource.

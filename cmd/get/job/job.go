@@ -4,20 +4,20 @@ import (
 	"errors"
 	"fmt"
 
-	v1 "github.com/eiladin/k8s-dotenv/pkg/api/v1"
-	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/client"
+	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/spf13/cobra"
 )
 
 // ErrResourceNameRequired is returned when no resource name is provided.
 var ErrResourceNameRequired = errors.New("resource name required")
 
-func newRunError(err error) error {
+func runError(err error) error {
 	return fmt.Errorf("job error: %w", err)
 }
 
 // NewCmd creates the `job` command.
-func NewCmd(opt *options.Options) *cobra.Command {
+func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "job RESOURCE_NAME",
 		Aliases: []string{"jobs"},
@@ -33,24 +33,30 @@ func NewCmd(opt *options.Options) *cobra.Command {
 	return cmd
 }
 
-func validArgs(opt *options.Options) []string {
-	list, _ := v1.Jobs(opt.Client, opt.Namespace)
+func validArgs(opt *clioptions.CLIOptions) []string {
+	list, _ := client.NewClient(
+		client.WithKubeClient(opt.KubeClient),
+		client.WithNamespace(opt.Namespace),
+	).BatchV1().JobList()
 
 	return list
 }
 
-func run(opt *options.Options, args []string) error {
+func run(opt *clioptions.CLIOptions, args []string) error {
 	if len(args) == 0 {
 		return ErrResourceNameRequired
 	}
 
-	res, err := v1.Job(opt.Client, opt.Namespace, args[0])
-	if err != nil {
-		return newRunError(err)
-	}
+	err := client.NewClient(
+		client.WithKubeClient(opt.KubeClient),
+		client.WithNamespace(opt.Namespace),
+		client.WithFilename(opt.Filename),
+		client.WithWriter(opt.Writer),
+		client.WithExport(!opt.NoExport),
+	).BatchV1().Job(args[0]).Write()
 
-	if err := res.Write(opt); err != nil {
-		return newRunError(err)
+	if err != nil {
+		return runError(err)
 	}
 
 	return nil

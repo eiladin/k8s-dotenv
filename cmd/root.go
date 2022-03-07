@@ -7,14 +7,14 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/cmd/completion"
 	"github.com/eiladin/k8s-dotenv/cmd/get"
-	v1 "github.com/eiladin/k8s-dotenv/pkg/api/v1"
 	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
+	"github.com/eiladin/k8s-dotenv/pkg/kubeclient"
 	"github.com/spf13/cobra"
 )
 
 //nolint
-var opt *options.Options = &options.Options{}
+var opt *clioptions.CLIOptions = &clioptions.CLIOptions{}
 
 //nolint
 var stdOut bool
@@ -45,12 +45,12 @@ func newRootCmd(version string) *rootCmd {
 		Long:  `k8s-dotenv takes a kubernetes secret or configmap and turns it into a .env file.`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetFlags(0)
-			cs, err := client.Get()
+			cs, err := kubeclient.Get()
 			if err != nil {
 				//nolint
 				return err
 			}
-			opt.Client = cs
+			opt.KubeClient = cs
 			if stdOut {
 				opt.Writer = os.Stdout
 			}
@@ -67,7 +67,7 @@ func newRootCmd(version string) *rootCmd {
 	cmd.PersistentFlags().StringVarP(&opt.Namespace, "namespace", "n", "", "Namespace")
 	_ = cmd.RegisterFlagCompletionFunc("namespace",
 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			list, err := v1.Namespaces(opt.Client)
+			list, err := client.NewClient(client.WithKubeClient(opt.KubeClient)).CoreV1().NamespaceList()
 			if err != nil {
 				log.Fatal(err)
 			}

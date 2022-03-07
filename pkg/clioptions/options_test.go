@@ -1,7 +1,6 @@
-package options
+package clioptions
 
 import (
-	"bytes"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -74,17 +73,13 @@ users:
     token: not-a-real-token
 `
 
-func TestOptionsResolveNamespace(t *testing.T) {
+func TestCLIOptionsResolveNamespace(t *testing.T) {
 	type testCase struct {
-		Name string
-
-		Options *Options
-
-		ConfigPath string
-
+		Name         string
+		Options      *CLIOptions
+		ConfigPath   string
 		ErrorChecker func(err error) bool
-
-		ValueChecker func(opt *Options) bool
+		ValueChecker func(opt *CLIOptions) bool
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
@@ -103,8 +98,8 @@ func TestOptionsResolveNamespace(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:    "Should resolve test",
-		Options: &Options{Namespace: "test"},
-		ValueChecker: func(opt *Options) bool {
+		Options: &CLIOptions{Namespace: "test"},
+		ValueChecker: func(opt *CLIOptions) bool {
 			return opt.Namespace == "test"
 		},
 	})
@@ -116,9 +111,9 @@ func TestOptionsResolveNamespace(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:       "Should resolve default",
-		Options:    &Options{},
+		Options:    &CLIOptions{},
 		ConfigPath: "default.config",
-		ValueChecker: func(opt *Options) bool {
+		ValueChecker: func(opt *CLIOptions) bool {
 			return opt.Namespace == "default"
 		},
 	})
@@ -130,9 +125,9 @@ func TestOptionsResolveNamespace(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:       "Should resolve dev",
-		Options:    &Options{},
+		Options:    &CLIOptions{},
 		ConfigPath: "dev.config",
-		ValueChecker: func(opt *Options) bool {
+		ValueChecker: func(opt *CLIOptions) bool {
 			return opt.Namespace == "dev"
 		},
 	})
@@ -144,50 +139,10 @@ func TestOptionsResolveNamespace(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:       "Should throw an error on invalid config",
-		Options:    &Options{},
+		Options:    &CLIOptions{},
 		ConfigPath: "error.config",
 		ErrorChecker: func(err error) bool {
 			return err != nil
 		},
-	})
-}
-
-func TestOptionsSetDefaultWriter(t *testing.T) {
-	type testCase struct {
-		Name        string
-		Options     *Options
-		ExpectError bool
-	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualError := tc.Options.SetDefaultWriter()
-
-			if tc.ExpectError {
-				assert.Error(t, actualError)
-			} else {
-				assert.NoError(t, actualError)
-			}
-		})
-	}
-
-	var b bytes.Buffer
-
-	defer os.Remove("./out.test")
-
-	validate(t, &testCase{
-		Name:    "Should use the passed in writer",
-		Options: &Options{Writer: &b},
-	})
-
-	validate(t, &testCase{
-		Name:        "Should Error given no filename or writer",
-		Options:     &Options{},
-		ExpectError: true,
-	})
-
-	validate(t, &testCase{
-		Name:    "Should not error given a filename",
-		Options: &Options{Filename: "./out.test"},
 	})
 }

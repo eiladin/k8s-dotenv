@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"github.com/eiladin/k8s-dotenv/pkg/options"
+	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,9 +12,9 @@ import (
 
 func TestNewCmd(t *testing.T) {
 	v1mock := mock.CronJobv1("my-cronjob", "test", nil, nil, nil)
-	cl := mock.NewFakeClient(v1mock).WithResources(mock.CronJobv1Resource())
+	kubeClient := mock.NewFakeClient(v1mock).WithResources(mock.CronJobv1Resource())
 
-	got := NewCmd(&options.Options{Client: client.NewClient(cl), Namespace: "test"})
+	got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
 	assert.NotNil(t, got)
 
 	cronjobs, _ := got.ValidArgsFunction(got, []string{}, "")
@@ -28,7 +27,7 @@ func TestNewCmd(t *testing.T) {
 func TestRun(t *testing.T) {
 	type testCase struct {
 		Name        string
-		Opt         *options.Options
+		Opt         *clioptions.CLIOptions
 		Args        []string
 		ExpectError bool
 		Comparison  assert.Comparison
@@ -58,25 +57,25 @@ func TestRun(t *testing.T) {
 		ExpectError: true,
 	})
 
-	cl := mock.NewFakeClient().WithResources(mock.InvalidGroupResource())
+	kubeClient := mock.NewFakeClient().WithResources(mock.InvalidGroupResource())
 
 	validate(t, &testCase{
 		Name:        "Should return client errors",
-		Opt:         &options.Options{Client: client.NewClient(cl)},
+		Opt:         &clioptions.CLIOptions{KubeClient: kubeClient},
 		Args:        []string{"test"},
 		ExpectError: true,
 	})
 
 	var b bytes.Buffer
 
-	cl = mock.NewFakeClient(v1mock).WithResources(mock.CronJobv1Resource())
+	kubeClient = mock.NewFakeClient(v1mock).WithResources(mock.CronJobv1Resource())
 
 	validate(t, &testCase{
 		Name: "Should write v1 CronJobs",
-		Opt: &options.Options{
-			Client:    client.NewClient(cl),
-			Namespace: "test",
-			Writer:    &b,
+		Opt: &clioptions.CLIOptions{
+			KubeClient: kubeClient,
+			Namespace:  "test",
+			Writer:     &b,
 		},
 		Args: []string{"my-cronjob"},
 		Comparison: func() (success bool) {
@@ -84,16 +83,16 @@ func TestRun(t *testing.T) {
 		},
 	})
 
-	cl = mock.NewFakeClient(v1beta1mock).WithResources(mock.CronJobv1beta1Resource())
+	kubeClient = mock.NewFakeClient(v1beta1mock).WithResources(mock.CronJobv1beta1Resource())
 
 	b.Reset()
 
 	validate(t, &testCase{
 		Name: "Should write v1beta1 CronJobs",
-		Opt: &options.Options{
-			Client:    client.NewClient(cl),
-			Namespace: "test",
-			Writer:    &b,
+		Opt: &clioptions.CLIOptions{
+			KubeClient: kubeClient,
+			Namespace:  "test",
+			Writer:     &b,
 		},
 		Args: []string{"my-beta-cronjob"},
 		Comparison: func() (success bool) {
@@ -103,39 +102,39 @@ func TestRun(t *testing.T) {
 
 	validate(t, &testCase{
 		Name: "Should return writer errors",
-		Opt: &options.Options{
-			Client:    client.NewClient(cl),
-			Namespace: "test",
-			Writer:    mock.NewErrorWriter().ErrorAfter(1),
+		Opt: &clioptions.CLIOptions{
+			KubeClient: kubeClient,
+			Namespace:  "test",
+			Writer:     mock.NewErrorWriter().ErrorAfter(1),
 		},
 		Args:        []string{"my-beta-cronjob"},
 		ExpectError: true,
 	})
 
-	cl = mock.NewFakeClient().WithResources(mock.UnsupportedGroupResource())
+	kubeClient = mock.NewFakeClient().WithResources(mock.UnsupportedGroupResource())
 
 	b.Reset()
 
 	validate(t, &testCase{
 		Name: "Should error on unsupported group",
-		Opt: &options.Options{
-			Client:    client.NewClient(cl),
-			Namespace: "test",
-			Writer:    &b,
+		Opt: &clioptions.CLIOptions{
+			KubeClient: kubeClient,
+			Namespace:  "test",
+			Writer:     &b,
 		},
 		Args:        []string{"test"},
 		ExpectError: true,
 	})
 
-	cl = mock.NewFakeClient().
+	kubeClient = mock.NewFakeClient().
 		WithResources(mock.CronJobv1Resource()).
 		PrependReactor("get", "cronjobs", true, nil, assert.AnError)
 
 	validate(t, &testCase{
 		Name: "Should return API errors",
-		Opt: &options.Options{
-			Client:    client.NewClient(cl),
-			Namespace: "test",
+		Opt: &clioptions.CLIOptions{
+			KubeClient: kubeClient,
+			Namespace:  "test",
 		},
 		Args:        []string{"test"},
 		ExpectError: true,
@@ -145,7 +144,7 @@ func TestRun(t *testing.T) {
 func TestValidArgs(t *testing.T) {
 	type testCase struct {
 		Name          string
-		Opt           *options.Options
+		Opt           *clioptions.CLIOptions
 		APIResource   *metav1.APIResourceList
 		Group         string
 		ExpectedSlice []string
@@ -153,10 +152,10 @@ func TestValidArgs(t *testing.T) {
 
 	v1mock := mock.CronJobv1("my-cronjob", "test", nil, nil, nil)
 	v1beta1mock := mock.CronJobv1beta1("my-beta-cronjob", "test", nil, nil, nil)
-	cl := mock.NewFakeClient(v1mock, v1beta1mock)
+	kubeClient := mock.NewFakeClient(v1mock, v1beta1mock)
 
 	validate := func(t *testing.T, tc *testCase) {
-		cl.Fake.Resources = []*metav1.APIResourceList{tc.APIResource}
+		kubeClient.Fake.Resources = []*metav1.APIResourceList{tc.APIResource}
 
 		t.Run(tc.Name, func(t *testing.T) {
 			actualSlice := validArgs(tc.Opt)
@@ -167,7 +166,7 @@ func TestValidArgs(t *testing.T) {
 	validate(t, &testCase{
 		Name:          "Should find v1 cronjobs",
 		Group:         "batch/v1",
-		Opt:           &options.Options{Client: client.NewClient(cl), Namespace: "test"},
+		Opt:           &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"},
 		APIResource:   mock.CronJobv1Resource(),
 		ExpectedSlice: []string{"my-cronjob"},
 	})
@@ -175,7 +174,7 @@ func TestValidArgs(t *testing.T) {
 	validate(t, &testCase{
 		Name:          "Should find v1beta1 cronjobs",
 		Group:         "batch/v1beta1",
-		Opt:           &options.Options{Client: client.NewClient(cl), Namespace: "test"},
+		Opt:           &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"},
 		APIResource:   mock.CronJobv1beta1Resource(),
 		ExpectedSlice: []string{"my-beta-cronjob"},
 	})
@@ -184,6 +183,6 @@ func TestValidArgs(t *testing.T) {
 		Name:        "Should not find non-existent groups",
 		Group:       "batch/not-a-version",
 		APIResource: mock.InvalidGroupResource(),
-		Opt:         &options.Options{Client: client.NewClient(cl), Namespace: "test"},
+		Opt:         &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"},
 	})
 }
