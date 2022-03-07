@@ -33,6 +33,7 @@ func newWriteError(err error) error {
 }
 
 func newMissingKubeClientError(client string) error {
+	//nolint
 	return fmt.Errorf("could not create %s client, missing call to WithKubeClient?", client)
 }
 

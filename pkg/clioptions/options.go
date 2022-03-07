@@ -23,8 +23,8 @@ type CLIOptions struct {
 }
 
 // ResolveNamespace sets the Namespace property of an Options struct.
-func (opt *CLIOptions) ResolveNamespace(configPath string) error {
-	ns, err := kubeclient.CurrentNamespace(opt.Namespace, configPath)
+func (opt *CLIOptions) ResolveNamespace() error {
+	ns, err := kubeclient.CurrentNamespace()
 	if err != nil {
 		return fmt.Errorf("resolve namespace: %w", err)
 	}
