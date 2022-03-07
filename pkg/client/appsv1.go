@@ -39,8 +39,8 @@ func (appsv1 *AppsV1) DaemonSet(resource string) *Client {
 	return appsv1.client
 }
 
-// DaemonSets returns a list of resources.
-func (appsv1 *AppsV1) DaemonSets() ([]string, error) {
+// DaemonSetList returns a list of daemonsets.
+func (appsv1 *AppsV1) DaemonSetList() ([]string, error) {
 	resp, err := appsv1.
 		AppsV1Interface.
 		DaemonSets(appsv1.client.namespace).
@@ -76,8 +76,8 @@ func (appsv1 *AppsV1) Deployment(resource string) *Client {
 	return appsv1.client
 }
 
-// Deployments returns a list of resources.
-func (appsv1 *AppsV1) Deployments() ([]string, error) {
+// DeploymentList returns a list of depployments.
+func (appsv1 *AppsV1) DeploymentList() ([]string, error) {
 	resp, err := appsv1.
 		AppsV1Interface.
 		Deployments(appsv1.client.namespace).
@@ -113,8 +113,8 @@ func (appsv1 *AppsV1) ReplicaSet(resource string) *Client {
 	return appsv1.client
 }
 
-// ReplicaSets returns a list of resources.
-func (appsv1 *AppsV1) ReplicaSets() ([]string, error) {
+// ReplicaSetList returns a list of replicasets.
+func (appsv1 *AppsV1) ReplicaSetList() ([]string, error) {
 	resp, err := appsv1.
 		AppsV1Interface.
 		ReplicaSets(appsv1.client.namespace).

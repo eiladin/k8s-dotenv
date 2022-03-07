@@ -39,21 +39,37 @@ func NewClient(configures ...ConfigureFunc) *Client {
 
 // AppsV1 is used to interact with features provided by the apps group.
 func (client *Client) AppsV1() *AppsV1 {
+	if client.Interface == nil {
+		panic(newMissingKubeClientError("AppsV1"))
+	}
+
 	return client.appsv1
 }
 
 // BatchV1 is used to interact with features provided by the batch group.
 func (client *Client) BatchV1() *BatchV1 {
+	if client.Interface == nil {
+		panic(newMissingKubeClientError("BatchV1"))
+	}
+
 	return client.batchv1
 }
 
 // BatchV1Beta1 is used to interact with features provided by the batch group.
 func (client *Client) BatchV1Beta1() *BatchV1Beta1 {
+	if client.Interface == nil {
+		panic(newMissingKubeClientError("BatchV1Beta1"))
+	}
+
 	return client.batchv1beta1
 }
 
 // CoreV1 is used to interact with features provided by the core group.
 func (client *Client) CoreV1() *CoreV1 {
+	if client.Interface == nil {
+		panic(newMissingKubeClientError("CoreV1"))
+	}
+
 	return client.corev1
 }
 

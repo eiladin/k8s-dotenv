@@ -37,7 +37,7 @@ func validArgs(opt *clioptions.CLIOptions) []string {
 	list, _ := client.NewClient(
 		client.WithKubeClient(opt.KubeClient),
 		client.WithNamespace(opt.Namespace),
-	).BatchV1().Jobs()
+	).BatchV1().JobList()
 
 	return list
 }

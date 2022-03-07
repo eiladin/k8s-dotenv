@@ -167,7 +167,7 @@ func TestNewResult(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualResult := NewResult()
+			actualResult := newResult()
 
 			assert.Equal(t, tc.ExpectedResult, actualResult)
 		})

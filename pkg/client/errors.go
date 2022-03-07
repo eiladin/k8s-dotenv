@@ -20,19 +20,20 @@ var ErrAPIGroup = errors.New("api group error")
 // ErrNoFilename is returned when no filename is provided.
 var ErrNoFilename = errors.New("no filename provided")
 
-// NewSecretErr wraps secret errors.
-func NewSecretErr(err error) error {
+func newSecretErr(err error) error {
 	return fmt.Errorf("secret error: %w", err)
 }
 
-// NewConfigMapError wraps config map errors.
-func NewConfigMapError(err error) error {
+func newConfigMapError(err error) error {
 	return fmt.Errorf("configmap error: %w", err)
 }
 
-// NewWriteError wraps writer errors.
-func NewWriteError(err error) error {
+func newWriteError(err error) error {
 	return fmt.Errorf("write error: %w", err)
+}
+
+func newMissingKubeClientError(client string) error {
+	return fmt.Errorf("could not create %s client, missing call to WithKubeClient?", client)
 }
 
 // ResourceLoadError wraps API errors when a resource is not found.

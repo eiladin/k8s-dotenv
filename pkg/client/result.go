@@ -15,8 +15,7 @@ type Result struct {
 	ConfigMaps  map[string]envValues
 }
 
-// NewResult constructor.
-func NewResult() *Result {
+func newResult() *Result {
 	return &Result{
 		Environment: envValues{},
 		Secrets:     map[string]envValues{},
@@ -39,7 +38,7 @@ func (env envValues) sortedKeys() []string {
 }
 
 func (client *Client) resultFromContainers(containers []v1.Container) *Client {
-	res := NewResult()
+	res := newResult()
 
 	for _, cont := range containers {
 		for _, env := range cont.Env {
@@ -106,11 +105,11 @@ func (client *Client) Write() error {
 
 	err := client.setDefaultWriter()
 	if err != nil {
-		return NewWriteError(err)
+		return newWriteError(err)
 	}
 
 	if _, err := client.writer.Write([]byte(output)); err != nil {
-		return NewWriteError(err)
+		return newWriteError(err)
 	}
 
 	return nil

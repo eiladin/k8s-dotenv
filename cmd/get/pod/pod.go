@@ -37,7 +37,7 @@ func validArgs(opt *clioptions.CLIOptions) []string {
 	list, _ := client.NewClient(
 		client.WithKubeClient(opt.KubeClient),
 		client.WithNamespace(opt.Namespace),
-	).CoreV1().Pods()
+	).CoreV1().PodList()
 
 	return list
 }

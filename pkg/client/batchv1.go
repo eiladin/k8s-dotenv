@@ -39,8 +39,8 @@ func (batchv1 *BatchV1) CronJob(resource string) *Client {
 	return batchv1.client
 }
 
-// CronJobs returns a list of resources.
-func (batchv1 *BatchV1) CronJobs() ([]string, error) {
+// CronJobList returns a list of cronjobs.
+func (batchv1 *BatchV1) CronJobList() ([]string, error) {
 	res := []string{}
 
 	resp, err := batchv1.
@@ -76,8 +76,8 @@ func (batchv1 *BatchV1) Job(resource string) *Client {
 	return batchv1.client
 }
 
-// Jobs returns a list of resources.
-func (batchv1 *BatchV1) Jobs() ([]string, error) {
+// JobList returns a list of jobs.
+func (batchv1 *BatchV1) JobList() ([]string, error) {
 	resp, err := batchv1.
 		BatchV1Interface.
 		Jobs(batchv1.client.namespace).

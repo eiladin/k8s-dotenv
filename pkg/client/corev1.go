@@ -55,8 +55,8 @@ func (corev1 *CoreV1) SecretData(secret string, shouldExport bool) (map[string]s
 	return res, nil
 }
 
-// Namespaces returns a single resource in a given namespace with the given name.
-func (corev1 *CoreV1) Namespaces() ([]string, error) {
+// NamespaceList returns all namespaces in a cluster.
+func (corev1 *CoreV1) NamespaceList() ([]string, error) {
 	resp, err := corev1.
 		CoreV1Interface.
 		Namespaces().
@@ -92,8 +92,8 @@ func (corev1 *CoreV1) Pod(resource string) *Client {
 	return corev1.client
 }
 
-// Pods returns a list of resources in a given namespace.
-func (corev1 *CoreV1) Pods() ([]string, error) {
+// PodList returns a list of pods.
+func (corev1 *CoreV1) PodList() ([]string, error) {
 	resp, err := corev1.
 		CoreV1Interface.
 		Pods(corev1.client.namespace).

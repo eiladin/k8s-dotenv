@@ -74,7 +74,7 @@ func TestAppsV1DaemonSets(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := tc.AppsV1.DaemonSets()
+			actualSlice, actualError := tc.AppsV1.DaemonSetList()
 
 			assert.Equal(t, tc.ExpectedSlice, actualSlice)
 			if tc.ExpectError {
@@ -178,7 +178,7 @@ func TestAppsV1Deployments(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := tc.AppsV1.Deployments()
+			actualSlice, actualError := tc.AppsV1.DeploymentList()
 
 			assert.Equal(t, tc.ExpectedSlice, actualSlice)
 			if tc.ExpectError {
@@ -282,7 +282,7 @@ func TestAppsV1ReplicaSets(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := tc.AppsV1.ReplicaSets()
+			actualSlice, actualError := tc.AppsV1.ReplicaSetList()
 
 			assert.Equal(t, tc.ExpectedSlice, actualSlice)
 			if tc.ExpectError {

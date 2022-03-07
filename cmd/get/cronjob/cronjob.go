@@ -51,9 +51,9 @@ func validArgs(opt *clioptions.CLIOptions) []string {
 
 	switch group {
 	case "batch/v1beta1":
-		list, _ = client.BatchV1Beta1().CronJobs()
+		list, _ = client.BatchV1Beta1().CronJobList()
 	case "batch/v1":
-		list, _ = client.BatchV1().CronJobs()
+		list, _ = client.BatchV1().CronJobList()
 	}
 
 	return list

@@ -39,8 +39,8 @@ func (batchv1beta1 *BatchV1Beta1) CronJob(resource string) *Client {
 	return batchv1beta1.client
 }
 
-// CronJobs returns a list of resources.
-func (batchv1beta1 *BatchV1Beta1) CronJobs() ([]string, error) {
+// CronJobList returns a list of cronjobs.
+func (batchv1beta1 *BatchV1Beta1) CronJobList() ([]string, error) {
 	res := []string{}
 
 	resp, err := batchv1beta1.

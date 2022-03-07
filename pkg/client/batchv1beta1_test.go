@@ -74,7 +74,7 @@ func TestBatchV1Beta1CronJobs(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := tc.BatchV1Beta1.CronJobs()
+			actualSlice, actualError := tc.BatchV1Beta1.CronJobList()
 
 			assert.Equal(t, tc.ExpectedSlice, actualSlice)
 			if tc.ExpectError {

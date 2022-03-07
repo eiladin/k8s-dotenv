@@ -121,7 +121,7 @@ func TestCoreV1Namespaces(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := tc.CoreV1.Namespaces()
+			actualSlice, actualError := tc.CoreV1.NamespaceList()
 
 			assert.Equal(t, tc.ExpectedSlice, actualSlice)
 
@@ -226,7 +226,7 @@ func TestCoreV1Pods(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := tc.CoreV1.Pods()
+			actualSlice, actualError := tc.CoreV1.PodList()
 
 			assert.Equal(t, tc.ExpectedSlice, actualSlice)
 			if tc.ExpectError {

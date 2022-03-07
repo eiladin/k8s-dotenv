@@ -108,21 +108,21 @@ func TestErrorWrappers(t *testing.T) {
 	validate(t, &testCase{
 		Name:          "NewSecretErr should wrap errors",
 		Err:           assert.AnError,
-		Func:          NewSecretErr,
+		Func:          newSecretErr,
 		ExpectedError: assert.AnError,
 	})
 
 	validate(t, &testCase{
 		Name:          "NewConfigMapError should wrap errors",
 		Err:           assert.AnError,
-		Func:          NewConfigMapError,
+		Func:          newConfigMapError,
 		ExpectedError: assert.AnError,
 	})
 
 	validate(t, &testCase{
 		Name:          "NewWriteErr Should wrap errors",
 		Err:           assert.AnError,
-		Func:          NewWriteError,
+		Func:          newWriteError,
 		ExpectedError: assert.AnError,
 	})
 }

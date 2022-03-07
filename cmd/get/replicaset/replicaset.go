@@ -37,7 +37,7 @@ func validArgs(opt *clioptions.CLIOptions) []string {
 	list, _ := client.NewClient(
 		client.WithKubeClient(opt.KubeClient),
 		client.WithNamespace(opt.Namespace),
-	).AppsV1().ReplicaSets()
+	).AppsV1().ReplicaSetList()
 
 	return list
 }

@@ -133,10 +133,20 @@ func TestNewClient(t *testing.T) {
 	})
 }
 
-func TestAPIs(t *testing.T) {
+func TestAPIClients(t *testing.T) {
 	client := NewClient(WithKubeClient(mock.NewFakeClient()))
+
 	assert.NotNil(t, client.AppsV1())
 	assert.NotNil(t, client.BatchV1())
 	assert.NotNil(t, client.BatchV1Beta1())
 	assert.NotNil(t, client.CoreV1())
+}
+
+func TestAPIClientsPanics(t *testing.T) {
+	client := NewClient()
+
+	assert.Panics(t, func() { client.AppsV1() })
+	assert.Panics(t, func() { client.BatchV1() })
+	assert.Panics(t, func() { client.BatchV1Beta1() })
+	assert.Panics(t, func() { client.CoreV1() })
 }
