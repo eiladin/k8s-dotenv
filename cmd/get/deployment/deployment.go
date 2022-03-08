@@ -50,10 +50,8 @@ func run(opt *clioptions.CLIOptions, args []string) error {
 	err := client.NewClient(
 		client.WithKubeClient(opt.KubeClient),
 		client.WithNamespace(opt.Namespace),
-		client.WithFilename(opt.Filename),
-		client.WithWriter(opt.Writer),
 		client.WithExport(!opt.NoExport),
-	).AppsV1().Deployment(args[0]).Write()
+	).AppsV1().Deployment(args[0]).Write(opt.Writer)
 
 	if err != nil {
 		return runError(err)

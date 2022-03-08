@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -12,6 +13,9 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/kubeclient"
 	"github.com/spf13/cobra"
 )
+
+// ErrNoFilename is returned when no filename is provided.
+var ErrNoFilename = errors.New("no filename provided")
 
 //nolint
 var opt *clioptions.CLIOptions = &clioptions.CLIOptions{}
@@ -55,11 +59,24 @@ func newRootCmd(version string) *rootCmd {
 
 			if stdOut {
 				opt.Writer = os.Stdout
+			} else {
+				if opt.Filename == "" {
+					return ErrNoFilename
+				}
+
+				//nolint
+				f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+				if err != nil {
+					return fmt.Errorf("creating output file: %w", err)
+				}
+
+				opt.Writer = f
 			}
 
 			if opt.Namespace == "" {
 				if err := opt.ResolveNamespace(); err != nil {
-					return fmt.Errorf("resolve namespace error: %w", err)
+					//nolint
+					return err
 				}
 			}
 
