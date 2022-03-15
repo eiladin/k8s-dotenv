@@ -1,8 +1,6 @@
 package client
 
 import (
-	"bytes"
-	"os"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
@@ -61,58 +59,22 @@ func TestClientGetAPIGroup(t *testing.T) {
 	})
 }
 
-func TestClientSetDefaultWriter(t *testing.T) {
-	type testCase struct {
-		Name          string
-		Client        *Client
-		ExpectedError error
-	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualError := tc.Client.setDefaultWriter()
-
-			assert.Equal(t, tc.ExpectedError, actualError)
-		})
-	}
-
-	var b bytes.Buffer
-
-	defer os.Remove("./out.test")
-
-	validate(t, &testCase{
-		Name:   "Should use the passed in writer",
-		Client: NewClient(WithKubeClient(mock.NewFakeClient()), WithWriter(&b)),
-	})
-
-	validate(t, &testCase{
-		Name:          "Should Error given no filename or writer",
-		Client:        NewClient(WithKubeClient(mock.NewFakeClient())),
-		ExpectedError: ErrNoFilename,
-	})
-
-	validate(t, &testCase{
-		Name:   "Should not error given a filename",
-		Client: NewClient(WithKubeClient(mock.NewFakeClient()), WithFilename("./out.test")),
-	})
-}
-
 func TestNewClient(t *testing.T) {
 	type testCase struct {
-		Name           string
-		Configures     []ConfigureFunc
-		ExpectedClient *Client
+		Name       string
+		Configures []ConfigureFunc
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
 			actualClient := NewClient(tc.Configures...)
 
-			assert.Equal(t, tc.ExpectedClient.shouldExport, actualClient.shouldExport)
-			assert.Equal(t, tc.ExpectedClient.namespace, actualClient.namespace)
-			assert.Equal(t, tc.ExpectedClient.filename, actualClient.filename)
-			assert.Equal(t, tc.ExpectedClient.writer, actualClient.writer)
-			assert.Equal(t, tc.ExpectedClient.Error, actualClient.Error)
+			assert.NotNil(t, actualClient.appsv1)
+			assert.NotNil(t, actualClient.batchv1)
+			assert.NotNil(t, actualClient.batchv1beta1)
+			assert.NotNil(t, actualClient.corev1)
+			assert.NotNil(t, actualClient.options)
+			assert.NotNil(t, actualClient.Interface)
 		})
 	}
 
@@ -120,15 +82,6 @@ func TestNewClient(t *testing.T) {
 		Name: "Should run configures",
 		Configures: []ConfigureFunc{
 			WithKubeClient(mock.NewFakeClient()),
-			WithFilename("string"),
-		},
-		ExpectedClient: &Client{
-			Interface:    mock.NewFakeClient(),
-			shouldExport: false,
-			namespace:    "",
-			filename:     "string",
-			writer:       nil,
-			Error:        nil,
 		},
 	})
 }

@@ -1,8 +1,10 @@
-package client
+package v1beta1
 
 import (
 	"testing"
 
+	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
+	"github.com/eiladin/k8s-dotenv/pkg/result"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -12,21 +14,14 @@ func TestBatchV1Beta1CronJob(t *testing.T) {
 		Name           string
 		BatchV1Beta1   *BatchV1Beta1
 		Resource       string
-		ExpectedResult *Result
-		ExpectError    bool
+		ExpectedResult *result.Result
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualClient := tc.BatchV1Beta1.CronJob(tc.Resource)
+			actualResult := tc.BatchV1Beta1.CronJob(tc.Resource)
 
-			assert.Equal(t, tc.ExpectedResult, actualClient.result)
-
-			if tc.ExpectError {
-				assert.Error(t, tc.BatchV1Beta1.client.Error)
-			} else {
-				assert.NoError(t, tc.BatchV1Beta1.client.Error)
-			}
+			assert.Equal(t, tc.ExpectedResult, actualResult)
 		})
 	}
 
@@ -34,33 +29,25 @@ func TestBatchV1Beta1CronJob(t *testing.T) {
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
-	client := NewClient(
-		WithKubeClient(kubeClient),
-		WithNamespace("test"),
-	)
 
 	validate(t, &testCase{
 		Name:         "Should return cronjobs",
-		BatchV1Beta1: NewBatchV1Beta1(client),
+		BatchV1Beta1: NewBatchV1Beta1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
 		Resource:     "test",
-		ExpectedResult: &Result{
-			Environment: envValues{"k": "v"},
-			Secrets:     map[string]envValues{"test": {"k": "v"}},
-			ConfigMaps:  map[string]envValues{"test": {"k": "v"}},
+		ExpectedResult: &result.Result{
+			Environment: result.EnvValues{"k": "v"},
+			Secrets:     map[string]result.EnvValues{"test": {"k": "v"}},
+			ConfigMaps:  map[string]result.EnvValues{"test": {"k": "v"}},
 		},
 	})
 
 	kubeClient.PrependReactor("get", "cronjobs", true, nil, assert.AnError)
-	client = NewClient(
-		WithKubeClient(kubeClient),
-		WithNamespace("test"),
-	)
 
 	validate(t, &testCase{
-		Name:         "Should return API errors",
-		BatchV1Beta1: NewBatchV1Beta1(client),
-		Resource:     "test",
-		ExpectError:  true,
+		Name:           "Should return API errors",
+		BatchV1Beta1:   NewBatchV1Beta1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+		Resource:       "test",
+		ExpectedResult: result.NewFromError(NewResourceLoadError("CronJob", assert.AnError)),
 	})
 }
 
@@ -87,26 +74,18 @@ func TestBatchV1Beta1CronJobs(t *testing.T) {
 
 	mockv1 := mock.CronJobv1beta1("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
-	client := NewClient(
-		WithKubeClient(kubeClient),
-		WithNamespace("test"),
-	)
 
 	validate(t, &testCase{
 		Name:          "Should return cronjobs",
-		BatchV1Beta1:  NewBatchV1Beta1(client),
+		BatchV1Beta1:  NewBatchV1Beta1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
 		ExpectedSlice: []string{"test"},
 	})
 
 	kubeClient.PrependReactor("list", "cronjobs", true, nil, assert.AnError)
-	client = NewClient(
-		WithKubeClient(kubeClient),
-		WithNamespace("test"),
-	)
 
 	validate(t, &testCase{
 		Name:         "Should return API errors",
-		BatchV1Beta1: NewBatchV1Beta1(client),
+		BatchV1Beta1: NewBatchV1Beta1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
 		ExpectError:  true,
 	})
 }

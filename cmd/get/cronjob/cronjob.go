@@ -67,8 +67,6 @@ func run(opt *clioptions.CLIOptions, args []string) error {
 	client := client.NewClient(
 		client.WithKubeClient(opt.KubeClient),
 		client.WithNamespace(opt.Namespace),
-		client.WithFilename(opt.Filename),
-		client.WithWriter(opt.Writer),
 		client.WithExport(!opt.NoExport),
 	)
 
@@ -79,9 +77,9 @@ func run(opt *clioptions.CLIOptions, args []string) error {
 
 	switch group {
 	case "batch/v1beta1":
-		err = client.BatchV1Beta1().CronJob(args[0]).Write()
+		err = client.BatchV1Beta1().CronJob(args[0]).Write(opt.Writer)
 	case "batch/v1":
-		err = client.BatchV1().CronJob(args[0]).Write()
+		err = client.BatchV1().CronJob(args[0]).Write(opt.Writer)
 	default:
 		return ErrUnsupportedGroup
 	}

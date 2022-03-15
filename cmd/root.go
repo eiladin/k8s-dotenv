@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -12,6 +13,9 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/kubeclient"
 	"github.com/spf13/cobra"
 )
+
+// ErrNoFilename is returned when no filename is provided.
+var ErrNoFilename = errors.New("no filename provided")
 
 //nolint
 var opt *clioptions.CLIOptions = &clioptions.CLIOptions{}
@@ -45,18 +49,35 @@ func newRootCmd(version string) *rootCmd {
 		Long:  `k8s-dotenv takes a kubernetes secret or configmap and turns it into a .env file.`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetFlags(0)
-			cs, err := kubeclient.Get()
+			cs, err := kubeclient.GetDefault()
 			if err != nil {
 				//nolint
 				return err
 			}
+
 			opt.KubeClient = cs
+
 			if stdOut {
 				opt.Writer = os.Stdout
+			} else {
+				if opt.Filename == "" {
+					return ErrNoFilename
+				}
+
+				//nolint
+				f, err := os.OpenFile(opt.Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+				if err != nil {
+					return fmt.Errorf("creating output file: %w", err)
+				}
+
+				opt.Writer = f
 			}
 
-			if err := opt.ResolveNamespace(""); err != nil {
-				return fmt.Errorf("resolve namespace error: %w", err)
+			if opt.Namespace == "" {
+				if err := opt.ResolveNamespace(); err != nil {
+					//nolint
+					return err
+				}
 			}
 
 			return nil
@@ -64,7 +85,11 @@ func newRootCmd(version string) *rootCmd {
 		Version: version,
 	}
 
-	cmd.PersistentFlags().StringVarP(&opt.Namespace, "namespace", "n", "", "Namespace")
+	cmd.PersistentFlags().StringVarP(&opt.Namespace, "namespace", "n", "", "Namespace (default current context namespace)")
+	cmd.PersistentFlags().StringVarP(&opt.Filename, "outfile", "o", ".env", "Output file")
+	cmd.PersistentFlags().BoolVarP(&opt.NoExport, "no-export", "e", false, "Do not include `export` statements")
+	cmd.PersistentFlags().BoolVarP(&stdOut, "console", "c", false, "Output to console")
+
 	_ = cmd.RegisterFlagCompletionFunc("namespace",
 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			list, err := client.NewClient(client.WithKubeClient(opt.KubeClient)).CoreV1().NamespaceList()
@@ -74,12 +99,6 @@ func newRootCmd(version string) *rootCmd {
 
 			return list, cobra.ShellCompDirectiveDefault
 		})
-
-	cmd.PersistentFlags().StringVarP(&opt.Filename, "outfile", "o", ".env", "Output file")
-
-	cmd.PersistentFlags().BoolVarP(&opt.NoExport, "no-export", "e", false, "Do not include `export` statements")
-
-	cmd.PersistentFlags().BoolVarP(&stdOut, "console", "c", false, "Output to console")
 
 	cmd.AddCommand(
 		completion.NewCmd(opt),

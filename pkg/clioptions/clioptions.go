@@ -1,16 +1,12 @@
 package clioptions
 
 import (
-	"errors"
 	"fmt"
 	"io"
 
 	"github.com/eiladin/k8s-dotenv/pkg/kubeclient"
 	"k8s.io/client-go/kubernetes"
 )
-
-// ErrNoFilename is returned when no filename is provided.
-var ErrNoFilename = errors.New("no filename provided")
 
 // CLIOptions contains configuration used to interact with the kubernetes API.
 type CLIOptions struct {
@@ -23,8 +19,8 @@ type CLIOptions struct {
 }
 
 // ResolveNamespace sets the Namespace property of an Options struct.
-func (opt *CLIOptions) ResolveNamespace(configPath string) error {
-	ns, err := kubeclient.CurrentNamespace(opt.Namespace, configPath)
+func (opt *CLIOptions) ResolveNamespace() error {
+	ns, err := kubeclient.CurrentNamespace()
 	if err != nil {
 		return fmt.Errorf("resolve namespace: %w", err)
 	}

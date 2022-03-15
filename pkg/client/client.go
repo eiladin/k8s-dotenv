@@ -1,10 +1,11 @@
 package client
 
 import (
-	"fmt"
-	"io"
-	"os"
-
+	appsv1 "github.com/eiladin/k8s-dotenv/pkg/client/apps/v1"
+	batchv1 "github.com/eiladin/k8s-dotenv/pkg/client/batch/v1"
+	batchv1beta1 "github.com/eiladin/k8s-dotenv/pkg/client/batch/v1beta1"
+	corev1 "github.com/eiladin/k8s-dotenv/pkg/client/core/v1"
+	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -14,21 +15,17 @@ type ConfigureFunc = func(client *Client)
 // Client is used to interact with the kubernetes API.
 type Client struct {
 	kubernetes.Interface
-	shouldExport bool
-	namespace    string
-	filename     string
-	writer       io.Writer
-	result       *Result
+	options      *clientoptions.Clientoptions
 	Error        error
-	appsv1       *AppsV1
-	batchv1      *BatchV1
-	batchv1beta1 *BatchV1Beta1
-	corev1       *CoreV1
+	appsv1       *appsv1.AppsV1
+	batchv1      *batchv1.BatchV1
+	batchv1beta1 *batchv1beta1.BatchV1Beta1
+	corev1       *corev1.CoreV1
 }
 
 // NewClient creates `Client` from a kubernetes client.
 func NewClient(configures ...ConfigureFunc) *Client {
-	client := Client{}
+	client := Client{options: clientoptions.New()}
 
 	for _, configure := range configures {
 		configure(&client)
@@ -38,7 +35,7 @@ func NewClient(configures ...ConfigureFunc) *Client {
 }
 
 // AppsV1 is used to interact with features provided by the apps group.
-func (client *Client) AppsV1() *AppsV1 {
+func (client *Client) AppsV1() *appsv1.AppsV1 {
 	if client.Interface == nil {
 		panic(newMissingKubeClientError("AppsV1"))
 	}
@@ -47,7 +44,7 @@ func (client *Client) AppsV1() *AppsV1 {
 }
 
 // BatchV1 is used to interact with features provided by the batch group.
-func (client *Client) BatchV1() *BatchV1 {
+func (client *Client) BatchV1() *batchv1.BatchV1 {
 	if client.Interface == nil {
 		panic(newMissingKubeClientError("BatchV1"))
 	}
@@ -56,7 +53,7 @@ func (client *Client) BatchV1() *BatchV1 {
 }
 
 // BatchV1Beta1 is used to interact with features provided by the batch group.
-func (client *Client) BatchV1Beta1() *BatchV1Beta1 {
+func (client *Client) BatchV1Beta1() *batchv1beta1.BatchV1Beta1 {
 	if client.Interface == nil {
 		panic(newMissingKubeClientError("BatchV1Beta1"))
 	}
@@ -65,33 +62,12 @@ func (client *Client) BatchV1Beta1() *BatchV1Beta1 {
 }
 
 // CoreV1 is used to interact with features provided by the core group.
-func (client *Client) CoreV1() *CoreV1 {
+func (client *Client) CoreV1() *corev1.CoreV1 {
 	if client.Interface == nil {
 		panic(newMissingKubeClientError("CoreV1"))
 	}
 
 	return client.corev1
-}
-
-func (client *Client) setDefaultWriter() error {
-	if client.writer != nil {
-		return nil
-	}
-
-	if client.filename == "" {
-		return ErrNoFilename
-	}
-
-	//nolint
-	f, err := os.OpenFile(client.filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-
-	if err != nil {
-		return fmt.Errorf("creating output file: %w", err)
-	}
-
-	client.writer = f
-
-	return nil
 }
 
 // GetAPIGroup returns the GroupVersion (batch/v1, batch/v1beta1, etc) for the given resource.

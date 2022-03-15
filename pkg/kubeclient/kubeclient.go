@@ -19,10 +19,10 @@ var ErrReadingKubeConfig = errors.New("unable to read ~/.kube/config")
 var ErrCreatingKubeClient = errors.New("unable to parse ~/.kube/config")
 
 // ErrNamespaceResolution is returned when the current namespace cannot be resolved.
-var ErrNamespaceResolution = errors.New("current namespace resolution error")
+var ErrNamespaceResolution = errors.New("current namespace could not be resolved")
 
-// Get returns a kubernetes clientset by reading the current users ~/.kube/config.
-func Get() (kubernetes.Interface, error) {
+// GetDefault returns a kubernetes clientset by reading the current users ~/.kube/config.
+func GetDefault() (kubernetes.Interface, error) {
 	var home string
 	if home = homedir.HomeDir(); home == "" {
 		return nil, ErrMissingHomeDir
@@ -42,25 +42,17 @@ func Get() (kubernetes.Interface, error) {
 }
 
 // CurrentNamespace returns the namespace from `~/.kube/config`.
-func CurrentNamespace(namespace string, configPath string) (string, error) {
-	if namespace != "" {
-		return namespace, nil
-	}
-
+func CurrentNamespace() (string, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	if configPath != "" {
-		rules.ExplicitPath = configPath
-	}
 
 	clientCfg, err := rules.Load()
 	if err != nil {
 		return "", ErrNamespaceResolution
 	}
 
-	ns := clientCfg.Contexts[clientCfg.CurrentContext].Namespace
-	if ns == "" {
+	if clientCfg.Contexts[clientCfg.CurrentContext].Namespace == "" {
 		return "default", nil
 	}
 
-	return ns, nil
+	return clientCfg.Contexts[clientCfg.CurrentContext].Namespace, nil
 }

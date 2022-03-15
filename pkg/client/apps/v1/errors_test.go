@@ -1,4 +1,4 @@
-package client
+package v1
 
 import (
 	"testing"
@@ -86,43 +86,5 @@ func TestNewResourceLoadError(t *testing.T) {
 			Err:      assert.AnError,
 			Resource: "test",
 		},
-	})
-}
-
-func TestErrorWrappers(t *testing.T) {
-	type testCase struct {
-		Name          string
-		Func          func(err error) error
-		Err           error
-		ExpectedError error
-	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualError := tc.Func(tc.Err)
-
-			assert.ErrorIs(t, actualError, tc.ExpectedError)
-		})
-	}
-
-	validate(t, &testCase{
-		Name:          "NewSecretErr should wrap errors",
-		Err:           assert.AnError,
-		Func:          newSecretErr,
-		ExpectedError: assert.AnError,
-	})
-
-	validate(t, &testCase{
-		Name:          "NewConfigMapError should wrap errors",
-		Err:           assert.AnError,
-		Func:          newConfigMapError,
-		ExpectedError: assert.AnError,
-	})
-
-	validate(t, &testCase{
-		Name:          "NewWriteErr Should wrap errors",
-		Err:           assert.AnError,
-		Func:          newWriteError,
-		ExpectedError: assert.AnError,
 	})
 }

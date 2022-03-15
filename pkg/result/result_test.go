@@ -1,29 +1,30 @@
-package client
+package result
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 func TestResultWrite(t *testing.T) {
 	type testCase struct {
 		Name           string
-		Client         *Client
 		Result         *Result
 		Reader         func() string
 		ExpectedResult string
 		ExpectError    bool
+		Writer         io.Writer
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			tc.Client.result = tc.Result
-			actualError := tc.Client.Write()
+			actualError := tc.Result.Write(tc.Writer)
 
 			if tc.Reader != nil {
 				assert.Equal(t, tc.ExpectedResult, tc.Reader())
@@ -37,12 +38,10 @@ func TestResultWrite(t *testing.T) {
 		})
 	}
 
-	kubeClient := mock.NewFakeClient()
-
 	r1 := &Result{
-		Environment: envValues{"env1": "val", "env2": "val2"},
-		ConfigMaps:  map[string]envValues{"test": {"cm1": "val", "cm2": "val2"}},
-		Secrets:     map[string]envValues{"test": {"sec1": "val", "sec2": "val2"}},
+		Environment: EnvValues{"env1": "val", "env2": "val2"},
+		ConfigMaps:  map[string]EnvValues{"test": {"cm1": "val", "cm2": "val2"}},
+		Secrets:     map[string]EnvValues{"test": {"sec1": "val", "sec2": "val2"}},
 	}
 
 	envResult := "env1=\"val\"\nenv2=\"val2\"\n"
@@ -53,9 +52,9 @@ func TestResultWrite(t *testing.T) {
 
 	validate(t, &testCase{
 		Name:           "Should write results",
-		Client:         NewClient(WithKubeClient(kubeClient), WithNamespace("test"), WithWriter(&b)),
 		Result:         r1,
 		Reader:         b.String,
+		Writer:         &b,
 		ExpectedResult: envResult + cmResult + secResult,
 	})
 
@@ -63,28 +62,19 @@ func TestResultWrite(t *testing.T) {
 	validate(t, &testCase{
 		Name:        "Should Error with missing writer",
 		Result:      r1,
-		Client:      NewClient(WithKubeClient(kubeClient), WithNamespace("test")),
 		ExpectError: true,
 	})
 
 	validate(t, &testCase{
-		Name:   "Should return writer errors",
-		Result: r1,
-		Client: NewClient(
-			WithKubeClient(kubeClient),
-			WithNamespace("test"),
-			WithWriter(mock.NewErrorWriter().ErrorAfter(1)),
-		),
+		Name:        "Should return writer errors",
+		Result:      r1,
+		Writer:      mock.NewErrorWriter().ErrorAfter(1),
 		ExpectError: true,
 	})
-
-	client := NewClient(WithKubeClient(kubeClient))
-	client.Error = assert.AnError
 
 	validate(t, &testCase{
 		Name:        "Should return client error",
-		Result:      r1,
-		Client:      client,
+		Result:      NewFromError(assert.AnError),
 		ExpectError: true,
 	})
 }
@@ -93,68 +83,59 @@ func TestResultParse(t *testing.T) {
 	type testCase struct {
 		Name           string
 		Result         *Result
-		Client         *Client
 		ShouldExport   bool
 		ExpectedString string
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualString := tc.Result.parse(tc.Client)
+			actualString := tc.Result.parse()
 
 			assert.Equal(t, tc.ExpectedString, actualString)
 		})
 	}
 
-	envMap := envValues{"env1": "val", "env2": "val2"}
-	cmMap := map[string]envValues{"test": {"cm1": "val", "cm2": "val2"}}
-	secretMap := map[string]envValues{"test": {"sec1": "val", "sec2": "val2"}}
+	envMap := EnvValues{"env1": "val", "env2": "val2"}
+	cmMap := map[string]EnvValues{"test": {"cm1": "val", "cm2": "val2"}}
+	secretMap := map[string]EnvValues{"test": {"sec1": "val", "sec2": "val2"}}
 
 	envResult := "env1=\"val\"\nenv2=\"val2\"\n"
 	secResult := "##### SECRET - test #####\nsec1=\"val\"\nsec2=\"val2\"\n"
 	cmResult := "##### CONFIGMAP - test #####\ncm1=\"val\"\ncm2=\"val2\"\n"
 
-	client := NewClient(WithKubeClient(mock.NewFakeClient()), WithNamespace("test"))
-
 	validate(t, &testCase{
 		Name:           "Should get env configmaps and secrets",
 		Result:         &Result{Environment: envMap, ConfigMaps: cmMap, Secrets: secretMap},
-		Client:         client,
 		ExpectedString: envResult + cmResult + secResult,
 	})
 
 	validate(t, &testCase{
 		Name:           "Should get env and configmaps with no secrets",
 		Result:         &Result{Environment: envMap, ConfigMaps: cmMap},
-		Client:         client,
 		ExpectedString: envResult + cmResult,
 	})
 
 	validate(t, &testCase{
 		Name:           "Should get env and secrets with no configmaps",
 		Result:         &Result{Environment: envMap, Secrets: secretMap},
-		Client:         client,
 		ExpectedString: envResult + secResult,
 	})
 
 	validate(t, &testCase{
 		Name:           "Should get env with no secrets or configmaps",
 		Result:         &Result{Environment: envMap},
-		Client:         client,
 		ExpectedString: envResult,
 	})
 
 	validate(t, &testCase{
 		Name:           "Should get configmaps with no env or secrets",
 		Result:         &Result{ConfigMaps: cmMap},
-		Client:         client,
 		ExpectedString: cmResult,
 	})
 
 	validate(t, &testCase{
 		Name:           "Should get secrets with no env or configmaps",
 		Result:         &Result{Secrets: secretMap},
-		Client:         client,
 		ExpectedString: secResult,
 	})
 }
@@ -176,17 +157,19 @@ func TestNewResult(t *testing.T) {
 	validate(t, &testCase{
 		Name: "Should return a new Result",
 		ExpectedResult: &Result{
-			Environment: envValues{},
-			Secrets:     map[string]envValues{},
-			ConfigMaps:  map[string]envValues{},
+			Environment: EnvValues{},
+			Secrets:     map[string]EnvValues{},
+			ConfigMaps:  map[string]EnvValues{},
 		},
 	})
 }
 
-func TestResultFromContainers(t *testing.T) {
+func TestNewFromContainers(t *testing.T) {
 	type testCase struct {
 		Name           string
-		Client         *Client
+		Client         kubernetes.Interface
+		Namespace      string
+		ShouldExport   bool
 		Containers     []v1.Container
 		ExpectedResult *Result
 		ExpectedError  error
@@ -194,11 +177,11 @@ func TestResultFromContainers(t *testing.T) {
 
 	validate := func(t *testing.T, tc *testCase) {
 		t.Run(tc.Name, func(t *testing.T) {
-			actualResult := tc.Client.resultFromContainers(tc.Containers)
+			actualResult := NewFromContainers(tc.Client, tc.Namespace, tc.ShouldExport, tc.Containers)
 
-			assert.Equal(t, tc.ExpectedResult, actualResult.result)
+			assert.Equal(t, tc.ExpectedResult, actualResult)
 
-			assert.ErrorIs(t, tc.Client.Error, tc.ExpectedError)
+			assert.ErrorIs(t, actualResult.Error, tc.ExpectedError)
 		})
 	}
 
@@ -208,33 +191,39 @@ func TestResultFromContainers(t *testing.T) {
 	)
 
 	validate(t, &testCase{
-		Name:   "Should return results from containers",
-		Client: NewClient(WithKubeClient(kubeClient), WithNamespace("test")),
+		Name:      "Should return results from containers",
+		Client:    kubeClient,
+		Namespace: "test",
 		Containers: []v1.Container{
 			mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test"}),
 		},
 		ExpectedResult: &Result{
-			Environment: envValues{"env1": "val", "env2": "val2"},
-			ConfigMaps:  map[string]envValues{"test": {"cm1": "val", "cm2": "val2"}},
-			Secrets:     map[string]envValues{"test": {"sec1": "val", "sec2": "val2"}},
+			shouldExport: false,
+			Environment:  EnvValues{"env1": "val", "env2": "val2"},
+			ConfigMaps:   map[string]EnvValues{"test": {"cm1": "val", "cm2": "val2"}},
+			Secrets:      map[string]EnvValues{"test": {"sec1": "val", "sec2": "val2"}},
 		},
 	})
 
 	validate(t, &testCase{
-		Name:   "Should set client.Error with missing secret",
-		Client: NewClient(WithKubeClient(kubeClient), WithNamespace("test")),
+		Name:   "Should set Error with missing secret",
+		Client: kubeClient,
 		Containers: []v1.Container{
 			mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test"}, []string{"test1"}),
 		},
-		ExpectedError: ErrMissingResource,
+		Namespace:      "test",
+		ExpectedResult: NewFromError(ErrMissingResource),
+		ExpectedError:  ErrMissingResource,
 	})
 
 	validate(t, &testCase{
-		Name:   "Should set client.Error with missing configmap",
-		Client: NewClient(WithKubeClient(kubeClient), WithNamespace("test")),
+		Name:   "Should set Error with missing configmap",
+		Client: kubeClient,
 		Containers: []v1.Container{
 			mock.Container(map[string]string{"env1": "val", "env2": "val2"}, []string{"test1"}, []string{"test"}),
 		},
-		ExpectedError: ErrMissingResource,
+		Namespace:      "test",
+		ExpectedResult: NewFromError(ErrMissingResource),
+		ExpectedError:  ErrMissingResource,
 	})
 }
