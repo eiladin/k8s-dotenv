@@ -23,10 +23,12 @@ func TestNewCmd(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	type testCase struct {
-		Name        string
-		Opt         *clioptions.CLIOptions
-		Args        []string
-		ExpectError bool
+		Name           string
+		Opt            *clioptions.CLIOptions
+		Args           []string
+		ExpectError    bool
+		ExpectedResult string
+		ResultChecker  func() string
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
@@ -38,6 +40,10 @@ func TestRun(t *testing.T) {
 			} else {
 				assert.NoError(t, actualError)
 			}
+
+			if tc.ResultChecker != nil {
+				assert.Equal(t, tc.ExpectedResult, tc.ResultChecker())
+			}
 		})
 	}
 
@@ -47,11 +53,18 @@ func TestRun(t *testing.T) {
 	})
 
 	kubeClient := mock.NewFakeClient(mock.DaemonSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
+	writer := mock.NewWriter()
 
 	validate(t, &testCase{
 		Name: "Should find daemonsets",
-		Opt:  &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test", Writer: mock.NewWriter()},
-		Args: []string{"test"},
+		Opt: &clioptions.CLIOptions{
+			KubeClient: kubeClient,
+			Namespace:  "test",
+			Writer:     writer,
+		},
+		Args:           []string{"test"},
+		ExpectedResult: "export k=\"v\"\nexport k2=\"v2\"\n",
+		ResultChecker:  writer.String,
 	})
 
 	validate(t, &testCase{

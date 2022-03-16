@@ -1,7 +1,6 @@
 package cronjob
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
@@ -26,11 +25,12 @@ func TestNewCmd(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	type testCase struct {
-		Name        string
-		Opt         *clioptions.CLIOptions
-		Args        []string
-		ExpectError bool
-		Comparison  assert.Comparison
+		Name           string
+		Opt            *clioptions.CLIOptions
+		Args           []string
+		ExpectError    bool
+		ExpectedResult string
+		ResultChecker  func() string
 	}
 
 	validate := func(t *testing.T, tc *testCase) {
@@ -43,8 +43,8 @@ func TestRun(t *testing.T) {
 				assert.NoError(t, actualError)
 			}
 
-			if tc.Comparison != nil {
-				assert.Condition(t, tc.Comparison)
+			if tc.ResultChecker != nil {
+				assert.Equal(t, tc.ExpectedResult, tc.ResultChecker())
 			}
 		})
 	}
@@ -66,8 +66,7 @@ func TestRun(t *testing.T) {
 		ExpectError: true,
 	})
 
-	var b bytes.Buffer
-
+	writer := mock.NewWriter()
 	kubeClient = mock.NewFakeClient(v1mock).WithResources(mock.CronJobv1Resource())
 
 	validate(t, &testCase{
@@ -75,29 +74,26 @@ func TestRun(t *testing.T) {
 		Opt: &clioptions.CLIOptions{
 			KubeClient: kubeClient,
 			Namespace:  "test",
-			Writer:     &b,
+			Writer:     writer,
 		},
-		Args: []string{"my-cronjob"},
-		Comparison: func() (success bool) {
-			return assert.Equal(t, "export k1=\"v1\"\nexport k2=\"v2\"\n", b.String())
-		},
+		Args:           []string{"my-cronjob"},
+		ExpectedResult: "export k1=\"v1\"\nexport k2=\"v2\"\n",
+		ResultChecker:  writer.String,
 	})
 
 	kubeClient = mock.NewFakeClient(v1beta1mock).WithResources(mock.CronJobv1beta1Resource())
-
-	b.Reset()
+	writer = mock.NewWriter()
 
 	validate(t, &testCase{
 		Name: "Should write v1beta1 CronJobs",
 		Opt: &clioptions.CLIOptions{
 			KubeClient: kubeClient,
 			Namespace:  "test",
-			Writer:     &b,
+			Writer:     writer,
 		},
-		Args: []string{"my-beta-cronjob"},
-		Comparison: func() (success bool) {
-			return assert.Equal(t, "export k1=\"v1\"\nexport k2=\"v2\"\n", b.String())
-		},
+		Args:           []string{"my-beta-cronjob"},
+		ExpectedResult: "export k1=\"v1\"\nexport k2=\"v2\"\n",
+		ResultChecker:  writer.String,
 	})
 
 	validate(t, &testCase{
@@ -112,15 +108,14 @@ func TestRun(t *testing.T) {
 	})
 
 	kubeClient = mock.NewFakeClient().WithResources(mock.UnsupportedGroupResource())
-
-	b.Reset()
+	writer = mock.NewWriter()
 
 	validate(t, &testCase{
 		Name: "Should error on unsupported group",
 		Opt: &clioptions.CLIOptions{
 			KubeClient: kubeClient,
 			Namespace:  "test",
-			Writer:     &b,
+			Writer:     writer,
 		},
 		Args:        []string{"test"},
 		ExpectError: true,
