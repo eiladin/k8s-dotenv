@@ -8,23 +8,32 @@ Download from the [Releases](https://github.com/eiladin/k8s-dotenv/releases) pag
 
 Alternatively, use [install.sh](https://raw.githubusercontent.com/eiladin/k8s-dotenv/main/install.sh) to download and extract the latest version automatically.
 
+## Supported Resource Types
+- cronjob
+- deployment
+- daemonset
+- job
+- pod
+- statefulset
+
 ## Usage
-### CronJob
 ```bash
-k8s-dotenv get cj <DAEMONSET_NAME>
+k8s-dotenv get <resource_type> <RESOURCE_NAME>
 ```
 
-### Deployment
+## Examples
+
+### Get Deployment and write to .env
 ```bash
-k8s-dotenv get deploy <DEPLOYMENT_NAME>
+k8s-dotenv get deploy my-deployment
 ```
-### DaemonSet
+### Get DaemonSet and write to out.txt file
 ```bash
-k8s-dotenv get ds <DAEMONSET_NAME>
+k8s-dotenv get ds my-daemonset -f out.txt
 ```
-### Job
+### Get Job and write output to console (stdout)
 ```bash
-k8s-dotenv get job <DAEMONSET_NAME>
+k8s-dotenv get job my-job -c
 ```
 
 ## Help

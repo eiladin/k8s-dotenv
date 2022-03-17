@@ -6,6 +6,7 @@ import (
 	"github.com/eiladin/k8s-dotenv/cmd/get/deployment"
 	"github.com/eiladin/k8s-dotenv/cmd/get/job"
 	"github.com/eiladin/k8s-dotenv/cmd/get/pod"
+	"github.com/eiladin/k8s-dotenv/cmd/get/statefulset"
 	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/spf13/cobra"
 )
@@ -22,6 +23,7 @@ func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
 	cmd.AddCommand(daemonset.NewCmd(opt))
 	cmd.AddCommand(job.NewCmd(opt))
 	cmd.AddCommand(pod.NewCmd(opt))
+	cmd.AddCommand(statefulset.NewCmd(opt))
 
 	return cmd
 }

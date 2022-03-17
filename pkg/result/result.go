@@ -16,6 +16,9 @@ import (
 // ErrMissingResource is returned when the resource is not found.
 var ErrMissingResource = errors.New("resource not found")
 
+// ErrMissingWriter is returned when no writer has been set.
+var ErrMissingWriter = errors.New("missing writer")
+
 func newWriteError(err error) error {
 	return fmt.Errorf("write error: %w", err)
 }
@@ -101,25 +104,25 @@ func NewFromContainers(client kubernetes.Interface, namespace string, shouldExpo
 
 		for _, envFrom := range cont.EnvFrom {
 			if envFrom.ConfigMapRef != nil {
-				n := envFrom.ConfigMapRef.Name
-				cm, err := configMapData(client, namespace, n)
+				name := envFrom.ConfigMapRef.Name
+				configMap, err := configMapData(client, namespace, name)
 
 				if err != nil {
 					return NewFromError(err)
 				}
 
-				res.ConfigMaps[n] = cm
+				res.ConfigMaps[name] = configMap
 			}
 
 			if envFrom.SecretRef != nil {
-				n := envFrom.SecretRef.Name
-				sec, err := secretData(client, namespace, n)
+				name := envFrom.SecretRef.Name
+				sec, err := secretData(client, namespace, name)
 
 				if err != nil {
 					return NewFromError(err)
 				}
 
-				res.Secrets[n] = sec
+				res.Secrets[name] = sec
 			}
 		}
 	}
@@ -158,7 +161,7 @@ func (r *Result) Write(writer io.Writer) error {
 	}
 
 	if writer == nil {
-		return errors.New("missing writer")
+		return ErrMissingWriter
 	}
 
 	output := r.parse()

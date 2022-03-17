@@ -1,4 +1,4 @@
-package replicaset
+package statefulset
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewCmd(t *testing.T) {
-	kubeClient := mock.NewFakeClient(mock.ReplicaSet("test", "test", nil, nil, nil))
+	kubeClient := mock.NewFakeClient(mock.StatefulSet("test", "test", nil, nil, nil))
 
 	got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
 	assert.NotNil(t, got)
@@ -52,16 +52,15 @@ func TestRun(t *testing.T) {
 		ExpectError: true,
 	})
 
-	kubeClient := mock.NewFakeClient(mock.ReplicaSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
+	kubeClient := mock.NewFakeClient(mock.StatefulSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
 	writer := mock.NewWriter()
 
 	validate(t, &testCase{
-		Name: "Should find replicasets",
+		Name: "Should find statefulsets",
 		Opt: &clioptions.CLIOptions{
-			KubeClient:   kubeClient,
-			Namespace:    "test",
-			ResourceName: "test",
-			Writer:       writer,
+			KubeClient: kubeClient,
+			Namespace:  "test",
+			Writer:     writer,
 		},
 		Args:           []string{"test"},
 		ExpectedResult: "export k=\"v\"\nexport k2=\"v2\"\n",
@@ -80,12 +79,11 @@ func TestRun(t *testing.T) {
 	})
 
 	validate(t, &testCase{
-		Name: "Should not find a job in an empty cluster",
+		Name: "Should not find a statefulset in an empty cluster",
 		Opt: &clioptions.CLIOptions{
-			KubeClient:   mock.NewFakeClient(),
-			Namespace:    "test",
-			ResourceName: "test",
-			Writer:       mock.NewWriter(),
+			KubeClient: mock.NewFakeClient(),
+			Namespace:  "test",
+			Writer:     mock.NewWriter(),
 		},
 		Args:        []string{"test"},
 		ExpectError: true,
@@ -107,14 +105,12 @@ func TestValidArgs(t *testing.T) {
 		})
 	}
 
-	kubeClient := mock.NewFakeClient(mock.ReplicaSet("test", "test", map[string]string{"k": "v", "k2": "v2"}, nil, nil))
-
 	validate(t, &testCase{
-		Name: "Should return replicasets",
+		Name: "Should return statefulsets",
 		Opt: &clioptions.CLIOptions{
-			KubeClient: kubeClient,
+			KubeClient: mock.NewFakeClient(),
 			Namespace:  "test",
 		},
-		ExpectedSlice: []string{"test"},
+		ExpectedSlice: []string{},
 	})
 }

@@ -49,13 +49,13 @@ func newRootCmd(version string) *rootCmd {
 		Long:  `k8s-dotenv takes a kubernetes secret or configmap and turns it into a .env file.`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			log.SetFlags(0)
-			cs, err := kubeclient.GetDefault()
+			kubeClient, err := kubeclient.GetDefault()
 			if err != nil {
 				//nolint
 				return err
 			}
 
-			opt.KubeClient = cs
+			opt.KubeClient = kubeClient
 
 			if stdOut {
 				opt.Writer = os.Stdout

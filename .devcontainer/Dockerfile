@@ -33,4 +33,5 @@ RUN KREW=$(mktemp -d) \
     && ${KREW}/krew-linux_amd64 install krew \
     && rm -rf ${KREW} \
     && kubectl krew install $KREW_PLUGINS
+RUN go install github.com/goreleaser/goreleaser@latest
 RUN sed -i 's/plugins=(git)/plugins=(git kubectl aws)/g' ~/.zshrc

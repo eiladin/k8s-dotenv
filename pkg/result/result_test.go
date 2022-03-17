@@ -22,15 +22,15 @@ func TestResultWrite(t *testing.T) {
 		Writer         io.Writer
 	}
 
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualError := tc.Result.Write(tc.Writer)
+	validate := func(t *testing.T, testCase *testCase) {
+		t.Run(testCase.Name, func(t *testing.T) {
+			actualError := testCase.Result.Write(testCase.Writer)
 
-			if tc.Reader != nil {
-				assert.Equal(t, tc.ExpectedResult, tc.Reader())
+			if testCase.Reader != nil {
+				assert.Equal(t, testCase.ExpectedResult, testCase.Reader())
 			}
 
-			if tc.ExpectError {
+			if testCase.ExpectError {
 				assert.Error(t, actualError)
 			} else {
 				assert.NoError(t, actualError)
@@ -38,7 +38,7 @@ func TestResultWrite(t *testing.T) {
 		})
 	}
 
-	r1 := &Result{
+	result1 := &Result{
 		Environment: EnvValues{"env1": "val", "env2": "val2"},
 		ConfigMaps:  map[string]EnvValues{"test": {"cm1": "val", "cm2": "val2"}},
 		Secrets:     map[string]EnvValues{"test": {"sec1": "val", "sec2": "val2"}},
@@ -48,26 +48,26 @@ func TestResultWrite(t *testing.T) {
 	secResult := "##### SECRET - test #####\nsec1=\"val\"\nsec2=\"val2\"\n"
 	cmResult := "##### CONFIGMAP - test #####\ncm1=\"val\"\ncm2=\"val2\"\n"
 
-	var b bytes.Buffer
+	var buffer bytes.Buffer
 
 	validate(t, &testCase{
 		Name:           "Should write results",
-		Result:         r1,
-		Reader:         b.String,
-		Writer:         &b,
+		Result:         result1,
+		Reader:         buffer.String,
+		Writer:         &buffer,
 		ExpectedResult: envResult + cmResult + secResult,
 	})
 
 	defer os.Remove("./test.out")
 	validate(t, &testCase{
 		Name:        "Should Error with missing writer",
-		Result:      r1,
+		Result:      result1,
 		ExpectError: true,
 	})
 
 	validate(t, &testCase{
 		Name:        "Should return writer errors",
-		Result:      r1,
+		Result:      result1,
 		Writer:      mock.NewErrorWriter().ErrorAfter(1),
 		ExpectError: true,
 	})
@@ -175,13 +175,13 @@ func TestNewFromContainers(t *testing.T) {
 		ExpectedError  error
 	}
 
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualResult := NewFromContainers(tc.Client, tc.Namespace, tc.ShouldExport, tc.Containers)
+	validate := func(t *testing.T, testCase *testCase) {
+		t.Run(testCase.Name, func(t *testing.T) {
+			actualResult := NewFromContainers(testCase.Client, testCase.Namespace, testCase.ShouldExport, testCase.Containers)
 
-			assert.Equal(t, tc.ExpectedResult, actualResult)
+			assert.Equal(t, testCase.ExpectedResult, actualResult)
 
-			assert.ErrorIs(t, actualResult.Error, tc.ExpectedError)
+			assert.ErrorIs(t, actualResult.Error, testCase.ExpectedError)
 		})
 	}
 

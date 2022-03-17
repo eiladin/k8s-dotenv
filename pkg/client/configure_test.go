@@ -14,13 +14,13 @@ func TestWithExport(t *testing.T) {
 		Client       *Client
 	}
 
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualConfigureFunc := WithExport(tc.ShouldExport)
+	validate := func(t *testing.T, testCase *testCase) {
+		t.Run(testCase.Name, func(t *testing.T) {
+			actualConfigureFunc := WithExport(testCase.ShouldExport)
 
-			actualConfigureFunc(tc.Client)
+			actualConfigureFunc(testCase.Client)
 
-			assert.Equal(t, tc.ShouldExport, tc.Client.options.ShouldExport)
+			assert.Equal(t, testCase.ShouldExport, testCase.Client.options.ShouldExport)
 		})
 	}
 
@@ -38,13 +38,13 @@ func TestWithNamespace(t *testing.T) {
 		Client    *Client
 	}
 
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualConfigureFunc := WithNamespace(tc.Namespace)
+	validate := func(t *testing.T, testCase *testCase) {
+		t.Run(testCase.Name, func(t *testing.T) {
+			actualConfigureFunc := WithNamespace(testCase.Namespace)
 
-			actualConfigureFunc(tc.Client)
+			actualConfigureFunc(testCase.Client)
 
-			assert.Equal(t, tc.Namespace, tc.Client.options.Namespace)
+			assert.Equal(t, testCase.Namespace, testCase.Client.options.Namespace)
 		})
 	}
 
