@@ -17,13 +17,13 @@ func TestClientGetAPIGroup(t *testing.T) {
 		ExpectError    bool
 	}
 
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualString, actualError := tc.Client.GetAPIGroup(tc.Resource)
+	validate := func(t *testing.T, testCase *testCase) {
+		t.Run(testCase.Name, func(t *testing.T) {
+			actualString, actualError := testCase.Client.GetAPIGroup(testCase.Resource)
 
-			assert.Equal(t, tc.ExpectedString, actualString)
+			assert.Equal(t, testCase.ExpectedString, actualString)
 
-			if tc.ExpectError {
+			if testCase.ExpectError {
 				assert.Error(t, actualError)
 			} else {
 				assert.NoError(t, actualError)

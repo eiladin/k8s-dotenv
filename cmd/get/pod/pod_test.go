@@ -31,18 +31,18 @@ func TestRun(t *testing.T) {
 		ResultChecker  func() string
 	}
 
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualError := run(tc.Opt, tc.Args)
+	validate := func(t *testing.T, testCase *testCase) {
+		t.Run(testCase.Name, func(t *testing.T) {
+			actualError := run(testCase.Opt, testCase.Args)
 
-			if tc.ExpectError {
+			if testCase.ExpectError {
 				assert.Error(t, actualError)
 			} else {
 				assert.NoError(t, actualError)
 			}
 
-			if tc.ResultChecker != nil {
-				assert.Equal(t, tc.ExpectedResult, tc.ResultChecker())
+			if testCase.ResultChecker != nil {
+				assert.Equal(t, testCase.ExpectedResult, testCase.ResultChecker())
 			}
 		})
 	}

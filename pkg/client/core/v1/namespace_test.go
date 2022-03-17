@@ -17,13 +17,13 @@ func TestNamespaceList(t *testing.T) {
 		ExpectError   bool
 	}
 
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := tc.CoreV1.NamespaceList()
+	validate := func(t *testing.T, testCase *testCase) {
+		t.Run(testCase.Name, func(t *testing.T) {
+			actualSlice, actualError := testCase.CoreV1.NamespaceList()
 
-			assert.Equal(t, tc.ExpectedSlice, actualSlice)
+			assert.Equal(t, testCase.ExpectedSlice, actualSlice)
 
-			if tc.ExpectError {
+			if testCase.ExpectError {
 				assert.Error(t, actualError)
 			} else {
 				assert.NoError(t, actualError)

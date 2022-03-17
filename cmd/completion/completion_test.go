@@ -35,13 +35,13 @@ func TestRun(t *testing.T) {
 		ExpectError bool
 	}
 
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
+	validate := func(t *testing.T, testCase *testCase) {
+		t.Run(testCase.Name, func(t *testing.T) {
 			parentCmd := &cobra.Command{Use: "test"}
-			parentCmd.AddCommand(tc.Cmd)
-			actualError := tc.Cmd.RunE(tc.Cmd, tc.Args)
+			parentCmd.AddCommand(testCase.Cmd)
+			actualError := testCase.Cmd.RunE(testCase.Cmd, testCase.Args)
 
-			if tc.ExpectError {
+			if testCase.ExpectError {
 				assert.Error(t, actualError)
 			} else {
 				assert.NoError(t, actualError)
@@ -77,16 +77,16 @@ func TestRun(t *testing.T) {
 }
 
 func TestCompletionShells(t *testing.T) {
-	for sh, run := range completionShells() {
+	for shell, run := range completionShells() {
 		testCmd := &cobra.Command{Use: "test"}
 		wr := mock.NewWriter()
 		err := run(wr, testCmd)
 		assert.NoError(t, err)
-		assert.Contains(t, wr.String(), sh)
+		assert.Contains(t, wr.String(), shell)
 
 		errorAfter := 0
 
-		if sh == "zsh" {
+		if shell == "zsh" {
 			errorAfter = 1
 		}
 

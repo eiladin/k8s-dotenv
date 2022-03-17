@@ -3,7 +3,7 @@
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
-			"VARIANT": "1.17",
+			"VARIANT": "1.18",
 			"FZF_VERSION": "0.27.2",
 			"KREW_PLUGINS": "ctx ns iexec"
 		},
@@ -26,7 +26,8 @@
 	},
 
 	"extensions": [
-		"golang.Go"
+		"golang.Go",
+		"ms-azuretools.vscode-docker"
 	],
 
 	"remoteUser": "vscode",
