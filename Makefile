@@ -30,3 +30,8 @@ test:
 ## open cover profile in browser
 cover:
 	@go tool cover -html=coverage.out
+
+.PHONY: docs
+## generate docs
+docs:
+	@go run main.go doc

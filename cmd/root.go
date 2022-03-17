@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/eiladin/k8s-dotenv/cmd/completion"
+	"github.com/eiladin/k8s-dotenv/cmd/doc"
 	"github.com/eiladin/k8s-dotenv/cmd/get"
 	"github.com/eiladin/k8s-dotenv/pkg/client"
 	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
@@ -103,6 +104,7 @@ func newRootCmd(version string) *rootCmd {
 	cmd.AddCommand(
 		completion.NewCmd(opt),
 		get.NewCmd(opt),
+		doc.NewCmd(opt),
 	)
 
 	root.cmd = cmd
