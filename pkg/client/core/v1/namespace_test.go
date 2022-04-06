@@ -44,6 +44,7 @@ func TestCoreV1_NamespaceList(t *testing.T) {
 			got, err := testCase.corev1.NamespaceList()
 			if (err != nil) != testCase.wantErr {
 				t.Errorf("CoreV1.NamespaceList() error = %v, wantErr %v", err, testCase.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, testCase.want) {

@@ -2,6 +2,7 @@ package result
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"reflect"
 	"testing"
@@ -194,8 +195,7 @@ func TestNewFromError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewFromError(tt.args.err)
-			if got.Error != tt.want.Error {
+			if got := NewFromError(tt.args.err); !errors.Is(got.Error, tt.want.Error) {
 				t.Errorf("NewFromError() = %v, want %v", got.Error, tt.want.Error)
 			}
 		})

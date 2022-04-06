@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
@@ -54,7 +55,7 @@ func TestResourceLoadError_Unwrap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.e.Unwrap(); err != tt.wantErr {
+			if err := tt.e.Unwrap(); !errors.Is(err, tt.wantErr) {
 				t.Errorf("ResourceLoadError.Unwrap() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
