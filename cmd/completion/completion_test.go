@@ -33,6 +33,18 @@ func TestNewCmd(t *testing.T) {
 	}
 	got = NewCmd(&opt)
 
+	t.Run("persistent prerun", func(t *testing.T) {
+		got.PersistentPreRun(got, nil)
+		if opt.Writer != os.Stdout {
+			t.Errorf("NewCmd().PersistentPreRunE.Writer = %v, want %v", opt.Writer, os.Stdout)
+		}
+	})
+
+	opt = clioptions.CLIOptions{
+		Writer: mock.NewWriter(),
+	}
+	got = NewCmd(&opt)
+
 	t.Run("runE", func(t *testing.T) {
 		parent := cobra.Command{Use: "test"}
 		parent.AddCommand(got)
