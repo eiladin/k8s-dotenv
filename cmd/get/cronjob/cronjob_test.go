@@ -42,6 +42,7 @@ func Test_clientError(t *testing.T) {
 	type args struct {
 		err error
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -63,6 +64,7 @@ func Test_runError(t *testing.T) {
 	type args struct {
 		err error
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -89,6 +91,7 @@ func Test_validArgs(t *testing.T) {
 		opt         *clioptions.CLIOptions
 		apiresource *metav1.APIResourceList
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -144,6 +147,7 @@ func Test_run(t *testing.T) {
 		opt  *clioptions.CLIOptions
 		args []string
 	}
+
 	tests := []struct {
 		name    string
 		args    args

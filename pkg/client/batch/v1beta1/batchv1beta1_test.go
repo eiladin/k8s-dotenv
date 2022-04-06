@@ -17,6 +17,7 @@ func TestNewBatchV1Beta1(t *testing.T) {
 		client  kubernetes.Interface
 		options *clientoptions.Clientoptions
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -24,6 +25,7 @@ func TestNewBatchV1Beta1(t *testing.T) {
 	}{
 		{name: "create batchV1 client", args: args{client: client, options: options}, want: NewBatchV1Beta1(client, options)},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := NewBatchV1Beta1(tt.args.client, tt.args.options); !reflect.DeepEqual(got, tt.want) {

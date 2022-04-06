@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -16,6 +15,7 @@ func Test_newWriteError(t *testing.T) {
 	type args struct {
 		err error
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -83,6 +83,7 @@ func Test_configMapData(t *testing.T) {
 		namespace string
 		resource  string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -109,15 +110,16 @@ func Test_configMapData(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := configMapData(tt.args.client, tt.args.namespace, tt.args.resource)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("configMapData() error = %v, wantErr %v", err, tt.wantErr)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			got, err := configMapData(testCase.args.client, testCase.args.namespace, testCase.args.resource)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("configMapData() error = %v, wantErr %v", err, testCase.wantErr)
+
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("configMapData() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("configMapData() = %v, want %v", got, testCase.want)
 			}
 		})
 	}
@@ -127,11 +129,13 @@ func Test_secretData(t *testing.T) {
 	kubeClient := mock.NewFakeClient(
 		mock.Secret("test", "test", map[string][]byte{"sec1": []byte("val"), "sec2": []byte("val2")}),
 	)
+
 	type args struct {
 		client    kubernetes.Interface
 		namespace string
 		resource  string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -158,15 +162,16 @@ func Test_secretData(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := secretData(tt.args.client, tt.args.namespace, tt.args.resource)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("secretData() error = %v, wantErr %v", err, tt.wantErr)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			got, err := secretData(testCase.args.client, testCase.args.namespace, testCase.args.resource)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("secretData() error = %v, wantErr %v", err, testCase.wantErr)
+
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("secretData() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("secretData() = %v, want %v", got, testCase.want)
 			}
 		})
 	}
@@ -174,9 +179,11 @@ func Test_secretData(t *testing.T) {
 
 func TestNewFromError(t *testing.T) {
 	err := mock.AnError
+
 	type args struct {
 		err error
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -205,8 +212,9 @@ func TestNewFromContainers(t *testing.T) {
 		client       kubernetes.Interface
 		namespace    string
 		shouldExport bool
-		containers   []corev1.Container
+		containers   []v1.Container
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -258,16 +266,22 @@ func TestNewFromContainers(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.wantErr {
-				got := NewFromContainers(tt.args.client, tt.args.namespace, tt.args.shouldExport, tt.args.containers)
-				if got.Error.Error() != tt.want.Error.Error() {
-					t.Errorf("NewFromContainers() = %v want %v", got.Error, tt.want.Error)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			if testCase.wantErr {
+				got := NewFromContainers(
+					testCase.args.client,
+					testCase.args.namespace,
+					testCase.args.shouldExport,
+					testCase.args.containers,
+				)
+
+				if got.Error.Error() != testCase.want.Error.Error() {
+					t.Errorf("NewFromContainers() = %v want %v", got.Error, testCase.want.Error)
 				}
 			} else {
-				if got := NewFromContainers(tt.args.client, tt.args.namespace, tt.args.shouldExport, tt.args.containers); !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("NewFromContainers() = %v, want %v", got, tt.want)
+				if got := NewFromContainers(testCase.args.client, testCase.args.namespace, testCase.args.shouldExport, testCase.args.containers); !reflect.DeepEqual(got, testCase.want) {
+					t.Errorf("NewFromContainers() = %v, want %v", got, testCase.want)
 				}
 			}
 		})
@@ -295,6 +309,7 @@ sec="val"
 `,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.r.parse(); got != tt.want {
@@ -309,8 +324,8 @@ func TestResult_Write(t *testing.T) {
 		name       string
 		r          *Result
 		wantWriter string
-		wantErr    bool
 		writer     io.Writer
+		wantErr    bool
 		nilWriter  bool
 	}{
 		{
@@ -345,27 +360,27 @@ sec="val"
 `,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.nilWriter {
-				if err := tt.r.Write(nil); (err != nil) != tt.wantErr {
-					t.Errorf("Result.Write() err = %v, wantErr %v", err, tt.wantErr)
-					return
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			switch {
+			case testCase.nilWriter:
+				if err := testCase.r.Write(nil); (err != nil) != testCase.wantErr {
+					t.Errorf("Result.Write() err = %v, wantErr %v", err, testCase.wantErr)
 				}
-			} else if tt.writer == nil {
+			case testCase.writer == nil:
 				writer := &bytes.Buffer{}
-				if err := tt.r.Write(writer); (err != nil) != tt.wantErr {
-					t.Errorf("Result.Write() error = %v, wantErr %v", err, tt.wantErr)
+				if err := testCase.r.Write(writer); (err != nil) != testCase.wantErr {
+					t.Errorf("Result.Write() error = %v, wantErr %v", err, testCase.wantErr)
+
 					return
 				}
-				if gotWriter := writer.String(); gotWriter != tt.wantWriter {
-					t.Errorf("Result.Write() = %v, want %v", gotWriter, tt.wantWriter)
-					return
+				if gotWriter := writer.String(); gotWriter != testCase.wantWriter {
+					t.Errorf("Result.Write() = %v, want %v", gotWriter, testCase.wantWriter)
 				}
-			} else {
-				if err := tt.r.Write(tt.writer); (err != nil) != tt.wantErr {
-					t.Errorf("Result.Write() error = %v, wantErr %v", err, tt.wantErr)
-					return
+			default:
+				if err := testCase.r.Write(testCase.writer); (err != nil) != testCase.wantErr {
+					t.Errorf("Result.Write() error = %v, wantErr %v", err, testCase.wantErr)
 				}
 			}
 		})

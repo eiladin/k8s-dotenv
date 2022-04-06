@@ -25,9 +25,9 @@ func (c *FakeClient) WithResources(resourceList *metav1.APIResourceList) *FakeCl
 }
 
 // PrependReactor adds a reactor to the beginning of the chain.
-func (c *FakeClient) PrependReactor(verb string, resource string, handled bool, ret runtime.Object, err error) *FakeClient {
-	c.Fake.PrependReactor(verb, resource, func(action testing.Action) (bool, runtime.Object, error) {
-		return handled, ret, err
+func (c *FakeClient) PrependReactor(v string, r string, h bool, o runtime.Object, e error) *FakeClient {
+	c.Fake.PrependReactor(v, r, func(action testing.Action) (bool, runtime.Object, error) {
+		return h, o, e
 	})
 
 	return c

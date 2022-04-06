@@ -40,6 +40,7 @@ func Test_runError(t *testing.T) {
 	type args struct {
 		err error
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -64,6 +65,7 @@ func Test_validArgs(t *testing.T) {
 	type args struct {
 		opt *clioptions.CLIOptions
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -77,6 +79,7 @@ func Test_validArgs(t *testing.T) {
 			want: []string{"my-job"},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := validArgs(tt.args.opt); !reflect.DeepEqual(got, tt.want) {
@@ -94,6 +97,7 @@ func Test_run(t *testing.T) {
 		opt  *clioptions.CLIOptions
 		args []string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -114,7 +118,11 @@ func Test_run(t *testing.T) {
 		{
 			name: "return writer errors",
 			args: args{
-				opt:  &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test", Writer: mock.NewErrorWriter().ErrorAfter(1)},
+				opt: &clioptions.CLIOptions{
+					KubeClient: kubeClient,
+					Namespace:  "test",
+					Writer:     mock.NewErrorWriter().ErrorAfter(1),
+				},
 				args: []string{"test"},
 			},
 			wantErr: true,

@@ -26,6 +26,7 @@ func TestResourceLoadError_Error(t *testing.T) {
 			want: "error loading test",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.e.Error(); got != tt.want {
@@ -50,6 +51,7 @@ func TestResourceLoadError_Unwrap(t *testing.T) {
 			wantErr: mock.AnError,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := tt.e.Unwrap(); err != tt.wantErr {
@@ -64,6 +66,7 @@ func TestNewResourceLoadError(t *testing.T) {
 		resource string
 		err      error
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -78,6 +81,7 @@ func TestNewResourceLoadError(t *testing.T) {
 			wantErr: &ResourceLoadError{Resource: "test", Err: mock.AnError},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := NewResourceLoadError(tt.args.resource, tt.args.err); err.Error() != tt.wantErr.Error() {

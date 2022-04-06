@@ -19,6 +19,7 @@ func TestBatchV1Beta1_CronJob(t *testing.T) {
 	type args struct {
 		resource string
 	}
+
 	tests := []struct {
 		name         string
 		batchv1beta1 *BatchV1Beta1
@@ -42,6 +43,7 @@ func TestBatchV1Beta1_CronJob(t *testing.T) {
 			want:         result.NewFromError(NewResourceLoadError("CronJob", mock.AnError)),
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.batchv1beta1.CronJob(tt.args.resource); !reflect.DeepEqual(got, tt.want) {
@@ -73,15 +75,17 @@ func TestBatchV1Beta1_CronJobList(t *testing.T) {
 			wantErr:      true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.batchv1beta1.CronJobList()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BatchV1Beta1.CronJobList() error = %v, wantErr %v", err, tt.wantErr)
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			got, err := testCase.batchv1beta1.CronJobList()
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("BatchV1Beta1.CronJobList() error = %v, wantErr %v", err, testCase.wantErr)
+
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BatchV1Beta1.CronJobList() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("BatchV1Beta1.CronJobList() = %v, want %v", got, testCase.want)
 			}
 		})
 	}

@@ -15,6 +15,7 @@ func TestCoreV1_ConfigMapData(t *testing.T) {
 	type args struct {
 		resource string
 	}
+
 	tests := []struct {
 		name    string
 		corev1  *CoreV1
@@ -22,18 +23,29 @@ func TestCoreV1_ConfigMapData(t *testing.T) {
 		want    map[string]string
 		wantErr bool
 	}{
-		{name: "return configmap data", corev1: NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}), args: args{resource: "test"}, want: map[string]string{"k": "v"}},
-		{name: "return API errors", corev1: NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}), args: args{resource: "test2"}, wantErr: true},
+		{
+			name:   "return configmap data",
+			corev1: NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			args:   args{resource: "test"}, want: map[string]string{"k": "v"},
+		},
+		{
+			name:    "return API errors",
+			corev1:  NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			args:    args{resource: "test2"},
+			wantErr: true,
+		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.corev1.ConfigMapData(tt.args.resource)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CoreV1.ConfigMapData() error = %v, wantErr %v", err, tt.wantErr)
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			got, err := testCase.corev1.ConfigMapData(testCase.args.resource)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("CoreV1.ConfigMapData() error = %v, wantErr %v", err, testCase.wantErr)
+
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CoreV1.ConfigMapData() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("CoreV1.ConfigMapData() = %v, want %v", got, testCase.want)
 			}
 		})
 	}

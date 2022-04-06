@@ -17,4 +17,4 @@ func (e *Error) Error() string {
 	return e.message
 }
 
-var AnError = NewError("mock.AnError general error for testing")
+var AnError = NewError("mock.AnError general error for testing") //nolint

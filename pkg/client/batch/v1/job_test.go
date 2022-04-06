@@ -19,6 +19,7 @@ func TestBatchV1_Job(t *testing.T) {
 	type args struct {
 		resource string
 	}
+
 	tests := []struct {
 		name    string
 		batchv1 *BatchV1
@@ -74,15 +75,17 @@ func TestBatchV1_JobList(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.batchv1.JobList()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BatchV1.JobList() error = %v, wantErr %v", err, tt.wantErr)
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			got, err := testCase.batchv1.JobList()
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("BatchV1.JobList() error = %v, wantErr %v", err, testCase.wantErr)
+
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BatchV1.JobList() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("BatchV1.JobList() = %v, want %v", got, testCase.want)
 			}
 		})
 	}

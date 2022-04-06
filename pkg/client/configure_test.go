@@ -11,9 +11,11 @@ import (
 
 func TestWithKubeClient(t *testing.T) {
 	kubeclient := mock.NewFakeClient()
+
 	type args struct {
 		kubeClient kubernetes.Interface
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -25,13 +27,14 @@ func TestWithKubeClient(t *testing.T) {
 			want: &Client{Interface: kubeclient},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fn := WithKubeClient(tt.args.kubeClient)
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			fn := WithKubeClient(testCase.args.kubeClient)
 			cl := NewClient()
 			fn(cl)
-			if !reflect.DeepEqual(cl.Interface, tt.want.Interface) {
-				t.Errorf("WithKubeClient() = %v, want %v", cl, tt.want)
+			if !reflect.DeepEqual(cl.Interface, testCase.want.Interface) {
+				t.Errorf("WithKubeClient() = %v, want %v", cl, testCase.want)
 			}
 		})
 	}
@@ -41,6 +44,7 @@ func TestWithExport(t *testing.T) {
 	type args struct {
 		shouldExport bool
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -53,13 +57,13 @@ func TestWithExport(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fn := WithExport(tt.args.shouldExport)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			fn := WithExport(testCase.args.shouldExport)
 			cl := NewClient()
 			fn(cl)
-			if !reflect.DeepEqual(cl, tt.want) {
-				t.Errorf("WithExport() = %v, want %v", cl, tt.want)
+			if !reflect.DeepEqual(cl, testCase.want) {
+				t.Errorf("WithExport() = %v, want %v", cl, testCase.want)
 			}
 		})
 	}
@@ -69,6 +73,7 @@ func TestWithNamespace(t *testing.T) {
 	type args struct {
 		namespace string
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -81,13 +86,13 @@ func TestWithNamespace(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fn := WithNamespace(tt.args.namespace)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			fn := WithNamespace(testCase.args.namespace)
 			cl := NewClient()
 			fn(cl)
-			if !reflect.DeepEqual(cl, tt.want) {
-				t.Errorf("WithNamespace() = %v, want %v", cl, tt.want)
+			if !reflect.DeepEqual(cl, testCase.want) {
+				t.Errorf("WithNamespace() = %v, want %v", cl, testCase.want)
 			}
 		})
 	}

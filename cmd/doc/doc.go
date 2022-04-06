@@ -15,7 +15,7 @@ func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
 		Short:  "generate markdown documentation",
 		Hidden: true,
 		RunE: func(c *cobra.Command, args []string) error {
-			return doc.GenMarkdownTree(c.Parent(), "./docs")
+			return doc.GenMarkdownTree(c.Parent(), "./docs") //nolint
 		},
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			opt.Writer = os.Stdout

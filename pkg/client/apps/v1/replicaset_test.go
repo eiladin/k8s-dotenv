@@ -19,6 +19,7 @@ func TestAppsV1_ReplicaSet(t *testing.T) {
 	type args struct {
 		resource string
 	}
+
 	tests := []struct {
 		name   string
 		appsv1 *AppsV1
@@ -42,6 +43,7 @@ func TestAppsV1_ReplicaSet(t *testing.T) {
 			want:   result.NewFromError(NewResourceLoadError("ReplicaSet", mock.AnError)),
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.appsv1.ReplicaSet(tt.args.resource); !reflect.DeepEqual(got, tt.want) {
@@ -73,15 +75,17 @@ func TestAppsV1_ReplicaSetList(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.appsv1.ReplicaSetList()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("AppsV1.ReplicaSetList() error = %v, wantErr %v", err, tt.wantErr)
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			got, err := testCase.appsv1.ReplicaSetList()
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("AppsV1.ReplicaSetList() error = %v, wantErr %v", err, testCase.wantErr)
+
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("AppsV1.ReplicaSetList() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("AppsV1.ReplicaSetList() = %v, want %v", got, testCase.want)
 			}
 		})
 	}

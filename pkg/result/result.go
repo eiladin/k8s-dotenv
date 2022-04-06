@@ -93,7 +93,12 @@ func NewFromError(err error) *Result {
 	return res
 }
 
-func NewFromContainers(client kubernetes.Interface, namespace string, shouldExport bool, containers []corev1.Container) *Result {
+func NewFromContainers(
+	client kubernetes.Interface,
+	namespace string,
+	shouldExport bool,
+	containers []corev1.Container,
+) *Result {
 	res := newResult()
 	res.shouldExport = shouldExport
 
