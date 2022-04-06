@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// SecretData returns a map of key/value pairs given a secret.
 func (corev1 *CoreV1) SecretData(resource string) (map[string]string, error) {
 	resp, err := corev1.
 		Secrets(corev1.options.Namespace).

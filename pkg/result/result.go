@@ -40,6 +40,7 @@ func newResult() *Result {
 	}
 }
 
+// EnvValues stores data returned from Environment, ConfigMaps or Secrets.
 type EnvValues map[string]string
 
 func (env EnvValues) sortedKeys() []string {
@@ -86,6 +87,7 @@ func secretData(client kubernetes.Interface, namespace, resource string) (map[st
 	return res, nil
 }
 
+// NewFromError creates a Result given an error.
 func NewFromError(err error) *Result {
 	res := newResult()
 	res.Error = err
@@ -93,6 +95,7 @@ func NewFromError(err error) *Result {
 	return res
 }
 
+// NewFromContainers creates a Result given []Container.
 func NewFromContainers(
 	client kubernetes.Interface,
 	namespace string,
