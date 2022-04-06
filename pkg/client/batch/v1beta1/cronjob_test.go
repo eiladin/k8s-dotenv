@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
@@ -9,83 +10,80 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBatchV1Beta1CronJob(t *testing.T) {
-	type testCase struct {
-		Name           string
-		BatchV1Beta1   *BatchV1Beta1
-		Resource       string
-		ExpectedResult *result.Result
-	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualResult := tc.BatchV1Beta1.CronJob(tc.Resource)
-
-			assert.Equal(t, tc.ExpectedResult, actualResult)
-		})
-	}
-
+func TestBatchV1Beta1_CronJob(t *testing.T) {
 	mockv1 := mock.CronJobv1beta1("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
+	errorClient := mock.NewFakeClient().PrependReactor("get", "cronjobs", true, nil, assert.AnError)
 
-	validate(t, &testCase{
-		Name:         "Should return cronjobs",
-		BatchV1Beta1: NewBatchV1Beta1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		Resource:     "test",
-		ExpectedResult: &result.Result{
-			Environment: result.EnvValues{"k": "v"},
-			Secrets:     map[string]result.EnvValues{"test": {"k": "v"}},
-			ConfigMaps:  map[string]result.EnvValues{"test": {"k": "v"}},
-		},
-	})
-
-	kubeClient.PrependReactor("get", "cronjobs", true, nil, assert.AnError)
-
-	validate(t, &testCase{
-		Name:           "Should return API errors",
-		BatchV1Beta1:   NewBatchV1Beta1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		Resource:       "test",
-		ExpectedResult: result.NewFromError(NewResourceLoadError("CronJob", assert.AnError)),
-	})
-}
-
-func TestBatchV1Beta1CronJobs(t *testing.T) {
-	type testCase struct {
-		Name          string
-		BatchV1Beta1  *BatchV1Beta1
-		ExpectedSlice []string
-		ExpectError   bool
+	type args struct {
+		resource string
 	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := tc.BatchV1Beta1.CronJobList()
-
-			assert.Equal(t, tc.ExpectedSlice, actualSlice)
-			if tc.ExpectError {
-				assert.Error(t, actualError)
-			} else {
-				assert.NoError(t, actualError)
+	tests := []struct {
+		name         string
+		batchv1beta1 *BatchV1Beta1
+		args         args
+		want         *result.Result
+	}{
+		{
+			name:         "return cronjobs",
+			batchv1beta1: NewBatchV1Beta1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			args:         args{resource: "test"},
+			want: &result.Result{
+				Environment: result.EnvValues{"k": "v"},
+				Secrets:     map[string]result.EnvValues{"test": {"k": "v"}},
+				ConfigMaps:  map[string]result.EnvValues{"test": {"k": "v"}},
+			},
+		},
+		{
+			name:         "return API errors",
+			batchv1beta1: NewBatchV1Beta1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			args:         args{resource: "test"},
+			want:         result.NewFromError(NewResourceLoadError("CronJob", assert.AnError)),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.batchv1beta1.CronJob(tt.args.resource); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BatchV1Beta1.CronJob() = %v, want %v", got, tt.want)
 			}
 		})
 	}
+}
 
+func TestBatchV1Beta1_CronJobList(t *testing.T) {
 	mockv1 := mock.CronJobv1beta1("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
+	errorClient := mock.NewFakeClient().PrependReactor("list", "cronjobs", true, nil, assert.AnError)
 
-	validate(t, &testCase{
-		Name:          "Should return cronjobs",
-		BatchV1Beta1:  NewBatchV1Beta1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		ExpectedSlice: []string{"test"},
-	})
-
-	kubeClient.PrependReactor("list", "cronjobs", true, nil, assert.AnError)
-
-	validate(t, &testCase{
-		Name:         "Should return API errors",
-		BatchV1Beta1: NewBatchV1Beta1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		ExpectError:  true,
-	})
+	tests := []struct {
+		name         string
+		batchv1beta1 *BatchV1Beta1
+		want         []string
+		wantErr      bool
+	}{
+		{
+			name:         "return cronjobs",
+			batchv1beta1: NewBatchV1Beta1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			want:         []string{"test"},
+		},
+		{
+			name:         "return API errors",
+			batchv1beta1: NewBatchV1Beta1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			wantErr:      true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.batchv1beta1.CronJobList()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BatchV1Beta1.CronJobList() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BatchV1Beta1.CronJobList() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

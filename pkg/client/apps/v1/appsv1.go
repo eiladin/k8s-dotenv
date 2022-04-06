@@ -14,10 +14,10 @@ type AppsV1 struct {
 }
 
 // NewAppsV1 creates `AppsV1`.
-func NewAppsV1(kubeClient kubernetes.Interface, options *clientoptions.Clientoptions) *AppsV1 {
+func NewAppsV1(client kubernetes.Interface, options *clientoptions.Clientoptions) *AppsV1 {
 	return &AppsV1{
 		options:         options,
-		kubeClient:      kubeClient,
-		AppsV1Interface: kubeClient.AppsV1(),
+		kubeClient:      client,
+		AppsV1Interface: client.AppsV1(),
 	}
 }

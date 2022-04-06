@@ -1,7 +1,7 @@
 package completion
 
 import (
-	"os"
+	"io"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
@@ -15,88 +15,262 @@ func TestNewCmd(t *testing.T) {
 	assert.NotNil(t, got)
 }
 
-func TestPreRun(t *testing.T) {
-	opt := &clioptions.CLIOptions{}
-	cmd := NewCmd(opt)
-	cmd.PreRun(cmd, []string{})
-	assert.Equal(t, os.Stdout, opt.Writer)
-
-	opt = &clioptions.CLIOptions{Writer: mock.NewWriter()}
-	cmd = NewCmd(opt)
-	cmd.PreRun(cmd, []string{})
-	assert.Equal(t, mock.NewWriter(), opt.Writer)
-}
-
-func TestRun(t *testing.T) {
-	type testCase struct {
-		Name        string
-		Cmd         *cobra.Command
-		Args        []string
-		ExpectError bool
+func Test_completionShells(t *testing.T) {
+	tests := []struct {
+		name string
+		want int
+	}{
+		{name: "get shells", want: 4},
 	}
-
-	validate := func(t *testing.T, testCase *testCase) {
-		t.Run(testCase.Name, func(t *testing.T) {
-			parentCmd := &cobra.Command{Use: "test"}
-			parentCmd.AddCommand(testCase.Cmd)
-			actualError := testCase.Cmd.RunE(testCase.Cmd, testCase.Args)
-
-			if testCase.ExpectError {
-				assert.Error(t, actualError)
-			} else {
-				assert.NoError(t, actualError)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := completionShells(); len(got) != tt.want {
+				t.Errorf("completionShells() = %v, want %v", got, tt.want)
 			}
 		})
 	}
-
-	validate(t, &testCase{
-		Name: "Should run",
-		Cmd:  NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
-		Args: []string{"zsh"},
-	})
-
-	validate(t, &testCase{
-		Name:        "Should error with too many shell types",
-		Cmd:         NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
-		Args:        []string{"zsh", "bash"},
-		ExpectError: true,
-	})
-
-	validate(t, &testCase{
-		Name:        "Should error with no arguments",
-		Cmd:         NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
-		ExpectError: true,
-	})
-
-	validate(t, &testCase{
-		Name:        "Should error with unsupported shell type",
-		Cmd:         NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
-		Args:        []string{"not-a-shell"},
-		ExpectError: true,
-	})
 }
 
-func TestCompletionShells(t *testing.T) {
-	for shell, run := range completionShells() {
-		testCmd := &cobra.Command{Use: "test"}
-		wr := mock.NewWriter()
-		err := run(wr, testCmd)
-		assert.NoError(t, err)
-		assert.Contains(t, wr.String(), shell)
+func Test_newCompletionGenerationError(t *testing.T) {
+	type args struct {
+		err error
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{name: "wraps error", args: args{err: assert.AnError}, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := newCompletionGenerationError(tt.args.err); (err != nil) != tt.wantErr {
+				t.Errorf("newCompletionGenerationError() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
 
-		errorAfter := 0
+func Test_runCompletion(t *testing.T) {
+	type args struct {
+		opt  *clioptions.CLIOptions
+		cmd  *cobra.Command
+		args []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "run",
+			args: args{
+				opt:  &clioptions.CLIOptions{Writer: mock.NewWriter()},
+				cmd:  NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
+				args: []string{"zsh"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "error with too many shell types",
+			args: args{
+				opt:  &clioptions.CLIOptions{Writer: mock.NewWriter()},
+				cmd:  NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
+				args: []string{"zsh", "bash"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "error with no shells specified",
+			args: args{
+				opt: &clioptions.CLIOptions{Writer: mock.NewWriter()},
+				cmd: NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
+			},
+			wantErr: true,
+		},
+		{
+			name: "error with undefined shell type",
+			args: args{
+				opt:  &clioptions.CLIOptions{Writer: mock.NewWriter()},
+				cmd:  NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
+				args: []string{"not-a-shell"},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parentCmd := &cobra.Command{Use: "test"}
+			parentCmd.AddCommand(tt.args.cmd)
+			if err := runCompletion(tt.args.opt, tt.args.cmd, tt.args.args); (err != nil) != tt.wantErr {
+				t.Errorf("runCompletion() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
 
-		if shell == "zsh" {
-			errorAfter = 1
-		}
+func Test_runCompletionBash(t *testing.T) {
+	type args struct {
+		root *cobra.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantOut bool
+		wantErr bool
+		writer  io.Writer
+	}{
+		{
+			name:    "run",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewWriter(),
+			wantOut: true,
+		},
+		{
+			name:    "error",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewErrorWriter(),
+			wantErr: true,
+		},
+		{
+			name:    "error after 2",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewErrorWriter().ErrorAfter(2),
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := runCompletionBash(tt.writer, tt.args.root); (err != nil) != tt.wantErr {
+				t.Errorf("runCompletionBash() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
 
-		errW := mock.NewErrorWriter().ErrorAfter(errorAfter)
-		err = run(errW, testCmd)
-		assert.Error(t, err)
+func Test_runCompletionZsh(t *testing.T) {
+	type args struct {
+		root *cobra.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantOut bool
+		wantErr bool
+		writer  io.Writer
+	}{
+		{
+			name:    "run",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewWriter(),
+			wantOut: true,
+		},
+		{
+			name:    "error",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewErrorWriter(),
+			wantErr: true,
+		},
+		{
+			name:    "error after 2",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewErrorWriter().ErrorAfter(2),
+			wantErr: true,
+		},
+		{
+			name:    "error after 3",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewErrorWriter().ErrorAfter(3),
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := runCompletionZsh(tt.writer, tt.args.root); (err != nil) != tt.wantErr {
+				t.Errorf("runCompletionZsh() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
 
-		errorAfter += 2
-		errW2 := mock.NewErrorWriter().ErrorAfter(errorAfter)
-		err = run(errW2, testCmd)
-		assert.Error(t, err)
+func Test_runCompletionFish(t *testing.T) {
+	type args struct {
+		root *cobra.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantOut bool
+		wantErr bool
+		writer  io.Writer
+	}{
+		{
+			name:    "run",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewWriter(),
+			wantOut: true,
+		},
+		{
+			name:    "error",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewErrorWriter(),
+			wantErr: true,
+		},
+		{
+			name:    "error after 2",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewErrorWriter().ErrorAfter(2),
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := runCompletionFish(tt.writer, tt.args.root); (err != nil) != tt.wantErr {
+				t.Errorf("runCompletionFish() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_runCompletionPwsh(t *testing.T) {
+	type args struct {
+		root *cobra.Command
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantOut bool
+		wantErr bool
+		writer  io.Writer
+	}{
+		{
+			name:    "run",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewWriter(),
+			wantOut: true,
+		},
+		{
+			name:    "error",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewErrorWriter(),
+			wantErr: true,
+		},
+		{
+			name:    "error after 2",
+			args:    args{root: &cobra.Command{Use: "test"}},
+			writer:  mock.NewErrorWriter().ErrorAfter(2),
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := runCompletionPwsh(tt.writer, tt.args.root); (err != nil) != tt.wantErr {
+				t.Errorf("runCompletionPwsh() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
 	}
 }

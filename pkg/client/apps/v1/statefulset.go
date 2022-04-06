@@ -15,7 +15,7 @@ func (appsv1 *AppsV1) StatefulSet(resource string) *result.Result {
 		Get(context.TODO(), resource, metav1.GetOptions{})
 
 	if err != nil {
-		return result.NewFromError(NewResourceLoadError("DaemonSet", err))
+		return result.NewFromError(NewResourceLoadError("StatefulSet", err))
 	}
 
 	return result.NewFromContainers(
@@ -35,7 +35,7 @@ func (appsv1 *AppsV1) StatefulSetList() ([]string, error) {
 		List(context.TODO(), metav1.ListOptions{})
 
 	if err != nil {
-		return nil, NewResourceLoadError("DaemonSets", err)
+		return nil, NewResourceLoadError("StatefulSets", err)
 	}
 
 	res := []string{}

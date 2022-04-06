@@ -6,85 +6,83 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestResourceLoadErrorError(t *testing.T) {
-	type testCase struct {
-		Name              string
-		ResourceLoadError *ResourceLoadError
-		ExpectedString    string
+func TestResourceLoadError_Error(t *testing.T) {
+	tests := []struct {
+		name string
+		e    *ResourceLoadError
+		want string
+	}{
+		{
+			name: "return internal error",
+			e: &ResourceLoadError{
+				Err:      assert.AnError,
+				Resource: "test",
+			},
+			want: "error loading test: assert.AnError general error for testing",
+		},
+		{
+			name: "return message when there is no internal error",
+			e:    &ResourceLoadError{Resource: "test"},
+			want: "error loading test",
+		},
 	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualString := tc.ResourceLoadError.Error()
-
-			assert.Equal(t, tc.ExpectedString, actualString)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.e.Error(); got != tt.want {
+				t.Errorf("ResourceLoadError.Error() = %v, want %v", got, tt.want)
+			}
 		})
 	}
-
-	validate(t, &testCase{
-		Name: "Should return internal error",
-		ResourceLoadError: &ResourceLoadError{
-			Err:      assert.AnError,
-			Resource: "test",
-		},
-		ExpectedString: "error loading test: assert.AnError general error for testing",
-	})
-
-	validate(t, &testCase{
-		Name:              "Should return message when there is no internal error",
-		ResourceLoadError: &ResourceLoadError{Resource: "test"},
-		ExpectedString:    "error loading test",
-	})
 }
 
-func TestResourceLoadErrorUnwrap(t *testing.T) {
-	type testCase struct {
-		Name              string
-		ResourceLoadError *ResourceLoadError
-		ExpectedError     error
+func TestResourceLoadError_Unwrap(t *testing.T) {
+	tests := []struct {
+		name    string
+		e       *ResourceLoadError
+		wantErr error
+	}{
+		{
+			name: "return internal error",
+			e: &ResourceLoadError{
+				Err:      assert.AnError,
+				Resource: "test",
+			},
+			wantErr: assert.AnError,
+		},
 	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualError := tc.ResourceLoadError.Unwrap()
-
-			assert.ErrorIs(t, actualError, tc.ExpectedError)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.e.Unwrap(); err != tt.wantErr {
+				t.Errorf("ResourceLoadError.Unwrap() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
-
-	validate(t, &testCase{
-		Name: "Should return internal error",
-		ResourceLoadError: &ResourceLoadError{
-			Err:      assert.AnError,
-			Resource: "test",
-		},
-		ExpectedError: assert.AnError,
-	})
 }
 
 func TestNewResourceLoadError(t *testing.T) {
-	type testCase struct {
-		Name          string
-		Resource      string
-		Err           error
-		ExpectedError error
+	type args struct {
+		resource string
+		err      error
 	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualError := NewResourceLoadError(tc.Resource, tc.Err)
-
-			assert.Equal(t, tc.ExpectedError, actualError)
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+	}{
+		{
+			name: "wrap errors",
+			args: args{
+				resource: "test",
+				err:      assert.AnError,
+			},
+			wantErr: &ResourceLoadError{Resource: "test", Err: assert.AnError},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := NewResourceLoadError(tt.args.resource, tt.args.err); err.Error() != tt.wantErr.Error() {
+				t.Errorf("NewResourceLoadError() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
-
-	validate(t, &testCase{
-		Name:     "Should wrap errors",
-		Resource: "test",
-		Err:      assert.AnError,
-		ExpectedError: &ResourceLoadError{
-			Err:      assert.AnError,
-			Resource: "test",
-		},
-	})
 }

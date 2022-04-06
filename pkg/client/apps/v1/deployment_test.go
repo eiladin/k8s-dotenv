@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
@@ -9,83 +10,80 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDeployment(t *testing.T) {
-	type testCase struct {
-		Name           string
-		AppsV1         *AppsV1
-		Resource       string
-		ExpectedResult *result.Result
-	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualResult := tc.AppsV1.Deployment(tc.Resource)
-
-			assert.Equal(t, tc.ExpectedResult, actualResult)
-		})
-	}
-
+func TestAppsV1_Deployment(t *testing.T) {
 	mockv1 := mock.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
+	errorClient := mock.NewFakeClient().PrependReactor("get", "deployments", true, nil, assert.AnError)
 
-	validate(t, &testCase{
-		Name:     "Should return deployments",
-		AppsV1:   NewAppsV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		Resource: "test",
-		ExpectedResult: &result.Result{
-			Environment: result.EnvValues{"k": "v"},
-			Secrets:     map[string]result.EnvValues{"test": {"k": "v"}},
-			ConfigMaps:  map[string]result.EnvValues{"test": {"k": "v"}},
-		},
-	})
-
-	kubeClient.PrependReactor("get", "deployments", true, nil, assert.AnError)
-
-	validate(t, &testCase{
-		Name:           "Should return API errors",
-		AppsV1:         NewAppsV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		Resource:       "test",
-		ExpectedResult: result.NewFromError(NewResourceLoadError("Deployment", assert.AnError)),
-	})
-}
-
-func TestDeploymentList(t *testing.T) {
-	type testCase struct {
-		Name          string
-		AppsV1        *AppsV1
-		ExpectedSlice []string
-		ExpectError   bool
+	type args struct {
+		resource string
 	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := tc.AppsV1.DeploymentList()
-
-			assert.Equal(t, tc.ExpectedSlice, actualSlice)
-			if tc.ExpectError {
-				assert.Error(t, actualError)
-			} else {
-				assert.NoError(t, actualError)
+	tests := []struct {
+		name   string
+		appsv1 *AppsV1
+		args   args
+		want   *result.Result
+	}{
+		{
+			name:   "return deployment",
+			appsv1: NewAppsV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			args:   args{resource: "test"},
+			want: &result.Result{
+				Environment: result.EnvValues{"k": "v"},
+				Secrets:     map[string]result.EnvValues{"test": {"k": "v"}},
+				ConfigMaps:  map[string]result.EnvValues{"test": {"k": "v"}},
+			},
+		},
+		{
+			name:   "return API errors",
+			appsv1: NewAppsV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			args:   args{resource: "test"},
+			want:   result.NewFromError(NewResourceLoadError("Deployment", assert.AnError)),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.appsv1.Deployment(tt.args.resource); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("AppsV1.Deployment() = %v, want %v", got, tt.want)
 			}
 		})
 	}
+}
 
+func TestAppsV1_DeploymentList(t *testing.T) {
 	mockv1 := mock.Deployment("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
+	errorClient := mock.NewFakeClient().PrependReactor("list", "deployments", true, nil, assert.AnError)
 
-	validate(t, &testCase{
-		Name:          "Should return deployments",
-		AppsV1:        NewAppsV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		ExpectedSlice: []string{"test"},
-	})
-
-	kubeClient.PrependReactor("list", "deployments", true, nil, assert.AnError)
-
-	validate(t, &testCase{
-		Name:        "Should return API errors",
-		AppsV1:      NewAppsV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		ExpectError: true,
-	})
+	tests := []struct {
+		name    string
+		appsv1  *AppsV1
+		want    []string
+		wantErr bool
+	}{
+		{
+			name:   "return deployments",
+			appsv1: NewAppsV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			want:   []string{"test"},
+		},
+		{
+			name:    "return API errors",
+			appsv1:  NewAppsV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.appsv1.DeploymentList()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AppsV1.DeploymentList() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("AppsV1.DeploymentList() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

@@ -1,56 +1,94 @@
 package client
 
 import (
+	"reflect"
 	"testing"
 
+	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	"github.com/stretchr/testify/assert"
+	"k8s.io/client-go/kubernetes"
 )
 
-func TestWithExport(t *testing.T) {
-	type testCase struct {
-		Name         string
-		ShouldExport bool
-		Client       *Client
+func TestWithKubeClient(t *testing.T) {
+	kubeclient := mock.NewFakeClient()
+	type args struct {
+		kubeClient kubernetes.Interface
 	}
-
-	validate := func(t *testing.T, testCase *testCase) {
-		t.Run(testCase.Name, func(t *testing.T) {
-			actualConfigureFunc := WithExport(testCase.ShouldExport)
-
-			actualConfigureFunc(testCase.Client)
-
-			assert.Equal(t, testCase.ShouldExport, testCase.Client.options.ShouldExport)
+	tests := []struct {
+		name string
+		args args
+		want *Client
+	}{
+		{
+			name: "update kube client",
+			args: args{kubeClient: kubeclient},
+			want: &Client{Interface: kubeclient},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fn := WithKubeClient(tt.args.kubeClient)
+			cl := NewClient()
+			fn(cl)
+			if !reflect.DeepEqual(cl.Interface, tt.want.Interface) {
+				t.Errorf("WithKubeClient() = %v, want %v", cl, tt.want)
+			}
 		})
 	}
+}
 
-	validate(t, &testCase{
-		Name:         "Should update Client.shouldExport",
-		ShouldExport: true,
-		Client:       NewClient(WithKubeClient(mock.NewFakeClient())),
-	})
+func TestWithExport(t *testing.T) {
+	type args struct {
+		shouldExport bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want *Client
+	}{
+		{
+			name: "update Client ShouldExport",
+			args: args{shouldExport: true},
+			want: &Client{options: &clientoptions.Clientoptions{ShouldExport: true}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fn := WithExport(tt.args.shouldExport)
+			cl := NewClient()
+			fn(cl)
+			if !reflect.DeepEqual(cl, tt.want) {
+				t.Errorf("WithExport() = %v, want %v", cl, tt.want)
+			}
+		})
+	}
 }
 
 func TestWithNamespace(t *testing.T) {
-	type testCase struct {
-		Name      string
-		Namespace string
-		Client    *Client
+	type args struct {
+		namespace string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *Client
+	}{
+		{
+			name: "update Client Namespace",
+			args: args{namespace: "test"},
+			want: &Client{options: &clientoptions.Clientoptions{Namespace: "test"}},
+		},
 	}
 
-	validate := func(t *testing.T, testCase *testCase) {
-		t.Run(testCase.Name, func(t *testing.T) {
-			actualConfigureFunc := WithNamespace(testCase.Namespace)
-
-			actualConfigureFunc(testCase.Client)
-
-			assert.Equal(t, testCase.Namespace, testCase.Client.options.Namespace)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fn := WithNamespace(tt.args.namespace)
+			cl := NewClient()
+			fn(cl)
+			if !reflect.DeepEqual(cl, tt.want) {
+				t.Errorf("WithNamespace() = %v, want %v", cl, tt.want)
+			}
 		})
 	}
-
-	validate(t, &testCase{
-		Name:      "Should update Client.namespace",
-		Namespace: "test",
-		Client:    NewClient(WithKubeClient(mock.NewFakeClient())),
-	})
 }
