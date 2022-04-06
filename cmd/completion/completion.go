@@ -123,9 +123,6 @@ func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runCompletion(opt, cmd, args)
 		},
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			opt.Writer = os.Stdout
-		},
 		ValidArgs: shells,
 	}
 

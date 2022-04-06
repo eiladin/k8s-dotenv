@@ -2,6 +2,7 @@ package completion
 
 import (
 	"io"
+	"os"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
@@ -11,8 +12,32 @@ import (
 )
 
 func TestNewCmd(t *testing.T) {
-	got := NewCmd(nil)
-	assert.NotNil(t, got)
+	opt := clioptions.CLIOptions{}
+	got := NewCmd(&opt)
+
+	t.Run("create", func(t *testing.T) {
+		if got == nil {
+			t.Errorf("NewCmd() = nil, want not nil")
+		}
+	})
+
+	t.Run("prerun", func(t *testing.T) {
+		got.PreRun(got, nil)
+		if opt.Writer != os.Stdout {
+			t.Errorf("NewCmd().PreRun.Writer = %v, want %v", opt.Writer, os.Stdout)
+		}
+	})
+
+	opt = clioptions.CLIOptions{
+		Writer: mock.NewWriter(),
+	}
+	got = NewCmd(&opt)
+
+	t.Run("runE", func(t *testing.T) {
+		parent := cobra.Command{Use: "test"}
+		parent.AddCommand(got)
+		got.RunE(got, []string{"zsh"})
+	})
 }
 
 func Test_completionShells(t *testing.T) {
