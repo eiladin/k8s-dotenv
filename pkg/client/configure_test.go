@@ -6,6 +6,7 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -60,10 +61,15 @@ func TestWithExport(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			fn := WithExport(testCase.args.shouldExport)
-			cl := NewClient()
-			fn(cl)
-			if !reflect.DeepEqual(cl, testCase.want) {
-				t.Errorf("WithExport() = %v, want %v", cl, testCase.want)
+			got := NewClient()
+			fn(got)
+
+			opts := []cmp.Option{
+				cmp.AllowUnexported(Client{}),
+			}
+
+			if !cmp.Equal(got, testCase.want, opts...) {
+				t.Errorf("WithExport() = %v, want %v", got, testCase.want)
 			}
 		})
 	}
@@ -89,10 +95,15 @@ func TestWithNamespace(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			fn := WithNamespace(testCase.args.namespace)
-			cl := NewClient()
-			fn(cl)
-			if !reflect.DeepEqual(cl, testCase.want) {
-				t.Errorf("WithNamespace() = %v, want %v", cl, testCase.want)
+			got := NewClient()
+			fn(got)
+
+			opt := []cmp.Option{
+				cmp.AllowUnexported(Client{}),
+			}
+
+			if !cmp.Equal(got, testCase.want, opt...) {
+				t.Errorf("WithNamespace() = %v, want %v", got, testCase.want)
 			}
 		})
 	}

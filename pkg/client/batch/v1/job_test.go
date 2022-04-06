@@ -7,6 +7,8 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"github.com/eiladin/k8s-dotenv/pkg/result"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestBatchV1_Job(t *testing.T) {
@@ -40,14 +42,19 @@ func TestBatchV1_Job(t *testing.T) {
 			name:    "return API errors",
 			batchv1: NewBatchV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
 			args:    args{resource: "test"},
-			want:    result.NewFromError(NewResourceLoadError("Job", mock.AnError)),
+			want:    result.NewFromError(mock.AnError),
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.batchv1.Job(tt.args.resource); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BatchV1.Job() = %v, want %v", got, tt.want)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			opts := []cmp.Option{
+				cmp.AllowUnexported(result.Result{}),
+				cmpopts.EquateErrors(),
+			}
+
+			if got := testCase.batchv1.Job(testCase.args.resource); !cmp.Equal(got, testCase.want, opts...) {
+				t.Errorf("BatchV1.Job() = %v, want %v", got, testCase.want)
 			}
 		})
 	}

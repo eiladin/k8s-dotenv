@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -49,10 +51,15 @@ func Test_newResult(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := newResult(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("newResult() = %v, want %v", got, tt.want)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			opt := []cmp.Option{
+				cmp.AllowUnexported(Result{}),
+				cmpopts.EquateErrors(),
+			}
+
+			if got := newResult(); !cmp.Equal(*got, *testCase.want, opt...) {
+				t.Errorf("newResult() = %v, want %v", got, testCase.want)
 			}
 		})
 	}
@@ -216,10 +223,9 @@ func TestNewFromContainers(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		args    args
-		want    *Result
-		wantErr bool
+		name string
+		args args
+		want *Result
 	}{
 		{
 			name: "create",
@@ -248,8 +254,7 @@ func TestNewFromContainers(t *testing.T) {
 				},
 				shouldExport: true,
 			},
-			want:    &Result{Error: ErrMissingResource},
-			wantErr: true,
+			want: NewFromError(ErrMissingResource),
 		},
 		{
 			name: "error on missing secret",
@@ -261,28 +266,26 @@ func TestNewFromContainers(t *testing.T) {
 				},
 				shouldExport: true,
 			},
-			want:    &Result{Error: ErrMissingResource},
-			wantErr: true,
+			want: NewFromError(ErrMissingResource),
 		},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			if testCase.wantErr {
-				got := NewFromContainers(
-					testCase.args.client,
-					testCase.args.namespace,
-					testCase.args.shouldExport,
-					testCase.args.containers,
-				)
+			opt := []cmp.Option{
+				cmp.AllowUnexported(Result{}),
+				cmpopts.EquateErrors(),
+			}
 
-				if got.Error.Error() != testCase.want.Error.Error() {
-					t.Errorf("NewFromContainers() = %v want %v", got.Error, testCase.want.Error)
-				}
-			} else {
-				if got := NewFromContainers(testCase.args.client, testCase.args.namespace, testCase.args.shouldExport, testCase.args.containers); !reflect.DeepEqual(got, testCase.want) {
-					t.Errorf("NewFromContainers() = %v, want %v", got, testCase.want)
-				}
+			got := NewFromContainers(
+				testCase.args.client,
+				testCase.args.namespace,
+				testCase.args.shouldExport,
+				testCase.args.containers,
+			)
+
+			if !cmp.Equal(*got, *testCase.want, opt...) {
+				t.Errorf("NewFromContainers() = %v, want %v", got, testCase.want)
 			}
 		})
 	}

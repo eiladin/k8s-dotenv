@@ -7,6 +7,8 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"github.com/eiladin/k8s-dotenv/pkg/result"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestCoreV1_Pod(t *testing.T) {
@@ -42,14 +44,19 @@ func TestCoreV1_Pod(t *testing.T) {
 			name:   "return API errors",
 			corev1: NewCoreV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
 			args:   args{resource: "test"},
-			want:   result.NewFromError(NewResourceLoadError("Pod", mock.AnError)),
+			want:   result.NewFromError(mock.AnError),
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.corev1.Pod(tt.args.resource); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CoreV1.Pod() = %v, want %v", got, tt.want)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			opts := []cmp.Option{
+				cmp.AllowUnexported(result.Result{}),
+				cmpopts.EquateErrors(),
+			}
+
+			if got := testCase.corev1.Pod(testCase.args.resource); !cmp.Equal(got, testCase.want, opts...) {
+				t.Errorf("CoreV1.Pod() = %v, want %v", got, testCase.want)
 			}
 		})
 	}
