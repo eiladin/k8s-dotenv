@@ -7,7 +7,8 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"github.com/eiladin/k8s-dotenv/pkg/result"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	"github.com/stretchr/testify/assert"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestCoreV1_Pod(t *testing.T) {
@@ -17,11 +18,12 @@ func TestCoreV1_Pod(t *testing.T) {
 
 	podClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
 	errorClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret).
-		PrependReactor("get", "pods", true, nil, assert.AnError)
+		PrependReactor("get", "pods", true, nil, mock.AnError)
 
 	type args struct {
 		resource string
 	}
+
 	tests := []struct {
 		name   string
 		corev1 *CoreV1
@@ -32,29 +34,38 @@ func TestCoreV1_Pod(t *testing.T) {
 			name:   "return pods",
 			corev1: NewCoreV1(podClient, &clientoptions.Clientoptions{Namespace: "test"}),
 			args:   args{resource: "test"},
-			want:   &result.Result{Environment: result.EnvValues{"k": "v"}, Secrets: map[string]result.EnvValues{"test": {"k": "v"}}, ConfigMaps: map[string]result.EnvValues{"test": {"k": "v"}}},
+			want: &result.Result{
+				Environment: result.EnvValues{"k": "v"},
+				Secrets:     map[string]result.EnvValues{"test": {"k": "v"}},
+				ConfigMaps:  map[string]result.EnvValues{"test": {"k": "v"}},
+			},
 		},
 		{
 			name:   "return API errors",
 			corev1: NewCoreV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
 			args:   args{resource: "test"},
-			want:   result.NewFromError(NewResourceLoadError("Pod", assert.AnError)),
+			want:   result.NewFromError(mock.AnError),
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.corev1.Pod(tt.args.resource); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CoreV1.Pod() = %v, want %v", got, tt.want)
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			opts := []cmp.Option{
+				cmp.AllowUnexported(result.Result{}),
+				cmpopts.EquateErrors(),
+			}
+
+			if got := testCase.corev1.Pod(testCase.args.resource); !cmp.Equal(got, testCase.want, opts...) {
+				t.Errorf("CoreV1.Pod() = %v, want %v", got, testCase.want)
 			}
 		})
 	}
 }
 
 func TestCoreV1_PodList(t *testing.T) {
-
 	mockv1 := mock.Pod("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
-	errorClient := mock.NewFakeClient(mockv1).PrependReactor("list", "pods", true, nil, assert.AnError)
+	errorClient := mock.NewFakeClient(mockv1).PrependReactor("list", "pods", true, nil, mock.AnError)
 
 	tests := []struct {
 		name    string
@@ -62,18 +73,28 @@ func TestCoreV1_PodList(t *testing.T) {
 		want    []string
 		wantErr bool
 	}{
-		{name: "return pods", corev1: NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}), want: []string{"test"}},
-		{name: "return API errors", corev1: NewCoreV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}), wantErr: true},
+		{
+			name:   "return pods",
+			corev1: NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			want:   []string{"test"},
+		},
+		{
+			name:    "return API errors",
+			corev1:  NewCoreV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			wantErr: true,
+		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.corev1.PodList()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CoreV1.PodList() error = %v, wantErr %v", err, tt.wantErr)
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			got, err := testCase.corev1.PodList()
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("CoreV1.PodList() error = %v, wantErr %v", err, testCase.wantErr)
+
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CoreV1.PodList() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("CoreV1.PodList() = %v, want %v", got, testCase.want)
 			}
 		})
 	}

@@ -1,37 +1,52 @@
 package replicaset
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCmd(t *testing.T) {
 	kubeClient := mock.NewFakeClient(mock.ReplicaSet("test", "test", nil, nil, nil))
 
-	got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
-	assert.NotNil(t, got)
+	t.Run("create", func(t *testing.T) {
+		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		if got == nil {
+			t.Errorf("NewCmd() is nil want not nil")
+		}
+	})
 
-	objs, _ := got.ValidArgsFunction(got, []string{}, "")
-	assert.Equal(t, []string{"test"}, objs)
+	t.Run("valid args", func(t *testing.T) {
+		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		resources, _ := got.ValidArgsFunction(got, []string{}, "")
+		if resources[0] != "test" {
+			t.Errorf("NewCmd().ValidArgs = %v, want %v", resources, []string{"test"})
+		}
+	})
 
-	actualError := got.RunE(got, []string{})
-	assert.Equal(t, ErrResourceNameRequired, actualError)
+	t.Run("runE", func(t *testing.T) {
+		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		err := got.RunE(got, []string{})
+		if !errors.Is(err, ErrResourceNameRequired) {
+			t.Errorf("NewCmd().RunE = %v, want %v", err, ErrResourceNameRequired)
+		}
+	})
 }
 
 func Test_runError(t *testing.T) {
 	type args struct {
 		err error
 	}
+
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{name: "wraps error", args: args{err: assert.AnError}, wantErr: true},
+		{name: "wraps error", args: args{err: mock.AnError}, wantErr: true},
 	}
 
 	for _, tt := range tests {
@@ -50,6 +65,7 @@ func Test_validArgs(t *testing.T) {
 	type args struct {
 		opt *clioptions.CLIOptions
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -63,6 +79,7 @@ func Test_validArgs(t *testing.T) {
 			want: []string{"my-replicaset"},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := validArgs(tt.args.opt); !reflect.DeepEqual(got, tt.want) {
@@ -80,6 +97,7 @@ func Test_run(t *testing.T) {
 		opt  *clioptions.CLIOptions
 		args []string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -100,7 +118,11 @@ func Test_run(t *testing.T) {
 		{
 			name: "return writer errors",
 			args: args{
-				opt:  &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test", Writer: mock.NewErrorWriter().ErrorAfter(1)},
+				opt: &clioptions.CLIOptions{
+					KubeClient: kubeClient,
+					Namespace:  "test",
+					Writer:     mock.NewErrorWriter().ErrorAfter(1),
+				},
 				args: []string{"test"},
 			},
 			wantErr: true,

@@ -12,10 +12,12 @@ import (
 func TestNewAppsV1(t *testing.T) {
 	client := mock.NewFakeClient()
 	options := &clientoptions.Clientoptions{}
+
 	type args struct {
 		client  kubernetes.Interface
 		options *clientoptions.Clientoptions
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -23,6 +25,7 @@ func TestNewAppsV1(t *testing.T) {
 	}{
 		{name: "create appsV1 client", args: args{client: client, options: options}, want: NewAppsV1(client, options)},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := NewAppsV1(tt.args.client, tt.args.options); !reflect.DeepEqual(got, tt.want) {

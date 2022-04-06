@@ -6,6 +6,7 @@ func Test_newMissingKubeClientError(t *testing.T) {
 	type args struct {
 		client string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -13,6 +14,7 @@ func Test_newMissingKubeClientError(t *testing.T) {
 	}{
 		{name: "wraps error", wantErr: true},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := newMissingKubeClientError(tt.args.client); (err != nil) != tt.wantErr {

@@ -1,9 +1,10 @@
 package v1
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 )
 
 func TestResourceLoadError_Error(t *testing.T) {
@@ -15,10 +16,10 @@ func TestResourceLoadError_Error(t *testing.T) {
 		{
 			name: "return internal error",
 			e: &ResourceLoadError{
-				Err:      assert.AnError,
+				Err:      mock.AnError,
 				Resource: "test",
 			},
-			want: "error loading test: assert.AnError general error for testing",
+			want: "error loading test: mock.AnError general error for testing",
 		},
 		{
 			name: "return message when there is no internal error",
@@ -26,6 +27,7 @@ func TestResourceLoadError_Error(t *testing.T) {
 			want: "error loading test",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.e.Error(); got != tt.want {
@@ -44,15 +46,16 @@ func TestResourceLoadError_Unwrap(t *testing.T) {
 		{
 			name: "return internal error",
 			e: &ResourceLoadError{
-				Err:      assert.AnError,
+				Err:      mock.AnError,
 				Resource: "test",
 			},
-			wantErr: assert.AnError,
+			wantErr: mock.AnError,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.e.Unwrap(); err != tt.wantErr {
+			if err := tt.e.Unwrap(); !errors.Is(err, tt.wantErr) {
 				t.Errorf("ResourceLoadError.Unwrap() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -64,6 +67,7 @@ func TestNewResourceLoadError(t *testing.T) {
 		resource string
 		err      error
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -73,11 +77,12 @@ func TestNewResourceLoadError(t *testing.T) {
 			name: "wrap errors",
 			args: args{
 				resource: "test",
-				err:      assert.AnError,
+				err:      mock.AnError,
 			},
-			wantErr: &ResourceLoadError{Resource: "test", Err: assert.AnError},
+			wantErr: &ResourceLoadError{Resource: "test", Err: mock.AnError},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := NewResourceLoadError(tt.args.resource, tt.args.err); err.Error() != tt.wantErr.Error() {

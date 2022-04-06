@@ -1,5 +1,7 @@
 package mock
 
+import "errors"
+
 // Error is used in tests.
 type Error struct {
 	message string
@@ -16,3 +18,6 @@ func NewError(message string) *Error {
 func (e *Error) Error() string {
 	return e.message
 }
+
+// AnError is a general error for testing.
+var AnError = errors.New("mock.AnError general error for testing") //nolint

@@ -7,7 +7,8 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"github.com/eiladin/k8s-dotenv/pkg/result"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	"github.com/stretchr/testify/assert"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestAppsV1_DaemonSet(t *testing.T) {
@@ -15,11 +16,12 @@ func TestAppsV1_DaemonSet(t *testing.T) {
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
-	errorClient := mock.NewFakeClient().PrependReactor("get", "daemonsets", true, nil, assert.AnError)
+	errorClient := mock.NewFakeClient().PrependReactor("get", "daemonsets", true, nil, mock.AnError)
 
 	type args struct {
 		resource string
 	}
+
 	tests := []struct {
 		name   string
 		appsv1 *AppsV1
@@ -40,13 +42,18 @@ func TestAppsV1_DaemonSet(t *testing.T) {
 			name:   "return API errors",
 			appsv1: NewAppsV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
 			args:   args{resource: "test"},
-			want:   result.NewFromError(NewResourceLoadError("DaemonSet", assert.AnError)),
+			want:   result.NewFromError(mock.AnError),
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.appsv1.DaemonSet(tt.args.resource); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("AppsV1.DaemonSet() = %v, want %v", got, tt.want)
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			opts := []cmp.Option{
+				cmp.AllowUnexported(result.Result{}),
+				cmpopts.EquateErrors(),
+			}
+			if got := testCase.appsv1.DaemonSet(testCase.args.resource); !cmp.Equal(*got, *testCase.want, opts...) {
+				t.Errorf("AppsV1.DaemonSet() = %v, want %v", got, testCase.want)
 			}
 		})
 	}
@@ -55,7 +62,7 @@ func TestAppsV1_DaemonSet(t *testing.T) {
 func TestAppsV1_DaemonSetList(t *testing.T) {
 	mockv1 := mock.DaemonSet("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
-	errorClient := mock.NewFakeClient().PrependReactor("list", "daemonsets", true, nil, assert.AnError)
+	errorClient := mock.NewFakeClient().PrependReactor("list", "daemonsets", true, nil, mock.AnError)
 
 	tests := []struct {
 		name    string
@@ -74,15 +81,17 @@ func TestAppsV1_DaemonSetList(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.appsv1.DaemonSetList()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("AppsV1.DaemonSetList() error = %v, wantErr %v", err, tt.wantErr)
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			got, err := testCase.appsv1.DaemonSetList()
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("AppsV1.DaemonSetList() error = %v, wantErr %v", err, testCase.wantErr)
+
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("AppsV1.DaemonSetList() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("AppsV1.DaemonSetList() = %v, want %v", got, testCase.want)
 			}
 		})
 	}

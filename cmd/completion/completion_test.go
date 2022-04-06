@@ -2,17 +2,53 @@ package completion
 
 import (
 	"io"
+	"os"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCmd(t *testing.T) {
-	got := NewCmd(nil)
-	assert.NotNil(t, got)
+	opt := clioptions.CLIOptions{}
+	got := NewCmd(&opt)
+
+	t.Run("create", func(t *testing.T) {
+		if got == nil {
+			t.Errorf("NewCmd() = nil, want not nil")
+		}
+	})
+
+	t.Run("prerun", func(t *testing.T) {
+		got.PreRun(got, nil)
+		if opt.Writer != os.Stdout {
+			t.Errorf("NewCmd().PreRun.Writer = %v, want %v", opt.Writer, os.Stdout)
+		}
+	})
+
+	opt = clioptions.CLIOptions{
+		Writer: mock.NewWriter(),
+	}
+	got = NewCmd(&opt)
+
+	t.Run("persistent prerun", func(t *testing.T) {
+		got.PersistentPreRun(got, nil)
+		if opt.Writer != os.Stdout {
+			t.Errorf("NewCmd().PersistentPreRunE.Writer = %v, want %v", opt.Writer, os.Stdout)
+		}
+	})
+
+	opt = clioptions.CLIOptions{
+		Writer: mock.NewWriter(),
+	}
+	got = NewCmd(&opt)
+
+	t.Run("runE", func(t *testing.T) {
+		parent := cobra.Command{Use: "test"}
+		parent.AddCommand(got)
+		_ = got.RunE(got, []string{"zsh"})
+	})
 }
 
 func Test_completionShells(t *testing.T) {
@@ -35,13 +71,15 @@ func Test_newCompletionGenerationError(t *testing.T) {
 	type args struct {
 		err error
 	}
+
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{name: "wraps error", args: args{err: assert.AnError}, wantErr: true},
+		{name: "wraps error", args: args{err: mock.AnError}, wantErr: true},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := newCompletionGenerationError(tt.args.err); (err != nil) != tt.wantErr {
@@ -57,6 +95,7 @@ func Test_runCompletion(t *testing.T) {
 		cmd  *cobra.Command
 		args []string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -98,6 +137,7 @@ func Test_runCompletion(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			parentCmd := &cobra.Command{Use: "test"}
@@ -113,6 +153,7 @@ func Test_runCompletionBash(t *testing.T) {
 	type args struct {
 		root *cobra.Command
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -139,10 +180,12 @@ func Test_runCompletionBash(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := runCompletionBash(tt.writer, tt.args.root); (err != nil) != tt.wantErr {
 				t.Errorf("runCompletionBash() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 		})
@@ -153,6 +196,7 @@ func Test_runCompletionZsh(t *testing.T) {
 	type args struct {
 		root *cobra.Command
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -185,10 +229,12 @@ func Test_runCompletionZsh(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := runCompletionZsh(tt.writer, tt.args.root); (err != nil) != tt.wantErr {
 				t.Errorf("runCompletionZsh() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 		})
@@ -199,6 +245,7 @@ func Test_runCompletionFish(t *testing.T) {
 	type args struct {
 		root *cobra.Command
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -225,10 +272,12 @@ func Test_runCompletionFish(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := runCompletionFish(tt.writer, tt.args.root); (err != nil) != tt.wantErr {
 				t.Errorf("runCompletionFish() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 		})
@@ -239,6 +288,7 @@ func Test_runCompletionPwsh(t *testing.T) {
 	type args struct {
 		root *cobra.Command
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -265,10 +315,12 @@ func Test_runCompletionPwsh(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := runCompletionPwsh(tt.writer, tt.args.root); (err != nil) != tt.wantErr {
 				t.Errorf("runCompletionPwsh() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 		})
