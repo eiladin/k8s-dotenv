@@ -1,58 +1,39 @@
 package v1
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
 )
 
-func TestNamespaceList(t *testing.T) {
-	type testCase struct {
-		Name          string
-		CoreV1        *CoreV1
-		ExpectedSlice []string
-		ExpectError   bool
+func TestCoreV1_NamespaceList(t *testing.T) {
+	oneNamespaceClient := mock.NewFakeClient(mock.Namespace("one"))
+	twoNamespaceClient := mock.NewFakeClient(mock.Namespace("one"), mock.Namespace("two"))
+	errorClient := mock.NewFakeClient().PrependReactor("list", "namespaces", true, nil, assert.AnError)
+
+	tests := []struct {
+		name    string
+		corev1  *CoreV1
+		want    []string
+		wantErr bool
+	}{
+		{name: "return a single namespace", corev1: NewCoreV1(oneNamespaceClient, &clientoptions.Clientoptions{}), want: []string{"one"}},
+		{name: "return multiple namespaces", corev1: NewCoreV1(twoNamespaceClient, &clientoptions.Clientoptions{}), want: []string{"one", "two"}},
+		{name: "return multiple namespaces", corev1: NewCoreV1(errorClient, &clientoptions.Clientoptions{}), wantErr: true},
 	}
-
-	validate := func(t *testing.T, testCase *testCase) {
-		t.Run(testCase.Name, func(t *testing.T) {
-			actualSlice, actualError := testCase.CoreV1.NamespaceList()
-
-			assert.Equal(t, testCase.ExpectedSlice, actualSlice)
-
-			if testCase.ExpectError {
-				assert.Error(t, actualError)
-			} else {
-				assert.NoError(t, actualError)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.corev1.NamespaceList()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CoreV1.NamespaceList() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CoreV1.NamespaceList() = %v, want %v", got, tt.want)
 			}
 		})
 	}
-
-	kubeClient := mock.NewFakeClient(mock.Namespace("one"))
-
-	validate(t, &testCase{
-		Name:          "Should return a single namespace",
-		CoreV1:        NewCoreV1(kubeClient, clientoptions.New()),
-		ExpectedSlice: []string{"one"},
-	})
-
-	kubeClient = mock.NewFakeClient(mock.Namespace("one"), mock.Namespace("two"))
-
-	validate(t, &testCase{
-		Name:          "Should return multiple namespaces",
-		CoreV1:        NewCoreV1(kubeClient, clientoptions.New()),
-		ExpectedSlice: []string{"one", "two"},
-	})
-
-	kubeClient = mock.NewFakeClient().
-		PrependReactor("list", "namespaces", true, &corev1.NamespaceList{}, assert.AnError)
-
-	validate(t, &testCase{
-		Name:        "Should return multiple namespaces",
-		CoreV1:      NewCoreV1(kubeClient, clientoptions.New()),
-		ExpectError: true,
-	})
 }

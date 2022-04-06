@@ -1,101 +1,49 @@
 package parser
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
+import "testing"
 
 func TestParse(t *testing.T) {
-	type testCase struct {
-		Name string
-
-		ShouldExport bool
-		Key          string
-		Value        []byte
-
-		ExpectedString string
+	type args struct {
+		shouldExport bool
+		key          string
+		value        []byte
 	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualString := Parse(tc.ShouldExport, tc.Key, tc.Value)
-
-			assert.Equal(t, tc.ExpectedString, actualString)
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{name: "without export", args: args{key: "key", value: []byte("value")}, want: "key=\"value\"\n"},
+		{name: "with export", args: args{shouldExport: true, key: "key", value: []byte("value")}, want: "export key=\"value\"\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Parse(tt.args.shouldExport, tt.args.key, tt.args.value); got != tt.want {
+				t.Errorf("Parse() = %v, want %v", got, tt.want)
+			}
 		})
 	}
-
-	validate(t, &testCase{
-		Name:           "Should not export",
-		ShouldExport:   false,
-		Key:            "key",
-		Value:          []byte("value"),
-		ExpectedString: "key=\"value\"\n",
-	})
-
-	validate(t, &testCase{Name: "Should export",
-		ShouldExport:   true,
-		Key:            "key",
-		Value:          []byte("value"),
-		ExpectedString: "export key=\"value\"\n",
-	})
-
-	validate(t,
-		&testCase{Name: "Should remove dots from keys",
-			ShouldExport:   true,
-			Key:            "k.e.y",
-			Value:          []byte("value"),
-			ExpectedString: "export key=\"value\"\n",
-		})
-
-	validate(t,
-		&testCase{Name: "Should escape newlines in values",
-			ShouldExport:   true,
-			Key:            "key",
-			Value:          []byte("va\nlue"),
-			ExpectedString: "export key=\"va\\nlue\"\n",
-		})
 }
 
 func TestParseStr(t *testing.T) {
-	type testCase struct {
-		Name string
-
-		ShouldExport bool
-		Key          string
-		Value        string
-
-		ExpectedString string
+	type args struct {
+		shouldExport bool
+		key          string
+		value        string
 	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualString := ParseStr(tc.ShouldExport, tc.Key, tc.Value)
-
-			assert.Equal(t, tc.ExpectedString, actualString)
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{name: "without export", args: args{key: "key", value: "value"}, want: "key=\"value\"\n"},
+		{name: "with export", args: args{shouldExport: true, key: "key", value: "value"}, want: "export key=\"value\"\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ParseStr(tt.args.shouldExport, tt.args.key, tt.args.value); got != tt.want {
+				t.Errorf("ParseStr() = %v, want %v", got, tt.want)
+			}
 		})
 	}
-
-	validate(t, &testCase{
-		Name:         "Should not export",
-		ShouldExport: false, Key: "key",
-		Value:          "value",
-		ExpectedString: "key=\"value\"\n",
-	})
-
-	validate(t, &testCase{
-		Name:           "Should export",
-		ShouldExport:   true,
-		Key:            "key",
-		Value:          "value",
-		ExpectedString: "export key=\"value\"\n",
-	})
-
-	validate(t, &testCase{
-		Name:           "Should remove dots from keys",
-		ShouldExport:   true,
-		Key:            "k.e.y",
-		Value:          "value",
-		ExpectedString: "export key=\"value\"\n",
-	})
 }

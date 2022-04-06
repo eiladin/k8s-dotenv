@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
@@ -9,83 +10,71 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCoreV1Pod(t *testing.T) {
-	type testCase struct {
-		Name           string
-		CoreV1         *CoreV1
-		Resource       string
-		ExpectedResult *result.Result
-	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualResult := tc.CoreV1.Pod(tc.Resource)
-
-			assert.Equal(t, tc.ExpectedResult, actualResult)
-		})
-	}
-
+func TestCoreV1_Pod(t *testing.T) {
 	mockv1 := mock.Pod("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
-	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
 
-	validate(t, &testCase{
-		Name:     "Should return pods",
-		CoreV1:   NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		Resource: "test",
-		ExpectedResult: &result.Result{
-			Environment: result.EnvValues{"k": "v"},
-			Secrets:     map[string]result.EnvValues{"test": {"k": "v"}},
-			ConfigMaps:  map[string]result.EnvValues{"test": {"k": "v"}},
-		},
-	})
+	podClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
+	errorClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret).
+		PrependReactor("get", "pods", true, nil, assert.AnError)
 
-	kubeClient.PrependReactor("get", "pods", true, nil, assert.AnError)
-
-	validate(t, &testCase{
-		Name:           "Should return API errors",
-		CoreV1:         NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		Resource:       "test",
-		ExpectedResult: result.NewFromError(NewResourceLoadError("Pod", assert.AnError)),
-	})
-}
-
-func TestCoreV1Pods(t *testing.T) {
-	type testCase struct {
-		Name          string
-		CoreV1        *CoreV1
-		ExpectedSlice []string
-		ExpectError   bool
+	type args struct {
+		resource string
 	}
-
-	validate := func(t *testing.T, tc *testCase) {
-		t.Run(tc.Name, func(t *testing.T) {
-			actualSlice, actualError := tc.CoreV1.PodList()
-
-			assert.Equal(t, tc.ExpectedSlice, actualSlice)
-			if tc.ExpectError {
-				assert.Error(t, actualError)
-			} else {
-				assert.NoError(t, actualError)
+	tests := []struct {
+		name   string
+		corev1 *CoreV1
+		args   args
+		want   *result.Result
+	}{
+		{
+			name:   "return pods",
+			corev1: NewCoreV1(podClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			args:   args{resource: "test"},
+			want:   &result.Result{Environment: result.EnvValues{"k": "v"}, Secrets: map[string]result.EnvValues{"test": {"k": "v"}}, ConfigMaps: map[string]result.EnvValues{"test": {"k": "v"}}},
+		},
+		{
+			name:   "return API errors",
+			corev1: NewCoreV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			args:   args{resource: "test"},
+			want:   result.NewFromError(NewResourceLoadError("Pod", assert.AnError)),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.corev1.Pod(tt.args.resource); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CoreV1.Pod() = %v, want %v", got, tt.want)
 			}
 		})
 	}
+}
+
+func TestCoreV1_PodList(t *testing.T) {
 
 	mockv1 := mock.Pod("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
+	errorClient := mock.NewFakeClient(mockv1).PrependReactor("list", "pods", true, nil, assert.AnError)
 
-	validate(t, &testCase{
-		Name:          "Should return pods",
-		CoreV1:        NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		ExpectedSlice: []string{"test"},
-	})
-
-	kubeClient.PrependReactor("list", "pods", true, nil, assert.AnError)
-
-	validate(t, &testCase{
-		Name:        "Should return API errors",
-		CoreV1:      NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
-		ExpectError: true,
-	})
+	tests := []struct {
+		name    string
+		corev1  *CoreV1
+		want    []string
+		wantErr bool
+	}{
+		{name: "return pods", corev1: NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}), want: []string{"test"}},
+		{name: "return API errors", corev1: NewCoreV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}), wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.corev1.PodList()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CoreV1.PodList() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CoreV1.PodList() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

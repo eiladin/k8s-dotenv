@@ -25,7 +25,7 @@ type Client struct {
 
 // NewClient creates `Client` from a kubernetes client.
 func NewClient(configures ...ConfigureFunc) *Client {
-	client := Client{options: clientoptions.New()}
+	client := Client{options: &clientoptions.Clientoptions{}}
 
 	for _, configure := range configures {
 		configure(&client)

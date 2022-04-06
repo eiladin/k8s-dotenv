@@ -17,21 +17,3 @@ func (corev1 *CoreV1) ConfigMapData(resource string) (map[string]string, error) 
 
 	return resp.Data, nil
 }
-
-func (corev1 *CoreV1) SecretData(resource string) (map[string]string, error) {
-	resp, err := corev1.
-		Secrets(corev1.options.Namespace).
-		Get(context.TODO(), resource, metav1.GetOptions{})
-
-	if err != nil {
-		return nil, ErrMissingResource
-	}
-
-	res := make(map[string]string)
-
-	for k, v := range resp.Data {
-		res[k] = string(v)
-	}
-
-	return res, nil
-}
