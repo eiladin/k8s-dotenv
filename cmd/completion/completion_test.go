@@ -8,7 +8,6 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCmd(t *testing.T) {
@@ -77,7 +76,7 @@ func Test_newCompletionGenerationError(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "wraps error", args: args{err: assert.AnError}, wantErr: true},
+		{name: "wraps error", args: args{err: mock.AnError}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

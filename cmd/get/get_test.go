@@ -2,11 +2,13 @@ package get
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCmd(t *testing.T) {
-	got := NewCmd(nil)
-	assert.NotNil(t, got)
+	t.Run("create", func(t *testing.T) {
+		got := NewCmd(nil)
+		if got == nil {
+			t.Errorf("NewCmd() = nil, want not nil")
+		}
+	})
 }

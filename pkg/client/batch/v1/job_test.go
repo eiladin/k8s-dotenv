@@ -7,7 +7,6 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"github.com/eiladin/k8s-dotenv/pkg/result"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestBatchV1_Job(t *testing.T) {
@@ -15,7 +14,7 @@ func TestBatchV1_Job(t *testing.T) {
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	mockConfigMap := mock.ConfigMap("test", "test", map[string]string{"k": "v"})
 	kubeClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
-	errorClient := mock.NewFakeClient().PrependReactor("get", "jobs", true, nil, assert.AnError)
+	errorClient := mock.NewFakeClient().PrependReactor("get", "jobs", true, nil, mock.AnError)
 
 	type args struct {
 		resource string
@@ -40,7 +39,7 @@ func TestBatchV1_Job(t *testing.T) {
 			name:    "return API errors",
 			batchv1: NewBatchV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
 			args:    args{resource: "test"},
-			want:    result.NewFromError(NewResourceLoadError("Job", assert.AnError)),
+			want:    result.NewFromError(NewResourceLoadError("Job", mock.AnError)),
 		},
 	}
 
@@ -56,7 +55,7 @@ func TestBatchV1_Job(t *testing.T) {
 func TestBatchV1_JobList(t *testing.T) {
 	mockv1 := mock.Job("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
-	errorClient := mock.NewFakeClient().PrependReactor("list", "jobs", true, nil, assert.AnError)
+	errorClient := mock.NewFakeClient().PrependReactor("list", "jobs", true, nil, mock.AnError)
 
 	tests := []struct {
 		name    string

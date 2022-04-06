@@ -16,3 +16,5 @@ func NewError(message string) *Error {
 func (e *Error) Error() string {
 	return e.message
 }
+
+var AnError = NewError("mock.AnError general error for testing")

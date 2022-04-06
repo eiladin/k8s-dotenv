@@ -6,13 +6,12 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCoreV1_SecretData(t *testing.T) {
 	mockSecret := mock.Secret("test", "test", map[string][]byte{"k": []byte("v")})
 	kubeClient := mock.NewFakeClient(mockSecret)
-	errorClient := mock.NewFakeClient(mockSecret).PrependReactor("get", "secrets", true, nil, assert.AnError)
+	errorClient := mock.NewFakeClient(mockSecret).PrependReactor("get", "secrets", true, nil, mock.AnError)
 
 	type args struct {
 		resource string

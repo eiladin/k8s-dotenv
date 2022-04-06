@@ -6,13 +6,12 @@ import (
 
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCoreV1_NamespaceList(t *testing.T) {
 	oneNamespaceClient := mock.NewFakeClient(mock.Namespace("one"))
 	twoNamespaceClient := mock.NewFakeClient(mock.Namespace("one"), mock.Namespace("two"))
-	errorClient := mock.NewFakeClient().PrependReactor("list", "namespaces", true, nil, assert.AnError)
+	errorClient := mock.NewFakeClient().PrependReactor("list", "namespaces", true, nil, mock.AnError)
 
 	tests := []struct {
 		name    string

@@ -1,12 +1,12 @@
 package cronjob
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
 	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -14,14 +14,28 @@ func TestNewCmd(t *testing.T) {
 	v1mock := mock.CronJobv1("my-cronjob", "test", nil, nil, nil)
 	kubeClient := mock.NewFakeClient(v1mock).WithResources(mock.CronJobv1Resource())
 
-	got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
-	assert.NotNil(t, got)
+	t.Run("create", func(t *testing.T) {
+		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		if got == nil {
+			t.Errorf("NewCmd() is nil want not nil")
+		}
+	})
 
-	cronjobs, _ := got.ValidArgsFunction(got, []string{}, "")
-	assert.Equal(t, []string{"my-cronjob"}, cronjobs)
+	t.Run("valid args", func(t *testing.T) {
+		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		cronjobs, _ := got.ValidArgsFunction(got, []string{}, "")
+		if cronjobs[0] != "my-cronjob" {
+			t.Errorf("NewCmd().ValidArgs = %v, want %v", cronjobs, []string{"my-cronjob"})
+		}
+	})
 
-	actualError := got.RunE(got, []string{})
-	assert.Equal(t, ErrResourceNameRequired, actualError)
+	t.Run("runE", func(t *testing.T) {
+		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		err := got.RunE(got, []string{})
+		if !errors.Is(err, ErrResourceNameRequired) {
+			t.Errorf("NewCmd().RunE = %v, want %v", err, ErrResourceNameRequired)
+		}
+	})
 }
 
 func Test_clientError(t *testing.T) {
@@ -33,7 +47,7 @@ func Test_clientError(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "wraps error", args: args{err: assert.AnError}, wantErr: true},
+		{name: "wraps error", args: args{err: mock.AnError}, wantErr: true},
 	}
 
 	for _, tt := range tests {
@@ -54,7 +68,7 @@ func Test_runError(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "wraps error", args: args{err: assert.AnError}, wantErr: true},
+		{name: "wraps error", args: args{err: mock.AnError}, wantErr: true},
 	}
 
 	for _, tt := range tests {

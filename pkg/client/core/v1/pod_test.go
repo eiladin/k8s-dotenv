@@ -7,7 +7,6 @@ import (
 	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
 	"github.com/eiladin/k8s-dotenv/pkg/result"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCoreV1_Pod(t *testing.T) {
@@ -17,7 +16,7 @@ func TestCoreV1_Pod(t *testing.T) {
 
 	podClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret)
 	errorClient := mock.NewFakeClient(mockv1, mockConfigMap, mockSecret).
-		PrependReactor("get", "pods", true, nil, assert.AnError)
+		PrependReactor("get", "pods", true, nil, mock.AnError)
 
 	type args struct {
 		resource string
@@ -38,7 +37,7 @@ func TestCoreV1_Pod(t *testing.T) {
 			name:   "return API errors",
 			corev1: NewCoreV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
 			args:   args{resource: "test"},
-			want:   result.NewFromError(NewResourceLoadError("Pod", assert.AnError)),
+			want:   result.NewFromError(NewResourceLoadError("Pod", mock.AnError)),
 		},
 	}
 	for _, tt := range tests {
@@ -54,7 +53,7 @@ func TestCoreV1_PodList(t *testing.T) {
 
 	mockv1 := mock.Pod("test", "test", map[string]string{"k": "v"}, []string{"test"}, []string{"test"})
 	kubeClient := mock.NewFakeClient(mockv1)
-	errorClient := mock.NewFakeClient(mockv1).PrependReactor("list", "pods", true, nil, assert.AnError)
+	errorClient := mock.NewFakeClient(mockv1).PrependReactor("list", "pods", true, nil, mock.AnError)
 
 	tests := []struct {
 		name    string
