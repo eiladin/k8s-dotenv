@@ -5,7 +5,7 @@ import (
 	batchv1 "github.com/eiladin/k8s-dotenv/pkg/client/batch/v1"
 	batchv1beta1 "github.com/eiladin/k8s-dotenv/pkg/client/batch/v1beta1"
 	corev1 "github.com/eiladin/k8s-dotenv/pkg/client/core/v1"
-	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -15,7 +15,7 @@ type ConfigureFunc = func(client *Client)
 // Client is used to interact with the kubernetes API.
 type Client struct {
 	kubernetes.Interface
-	options      *clientoptions.Clientoptions
+	options      *options.Client
 	Error        error
 	appsv1       *appsv1.AppsV1
 	batchv1      *batchv1.BatchV1
@@ -25,7 +25,7 @@ type Client struct {
 
 // NewClient creates `Client` from a kubernetes client.
 func NewClient(configures ...ConfigureFunc) *Client {
-	client := Client{options: &clientoptions.Clientoptions{}}
+	client := Client{options: &options.Client{}}
 
 	for _, configure := range configures {
 		configure(&client)

@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/result"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/google/go-cmp/cmp"
@@ -30,7 +30,7 @@ func TestAppsV1_ReplicaSet(t *testing.T) {
 	}{
 		{
 			name:   "return replicaset",
-			appsv1: NewAppsV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			appsv1: NewAppsV1(kubeClient, &options.Client{Namespace: "test"}),
 			args:   args{resource: "test"},
 			want: &result.Result{
 				Environment: result.EnvValues{"k": "v"},
@@ -40,7 +40,7 @@ func TestAppsV1_ReplicaSet(t *testing.T) {
 		},
 		{
 			name:   "return API errors",
-			appsv1: NewAppsV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			appsv1: NewAppsV1(errorClient, &options.Client{Namespace: "test"}),
 			args:   args{resource: "test"},
 			want:   result.NewFromError(mock.AnError),
 		},
@@ -73,12 +73,12 @@ func TestAppsV1_ReplicaSetList(t *testing.T) {
 	}{
 		{
 			name:   "return replicasets",
-			appsv1: NewAppsV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			appsv1: NewAppsV1(kubeClient, &options.Client{Namespace: "test"}),
 			want:   []string{"test"},
 		},
 		{
 			name:    "return API errors",
-			appsv1:  NewAppsV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			appsv1:  NewAppsV1(errorClient, &options.Client{Namespace: "test"}),
 			wantErr: true,
 		},
 	}

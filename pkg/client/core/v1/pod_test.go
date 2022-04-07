@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/result"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/google/go-cmp/cmp"
@@ -32,7 +32,7 @@ func TestCoreV1_Pod(t *testing.T) {
 	}{
 		{
 			name:   "return pods",
-			corev1: NewCoreV1(podClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			corev1: NewCoreV1(podClient, &options.Client{Namespace: "test"}),
 			args:   args{resource: "test"},
 			want: &result.Result{
 				Environment: result.EnvValues{"k": "v"},
@@ -42,7 +42,7 @@ func TestCoreV1_Pod(t *testing.T) {
 		},
 		{
 			name:   "return API errors",
-			corev1: NewCoreV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			corev1: NewCoreV1(errorClient, &options.Client{Namespace: "test"}),
 			args:   args{resource: "test"},
 			want:   result.NewFromError(mock.AnError),
 		},
@@ -75,12 +75,12 @@ func TestCoreV1_PodList(t *testing.T) {
 	}{
 		{
 			name:   "return pods",
-			corev1: NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			corev1: NewCoreV1(kubeClient, &options.Client{Namespace: "test"}),
 			want:   []string{"test"},
 		},
 		{
 			name:    "return API errors",
-			corev1:  NewCoreV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			corev1:  NewCoreV1(errorClient, &options.Client{Namespace: "test"}),
 			wantErr: true,
 		},
 	}

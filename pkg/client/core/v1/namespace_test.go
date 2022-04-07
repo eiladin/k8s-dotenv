@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 )
 
@@ -22,19 +22,19 @@ func TestCoreV1_NamespaceList(t *testing.T) {
 		{
 			name: "return a single namespace",
 			corev1: NewCoreV1(oneNamespaceClient,
-				&clientoptions.Clientoptions{}),
+				&options.Client{}),
 			want: []string{"one"},
 		},
 		{
 			name: "return multiple namespaces",
 			corev1: NewCoreV1(twoNamespaceClient,
-				&clientoptions.Clientoptions{}),
+				&options.Client{}),
 			want: []string{"one", "two"},
 		},
 		{
 			name: "return multiple namespaces",
 			corev1: NewCoreV1(errorClient,
-				&clientoptions.Clientoptions{}),
+				&options.Client{}),
 			wantErr: true,
 		},
 	}

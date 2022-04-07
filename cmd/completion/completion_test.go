@@ -5,13 +5,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/spf13/cobra"
 )
 
 func TestNewCmd(t *testing.T) {
-	opt := clioptions.CLIOptions{}
+	opt := options.CLI{}
 	got := NewCmd(&opt)
 
 	t.Run("create", func(t *testing.T) {
@@ -27,7 +27,7 @@ func TestNewCmd(t *testing.T) {
 		}
 	})
 
-	opt = clioptions.CLIOptions{
+	opt = options.CLI{
 		Writer: mock.NewWriter(),
 	}
 	got = NewCmd(&opt)
@@ -39,7 +39,7 @@ func TestNewCmd(t *testing.T) {
 		}
 	})
 
-	opt = clioptions.CLIOptions{
+	opt = options.CLI{
 		Writer: mock.NewWriter(),
 	}
 	got = NewCmd(&opt)
@@ -58,6 +58,7 @@ func Test_completionShells(t *testing.T) {
 	}{
 		{name: "get shells", want: 4},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := completionShells(); len(got) != tt.want {
@@ -91,7 +92,7 @@ func Test_newCompletionGenerationError(t *testing.T) {
 
 func Test_runCompletion(t *testing.T) {
 	type args struct {
-		opt  *clioptions.CLIOptions
+		opt  *options.CLI
 		cmd  *cobra.Command
 		args []string
 	}
@@ -104,8 +105,8 @@ func Test_runCompletion(t *testing.T) {
 		{
 			name: "run",
 			args: args{
-				opt:  &clioptions.CLIOptions{Writer: mock.NewWriter()},
-				cmd:  NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
+				opt:  &options.CLI{Writer: mock.NewWriter()},
+				cmd:  NewCmd(&options.CLI{Writer: mock.NewWriter()}),
 				args: []string{"zsh"},
 			},
 			wantErr: false,
@@ -113,8 +114,8 @@ func Test_runCompletion(t *testing.T) {
 		{
 			name: "error with too many shell types",
 			args: args{
-				opt:  &clioptions.CLIOptions{Writer: mock.NewWriter()},
-				cmd:  NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
+				opt:  &options.CLI{Writer: mock.NewWriter()},
+				cmd:  NewCmd(&options.CLI{Writer: mock.NewWriter()}),
 				args: []string{"zsh", "bash"},
 			},
 			wantErr: true,
@@ -122,16 +123,16 @@ func Test_runCompletion(t *testing.T) {
 		{
 			name: "error with no shells specified",
 			args: args{
-				opt: &clioptions.CLIOptions{Writer: mock.NewWriter()},
-				cmd: NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
+				opt: &options.CLI{Writer: mock.NewWriter()},
+				cmd: NewCmd(&options.CLI{Writer: mock.NewWriter()}),
 			},
 			wantErr: true,
 		},
 		{
 			name: "error with undefined shell type",
 			args: args{
-				opt:  &clioptions.CLIOptions{Writer: mock.NewWriter()},
-				cmd:  NewCmd(&clioptions.CLIOptions{Writer: mock.NewWriter()}),
+				opt:  &options.CLI{Writer: mock.NewWriter()},
+				cmd:  NewCmd(&options.CLI{Writer: mock.NewWriter()}),
 				args: []string{"not-a-shell"},
 			},
 			wantErr: true,

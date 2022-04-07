@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ func runError(err error) error {
 }
 
 // NewCmd creates the `deployment` command.
-func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
+func NewCmd(opt *options.CLI) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "deployment RESOURCE_NAME",
 		Aliases: []string{"deployments", "deploy"},
@@ -33,7 +33,7 @@ func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
 	return cmd
 }
 
-func validArgs(opt *clioptions.CLIOptions) []string {
+func validArgs(opt *options.CLI) []string {
 	list, _ := client.NewClient(
 		client.WithKubeClient(opt.KubeClient),
 		client.WithNamespace(opt.Namespace),
@@ -42,7 +42,7 @@ func validArgs(opt *clioptions.CLIOptions) []string {
 	return list
 }
 
-func run(opt *clioptions.CLIOptions, args []string) error {
+func run(opt *options.CLI, args []string) error {
 	if len(args) == 0 {
 		return ErrResourceNameRequired
 	}

@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/client-go/kubernetes"
@@ -54,7 +54,7 @@ func TestWithExport(t *testing.T) {
 		{
 			name: "update Client ShouldExport",
 			args: args{shouldExport: true},
-			want: &Client{options: &clientoptions.Clientoptions{ShouldExport: true}},
+			want: &Client{options: &options.Client{ShouldExport: true}},
 		},
 	}
 
@@ -88,7 +88,7 @@ func TestWithNamespace(t *testing.T) {
 		{
 			name: "update Client Namespace",
 			args: args{namespace: "test"},
-			want: &Client{options: &clientoptions.Clientoptions{Namespace: "test"}},
+			want: &Client{options: &options.Client{Namespace: "test"}},
 		},
 	}
 

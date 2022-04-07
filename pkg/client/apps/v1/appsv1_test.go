@@ -4,18 +4,17 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"k8s.io/client-go/kubernetes"
 )
 
 func TestNewAppsV1(t *testing.T) {
 	client := mock.NewFakeClient()
-	options := &clientoptions.Clientoptions{}
 
 	type args struct {
 		client  kubernetes.Interface
-		options *clientoptions.Clientoptions
+		options *options.Client
 	}
 
 	tests := []struct {
@@ -23,7 +22,14 @@ func TestNewAppsV1(t *testing.T) {
 		args args
 		want *AppsV1
 	}{
-		{name: "create appsV1 client", args: args{client: client, options: options}, want: NewAppsV1(client, options)},
+		{
+			name: "create appsV1 client",
+			args: args{
+				client:  client,
+				options: &options.Client{},
+			},
+			want: NewAppsV1(client, &options.Client{}),
+		},
 	}
 
 	for _, tt := range tests {

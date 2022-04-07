@@ -10,8 +10,8 @@ import (
 	"github.com/eiladin/k8s-dotenv/cmd/doc"
 	"github.com/eiladin/k8s-dotenv/cmd/get"
 	"github.com/eiladin/k8s-dotenv/pkg/client"
-	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
 	"github.com/eiladin/k8s-dotenv/pkg/kubeclient"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +19,7 @@ import (
 var ErrNoFilename = errors.New("no filename provided")
 
 //nolint
-var opt *clioptions.CLIOptions = &clioptions.CLIOptions{}
+var opt *options.CLI = &options.CLI{}
 
 //nolint
 var stdOut bool

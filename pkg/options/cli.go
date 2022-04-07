@@ -1,4 +1,4 @@
-package clioptions
+package options
 
 import (
 	"fmt"
@@ -8,8 +8,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// CLIOptions contains configuration used to interact with the kubernetes API.
-type CLIOptions struct {
+// CLI stores configuration and arguments passed to the cli.
+type CLI struct {
 	KubeClient   kubernetes.Interface
 	Namespace    string
 	ResourceName string
@@ -19,13 +19,13 @@ type CLIOptions struct {
 }
 
 // ResolveNamespace sets the Namespace property of an Options struct.
-func (opt *CLIOptions) ResolveNamespace() error {
+func (cli *CLI) ResolveNamespace() error {
 	ns, err := kubeclient.CurrentNamespace()
 	if err != nil {
 		return fmt.Errorf("resolve namespace: %w", err)
 	}
 
-	opt.Namespace = ns
+	cli.Namespace = ns
 
 	return nil
 }

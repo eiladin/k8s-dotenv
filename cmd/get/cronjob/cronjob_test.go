@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -15,14 +15,14 @@ func TestNewCmd(t *testing.T) {
 	kubeClient := mock.NewFakeClient(v1mock).WithResources(mock.CronJobv1Resource())
 
 	t.Run("create", func(t *testing.T) {
-		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		got := NewCmd(&options.CLI{KubeClient: kubeClient, Namespace: "test"})
 		if got == nil {
 			t.Errorf("NewCmd() is nil want not nil")
 		}
 	})
 
 	t.Run("valid args", func(t *testing.T) {
-		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		got := NewCmd(&options.CLI{KubeClient: kubeClient, Namespace: "test"})
 		cronjobs, _ := got.ValidArgsFunction(got, []string{}, "")
 		if cronjobs[0] != "my-cronjob" {
 			t.Errorf("NewCmd().ValidArgs = %v, want %v", cronjobs, []string{"my-cronjob"})
@@ -30,7 +30,7 @@ func TestNewCmd(t *testing.T) {
 	})
 
 	t.Run("runE", func(t *testing.T) {
-		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		got := NewCmd(&options.CLI{KubeClient: kubeClient, Namespace: "test"})
 		err := got.RunE(got, []string{})
 		if !errors.Is(err, ErrResourceNameRequired) {
 			t.Errorf("NewCmd().RunE = %v, want %v", err, ErrResourceNameRequired)
@@ -88,7 +88,7 @@ func Test_validArgs(t *testing.T) {
 	kubeClient := mock.NewFakeClient(v1mock, v1beta1mock)
 
 	type args struct {
-		opt         *clioptions.CLIOptions
+		opt         *options.CLI
 		apiresource *metav1.APIResourceList
 	}
 
@@ -100,7 +100,7 @@ func Test_validArgs(t *testing.T) {
 		{
 			name: "find v1 cronjobs",
 			args: args{
-				opt:         &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"},
+				opt:         &options.CLI{KubeClient: kubeClient, Namespace: "test"},
 				apiresource: mock.CronJobv1Resource(),
 			},
 			want: []string{"my-cronjob"},
@@ -108,7 +108,7 @@ func Test_validArgs(t *testing.T) {
 		{
 			name: "find v1beta1 cronjobs",
 			args: args{
-				opt:         &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"},
+				opt:         &options.CLI{KubeClient: kubeClient, Namespace: "test"},
 				apiresource: mock.CronJobv1beta1Resource(),
 			},
 			want: []string{"my-beta-cronjob"},
@@ -116,7 +116,7 @@ func Test_validArgs(t *testing.T) {
 		{
 			name: "don't find non-existent groups",
 			args: args{
-				opt:         &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"},
+				opt:         &options.CLI{KubeClient: kubeClient, Namespace: "test"},
 				apiresource: mock.InvalidGroupResource(),
 			},
 		},
@@ -144,7 +144,7 @@ func Test_run(t *testing.T) {
 	groupClient := mock.NewFakeClient().WithResources(mock.UnsupportedGroupResource())
 
 	type args struct {
-		opt  *clioptions.CLIOptions
+		opt  *options.CLI
 		args []string
 	}
 
@@ -157,7 +157,7 @@ func Test_run(t *testing.T) {
 		{
 			name: "return client errors",
 			args: args{
-				opt:  &clioptions.CLIOptions{KubeClient: errorClient},
+				opt:  &options.CLI{KubeClient: errorClient},
 				args: []string{"test"},
 			},
 			wantErr: true,
@@ -165,21 +165,21 @@ func Test_run(t *testing.T) {
 		{
 			name: "write v1 cronjobs",
 			args: args{
-				opt:  &clioptions.CLIOptions{KubeClient: v1Client, Namespace: "test", Writer: writer},
+				opt:  &options.CLI{KubeClient: v1Client, Namespace: "test", Writer: writer},
 				args: []string{"my-cronjob"},
 			},
 		},
 		{
 			name: "write v1beta1 cronjobs",
 			args: args{
-				opt:  &clioptions.CLIOptions{KubeClient: v1beta1Client, Namespace: "test", Writer: writer},
+				opt:  &options.CLI{KubeClient: v1beta1Client, Namespace: "test", Writer: writer},
 				args: []string{"my-beta-cronjob"},
 			},
 		},
 		{
 			name: "error on unsupported group",
 			args: args{
-				opt:  &clioptions.CLIOptions{KubeClient: groupClient, Namespace: "test", Writer: writer},
+				opt:  &options.CLI{KubeClient: groupClient, Namespace: "test", Writer: writer},
 				args: []string{"test"},
 			},
 			wantErr: true,
@@ -187,7 +187,7 @@ func Test_run(t *testing.T) {
 		{
 			name: "return writer errors",
 			args: args{
-				opt:  &clioptions.CLIOptions{KubeClient: v1Client, Namespace: "test", Writer: mock.NewErrorWriter().ErrorAfter(1)},
+				opt:  &options.CLI{KubeClient: v1Client, Namespace: "test", Writer: mock.NewErrorWriter().ErrorAfter(1)},
 				args: []string{"my-cronjob"},
 			},
 			wantErr: true,

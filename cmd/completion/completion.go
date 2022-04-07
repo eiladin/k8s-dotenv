@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
 
@@ -103,7 +103,7 @@ func newCompletionGenerationError(err error) error {
 }
 
 // NewCmd creates the `completion` command.
-func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
+func NewCmd(opt *options.CLI) *cobra.Command {
 	shells := []string{}
 	for s := range completionShells() {
 		shells = append(shells, s)
@@ -132,7 +132,7 @@ func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
 	return cmd
 }
 
-func runCompletion(opt *clioptions.CLIOptions, cmd *cobra.Command, args []string) error {
+func runCompletion(opt *options.CLI, cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return ErrShellNotSpecified
 	}

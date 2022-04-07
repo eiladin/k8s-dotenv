@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 )
 
@@ -26,13 +26,13 @@ func TestCoreV1_SecretData(t *testing.T) {
 	}{
 		{
 			name:   "return secret data",
-			corev1: NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			corev1: NewCoreV1(kubeClient, &options.Client{Namespace: "test"}),
 			args:   args{resource: "test"},
 			want:   map[string]string{"k": "v"},
 		},
 		{
 			name:    "return API errors",
-			corev1:  NewCoreV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			corev1:  NewCoreV1(errorClient, &options.Client{Namespace: "test"}),
 			args:    args{resource: "test"},
 			wantErr: true,
 		},

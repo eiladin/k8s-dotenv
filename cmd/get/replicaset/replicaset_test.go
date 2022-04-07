@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 )
 
@@ -13,14 +13,14 @@ func TestNewCmd(t *testing.T) {
 	kubeClient := mock.NewFakeClient(mock.ReplicaSet("test", "test", nil, nil, nil))
 
 	t.Run("create", func(t *testing.T) {
-		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		got := NewCmd(&options.CLI{KubeClient: kubeClient, Namespace: "test"})
 		if got == nil {
 			t.Errorf("NewCmd() is nil want not nil")
 		}
 	})
 
 	t.Run("valid args", func(t *testing.T) {
-		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		got := NewCmd(&options.CLI{KubeClient: kubeClient, Namespace: "test"})
 		resources, _ := got.ValidArgsFunction(got, []string{}, "")
 		if resources[0] != "test" {
 			t.Errorf("NewCmd().ValidArgs = %v, want %v", resources, []string{"test"})
@@ -28,7 +28,7 @@ func TestNewCmd(t *testing.T) {
 	})
 
 	t.Run("runE", func(t *testing.T) {
-		got := NewCmd(&clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"})
+		got := NewCmd(&options.CLI{KubeClient: kubeClient, Namespace: "test"})
 		err := got.RunE(got, []string{})
 		if !errors.Is(err, ErrResourceNameRequired) {
 			t.Errorf("NewCmd().RunE = %v, want %v", err, ErrResourceNameRequired)
@@ -63,7 +63,7 @@ func Test_validArgs(t *testing.T) {
 	kubeClient := mock.NewFakeClient(v1mock)
 
 	type args struct {
-		opt *clioptions.CLIOptions
+		opt *options.CLI
 	}
 
 	tests := []struct {
@@ -74,7 +74,7 @@ func Test_validArgs(t *testing.T) {
 		{
 			name: "find v1 replicasets",
 			args: args{
-				opt: &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test"},
+				opt: &options.CLI{KubeClient: kubeClient, Namespace: "test"},
 			},
 			want: []string{"my-replicaset"},
 		},
@@ -94,7 +94,7 @@ func Test_run(t *testing.T) {
 	writer := mock.NewWriter()
 
 	type args struct {
-		opt  *clioptions.CLIOptions
+		opt  *options.CLI
 		args []string
 	}
 
@@ -110,7 +110,7 @@ func Test_run(t *testing.T) {
 		{
 			name: "find replicasets",
 			args: args{
-				opt:  &clioptions.CLIOptions{KubeClient: kubeClient, Namespace: "test", Writer: writer},
+				opt:  &options.CLI{KubeClient: kubeClient, Namespace: "test", Writer: writer},
 				args: []string{"test"},
 			},
 			wantErr: false,
@@ -118,7 +118,7 @@ func Test_run(t *testing.T) {
 		{
 			name: "return writer errors",
 			args: args{
-				opt: &clioptions.CLIOptions{
+				opt: &options.CLI{
 					KubeClient: kubeClient,
 					Namespace:  "test",
 					Writer:     mock.NewErrorWriter().ErrorAfter(1),
