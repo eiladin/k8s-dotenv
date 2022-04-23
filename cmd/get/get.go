@@ -7,12 +7,12 @@ import (
 	"github.com/eiladin/k8s-dotenv/cmd/get/job"
 	"github.com/eiladin/k8s-dotenv/cmd/get/pod"
 	"github.com/eiladin/k8s-dotenv/cmd/get/statefulset"
-	"github.com/eiladin/k8s-dotenv/pkg/clioptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/spf13/cobra"
 )
 
 // NewCmd creates the `get` command.
-func NewCmd(opt *clioptions.CLIOptions) *cobra.Command {
+func NewCmd(opt *options.CLI) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get RESOURCE_TYPE",
 		Short: "fetch secrets and configmaps into a file",

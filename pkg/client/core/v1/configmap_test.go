@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 )
 
@@ -25,12 +25,12 @@ func TestCoreV1_ConfigMapData(t *testing.T) {
 	}{
 		{
 			name:   "return configmap data",
-			corev1: NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			corev1: NewCoreV1(kubeClient, &options.Client{Namespace: "test"}),
 			args:   args{resource: "test"}, want: map[string]string{"k": "v"},
 		},
 		{
 			name:    "return API errors",
-			corev1:  NewCoreV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			corev1:  NewCoreV1(kubeClient, &options.Client{Namespace: "test"}),
 			args:    args{resource: "test2"},
 			wantErr: true,
 		},

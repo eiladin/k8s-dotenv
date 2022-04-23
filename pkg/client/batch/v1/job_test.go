@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eiladin/k8s-dotenv/pkg/clientoptions"
+	"github.com/eiladin/k8s-dotenv/pkg/options"
 	"github.com/eiladin/k8s-dotenv/pkg/result"
 	"github.com/eiladin/k8s-dotenv/pkg/testing/mock"
 	"github.com/google/go-cmp/cmp"
@@ -30,7 +30,7 @@ func TestBatchV1_Job(t *testing.T) {
 	}{
 		{
 			name:    "return jobs",
-			batchv1: NewBatchV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			batchv1: NewBatchV1(kubeClient, &options.Client{Namespace: "test"}),
 			args:    args{resource: "test"},
 			want: &result.Result{
 				Environment: result.EnvValues{"k": "v"},
@@ -40,7 +40,7 @@ func TestBatchV1_Job(t *testing.T) {
 		},
 		{
 			name:    "return API errors",
-			batchv1: NewBatchV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			batchv1: NewBatchV1(errorClient, &options.Client{Namespace: "test"}),
 			args:    args{resource: "test"},
 			want:    result.NewFromError(mock.AnError),
 		},
@@ -73,12 +73,12 @@ func TestBatchV1_JobList(t *testing.T) {
 	}{
 		{
 			name:    "return jobs",
-			batchv1: NewBatchV1(kubeClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			batchv1: NewBatchV1(kubeClient, &options.Client{Namespace: "test"}),
 			want:    []string{"test"},
 		},
 		{
 			name:    "return API errors",
-			batchv1: NewBatchV1(errorClient, &clientoptions.Clientoptions{Namespace: "test"}),
+			batchv1: NewBatchV1(errorClient, &options.Client{Namespace: "test"}),
 			wantErr: true,
 		},
 	}
