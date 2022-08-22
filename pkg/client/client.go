@@ -72,7 +72,7 @@ func (client *Client) CoreV1() *corev1.CoreV1 {
 
 // GetAPIGroup returns the GroupVersion (batch/v1, batch/v1beta1, etc) for the given resource.
 func (client *Client) GetAPIGroup(resource string) (string, error) {
-	serverResources, err := client.Discovery().ServerResources()
+	_, serverResources, err := client.Discovery().ServerGroupsAndResources()
 	if err != nil {
 		return "", ErrAPIGroup
 	}
