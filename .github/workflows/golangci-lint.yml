@@ -21,5 +21,3 @@ jobs:
         with:
           args: --timeout 5m0s --verbose --out-${NO_FUTURE}format colored-line-number
           version: v1.47.2
-    env:
-      ACCESS_TOKEN: "${{ secrets.CORPDEV_GITHUB_ACCESS_TOKEN }}"
