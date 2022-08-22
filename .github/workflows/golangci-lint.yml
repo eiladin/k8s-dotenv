@@ -1,4 +1,4 @@
-name: Lint Golang
+name: lint
 on:
   pull_request:
 concurrency:
@@ -24,6 +24,6 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           args: --timeout 5m0s --verbose --out-${NO_FUTURE}format colored-line-number
-          version: v1.47.2
+          version: v1.48.0
         env:
           GOROOT: ${{ steps.goroot.outputs.GOROOT }}
