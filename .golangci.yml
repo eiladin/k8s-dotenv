@@ -24,6 +24,7 @@ linters:
     - gochecknoinits
     - gocognit
     - goconst
+    - gocritic
     - gocyclo
     - godox
     - goerr113
