@@ -20,7 +20,6 @@ jobs:
         run: |
           # Explicitly set GOROOT to avoid golangci-lint/issues/3107
           export "GOROOT=$(go env GOROOT)"
-        shell: bash          
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
