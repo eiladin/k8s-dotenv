@@ -8,6 +8,12 @@ Download from the [Releases](https://github.com/eiladin/k8s-dotenv/releases) pag
 
 Alternatively, use [install.sh](https://raw.githubusercontent.com/eiladin/k8s-dotenv/main/install.sh) to download and extract the latest version automatically.
 
+## Install as kubectl plugin
+
+Download from the [Releases](https://github.com/eiladin/k8s-dotenv/releases) page, extract and put in PATH, rename to kubectl-dotenv.  
+
+Alternatively, use [install-kubectl.sh](https://raw.githubusercontent.com/eiladin/k8s-dotenv/main/install-kubectl.sh) to download and extract the latest version automatically.
+
 [Documentation](./docs/k8s-dotenv.md)
 
 ## Supported Resource Types
